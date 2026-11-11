@@ -1,0 +1,4 @@
+const {fs,JSZip,TPL,OUT}=require('./exp_common');const XD=require('../exportdocs.js');const {paraText,P_RE}=XD._x;
+async function lines(buf){const z=await JSZip.loadAsync(buf);const out=[];for(const n of Object.keys(z.files).filter(n=>/^word\/(document|header\d*|footer\d*)\.xml$/.test(n))){const x=await z.file(n).async('string');x.replace(P_RE,p=>{const t=paraText(p);if(t.trim())out.push(n.replace('word/','').replace('.xml','')+': '+t.slice(0,170));return p;});}return out;}
+(async()=>{const [file,key]=process.argv.slice(2);const a=await lines(Buffer.from(TPL[key],'base64')),b=await lines(fs.readFileSync(OUT+'/'+file));
+ const sa=new Set(a),sb=new Set(b);console.log('--- só no modelo (removido):');a.filter(l=>!sb.has(l)).forEach(l=>console.log('  -',l));console.log('--- só no gerado:');b.filter(l=>!sa.has(l)).forEach(l=>console.log('  +',l));})();

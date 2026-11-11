@@ -1,0 +1,25 @@
+<!doctype html><html lang="pt-BR" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="../style.css">
+<style>.demo{background:var(--warn-soft);color:var(--warn);border-radius:6px;padding:4px 10px;font-size:.78rem}
+table.fr input{padding:5px 7px}table.fr td{vertical-align:middle}.n{text-align:right}
+.msg{display:grid;grid-template-columns:240px 1fr;gap:14px}.cl{display:flex;flex-direction:column;gap:6px}
+.cl button{text-align:left;display:flex;justify-content:space-between;gap:8px}.cl button[aria-pressed=true]{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+.sent{color:var(--ok)}.tot td{font-weight:700;background:var(--accent-soft)}
+</style></head><body><div class="wrap">
+<header><h1>Sistema de Pedidos - Prestige Aquarium Ltda</h1><span class="demo">EXEMPLO PARA APROVAR — ainda não está no app (horários inventados)</span></header>
+<nav class="tabs navtabs"><button>Pedido nacional</button><button>Exportação ✈</button><button>Histórico</button><button>Programação de embarques</button><button aria-selected="true">Frete 🚚</button><button>Painel</button><button>Roteiro ✓</button></nav>
+<section class="step"><div class="row between" style="align-items:center"><h2>Frete do embarque</h2><div class="row"><button class="primary">⬇ Baixar planilha (.xlsx)</button><button>Copiar lista</button></div></div>
+<div class="row" style="align-items:flex-end"><div class="field" style="flex:0 1 330px"><label>Embarque (da Programação de embarques)</label><select><option>Quinta 07/10 · 4 clientes · 9 caixas</option></select></div>
+<div class="field" style="flex:0 1 140px"><label>Taxa do despachante (R$)</label><input value="90,00"></div>
+<div class="field grow"><label>&nbsp;</label><span class="note">Os clientes vêm da Programação. Você digita só o frete de cada CTE e a hora que o despachante informar. Total = frete + taxa.</span></div></div>
+<div class="tablewrap"><table class="fr"><thead><tr><th>Cliente</th><th>Aero</th><th class="n">Cx</th><th>CTE nº</th><th class="n">Frete (R$)</th><th class="n">Taxa DM</th><th class="n">Total</th><th>Chega às</th><th>Aviso</th></tr></thead><tbody>
+<tr><td>RAQUEL</td><td>CGH</td><td class="n">2</td><td><input value="" placeholder="CTE" style="width:90px"></td><td class="n"><input value="352,18" style="width:96px;text-align:right"></td><td class="n">90,00</td><td class="n"><b>442,18</b></td><td><input value="14:30" style="width:70px"></td><td><span class="chip ok">copiado ✓</span></td></tr>
+<tr><td>RICARDO MANJOR</td><td>VCP</td><td class="n">3</td><td><input placeholder="CTE" style="width:90px"></td><td class="n"><input value="1.030,73" style="width:96px;text-align:right"></td><td class="n">90,00</td><td class="n"><b>1.120,73</b></td><td><input value="15:10" style="width:70px"></td><td><span class="chip warn">a copiar</span></td></tr>
+<tr><td>UBER PEIXES</td><td>GIG</td><td class="n">2</td><td><input placeholder="CTE" style="width:90px"></td><td class="n"><input value="433,40" style="width:96px;text-align:right"></td><td class="n">90,00</td><td class="n"><b>523,40</b></td><td><input value="13:45" style="width:70px"></td><td><span class="chip warn">a copiar</span></td></tr>
+<tr><td>JULIANA BEZERRA</td><td>CNF</td><td class="n">2</td><td><input placeholder="CTE" style="width:90px"></td><td class="n"><input value="527,06" style="width:96px;text-align:right"></td><td class="n">90,00</td><td class="n"><b>617,06</b></td><td><input placeholder="hh:mm" style="width:70px"></td><td><span class="chip bad">falta a hora</span></td></tr>
+<tr class="tot"><td colspan="2">TOTAL (4 clientes)</td><td class="n">9</td><td></td><td class="n">2.343,37</td><td class="n">360,00</td><td class="n">2.703,37</td><td colspan="2"></td></tr></tbody></table></div></section>
+<section class="step"><h2>Avisos de chegada para os clientes (WhatsApp)</h2><div class="msg"><div class="cl">
+<button aria-pressed="true"><span>RAQUEL</span><span class="sent">✓</span></button><button><span>RICARDO MANJOR</span><span>•</span></button><button><span>UBER PEIXES</span><span>•</span></button><button><span>JULIANA BEZERRA</span><span>—</span></button><button class="primary">Copiar todos</button></div>
+<div style="display:flex;flex-direction:column;gap:8px"><div class="field" style="flex:0 0 auto"><label>Modelo da mensagem (vale para todos; {hora}, {cliente}, {cte} são preenchidos sozinhos)</label><input value="EMBARQUE CHEGARÁ {hora} HORAS"></div>
+<div class="field" style="flex:0 0 auto"><label>Mensagem para RAQUEL (você pode editar só esta)</label><textarea style="min-height:90px">EMBARQUE CHEGARÁ 14:30 HORAS</textarea></div>
+<div class="row"><button class="primary">Copiar mensagem</button><button>Abrir no WhatsApp deste cliente</button></div></div></div></section>
+</div></body></html>

@@ -1,0 +1,3 @@
+const {JSZip,TPL}=require('./exp_common');const XD=require('../exportdocs.js');const {paraText,P_RE,TBL_RE,TR_RE}=XD._x;
+(async()=>{for(const k of process.argv.slice(2)){const z=await JSZip.loadAsync(Buffer.from(TPL[k],'base64'));const x=await z.file('word/document.xml').async('string');
+ console.log('=====',k);let ti=0;x.replace(TBL_RE,t=>{const rows=t.match(TR_RE)||[];console.log(' table',ti++,'rows',rows.length);rows.slice(0,3).concat(rows.length>3?rows.slice(-1):[]).forEach((r,i)=>console.log('   ',i,(r.match(P_RE)||[]).map(paraText).filter(Boolean).join(' | ').slice(0,150)));return t;});}})();

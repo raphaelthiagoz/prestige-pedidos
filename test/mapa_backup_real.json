@@ -1,0 +1,513 @@
+{
+  "nfs": [
+    {
+      "id": "nf1",
+      "numero": "1631638",
+      "fornecedor": "Aramar Castro Pinheiro",
+      "data": "2026-06-14",
+      "itens": [
+        {
+          "esp": "Paracheirodon axelrodi Cardinal",
+          "qtd": 14000
+        },
+        {
+          "esp": "Hemigrammus bleheri Rodostomus",
+          "qtd": 6000
+        },
+        {
+          "esp": "Otocinclus affinis Limpa vidro",
+          "qtd": 5000
+        },
+        {
+          "esp": "Corydoras sodalis Coridora",
+          "qtd": 600
+        },
+        {
+          "esp": "Corydoras robustus Coridora",
+          "qtd": 80
+        },
+        {
+          "esp": "Dianema urostriatum Dianema",
+          "qtd": 100
+        },
+        {
+          "esp": "Hemiodus gracilis Cruzeiro do sul",
+          "qtd": 80
+        },
+        {
+          "esp": "Heros severus Acará severo",
+          "qtd": 100
+        }
+      ]
+    },
+    {
+      "id": "nf2",
+      "numero": "1659487",
+      "fornecedor": "Eloisa Peres Aguiar",
+      "data": "2026-08-06",
+      "itens": [
+        {
+          "esp": "Tucanoichthys tucano Tucano",
+          "qtd": 1000
+        },
+        {
+          "esp": "Nannacara adoketa Adoketa",
+          "qtd": 40
+        }
+      ]
+    },
+    {
+      "id": "nf3",
+      "numero": "1661888",
+      "fornecedor": "Aramar Castro Pinheiro",
+      "data": "2026-08-11",
+      "itens": [
+        {
+          "esp": "Paracheirodon axelrodi Cardinal",
+          "qtd": 30000
+        },
+        {
+          "esp": "Nannostomus eques Peixe-lápis eques",
+          "qtd": 6000
+        },
+        {
+          "esp": "Nannostomus marginatus Torpedinho",
+          "qtd": 2000
+        },
+        {
+          "esp": "Paracheirodon simulans Neon verde",
+          "qtd": 10000
+        },
+        {
+          "esp": "Hemigrammus bleheri Rodostomus",
+          "qtd": 5000
+        }
+      ]
+    },
+    {
+      "id": "nf4",
+      "numero": "1662452",
+      "fornecedor": "Eloisa Peres Aguiar",
+      "data": "2026-08-12",
+      "itens": [
+        {
+          "esp": "Mesonauta festivus Acará festivo",
+          "qtd": 100
+        }
+      ]
+    },
+    {
+      "id": "nf5",
+      "numero": "NFS-e 202600000000002",
+      "fornecedor": "Romerio Dias Martins",
+      "data": "2026-08-14",
+      "itens": [
+        {
+          "esp": "Bunocephalus coracoideus Banjo",
+          "qtd": 5000
+        },
+        {
+          "esp": "Otocinclus hoppei Limpa vidro",
+          "qtd": 80000
+        },
+        {
+          "esp": "Corydoras schwartzi Coridora",
+          "qtd": 63000
+        },
+        {
+          "esp": "Corydoras elegans Coridora",
+          "qtd": 5000
+        },
+        {
+          "esp": "Corydoras incolicana Coridora",
+          "qtd": 12000
+        },
+        {
+          "esp": "Corydoras sodalis Coridora",
+          "qtd": 20000
+        }
+      ]
+    },
+    {
+      "id": "nf6",
+      "numero": "1668033",
+      "fornecedor": "Ezequiel Silva de Oliveira",
+      "data": "2026-08-21",
+      "itens": [
+        {
+          "esp": "Corydoras eques Coridora",
+          "qtd": 1000
+        }
+      ]
+    },
+    {
+      "id": "nf7",
+      "numero": "1670814",
+      "fornecedor": "Aramar Castro Pinheiro",
+      "data": "2026-08-27",
+      "itens": [
+        {
+          "esp": "Paracheirodon axelrodi Cardinal",
+          "qtd": 25000
+        },
+        {
+          "esp": "Carnegiella strigata Borboleta listrada",
+          "qtd": 3000
+        },
+        {
+          "esp": "Poecilocharax weitzmani Brilhante",
+          "qtd": 2000
+        },
+        {
+          "esp": "Hemigrammus bleheri Rodostomus",
+          "qtd": 2000
+        },
+        {
+          "esp": "Nannostomus marginatus Torpedinho",
+          "qtd": 3000
+        },
+        {
+          "esp": "Dianema urostriatum Dianema",
+          "qtd": 100
+        },
+        {
+          "esp": "Heros severus Acará severo",
+          "qtd": 100
+        }
+      ]
+    },
+    {
+      "id": "nf8",
+      "numero": "1676164",
+      "fornecedor": "Aramar Castro Pinheiro",
+      "data": "2026-09-07",
+      "itens": [
+        {
+          "esp": "Hemigrammus bleheri Rodostomus",
+          "qtd": 4000
+        },
+        {
+          "esp": "Nannostomus trifasciatus Lápis zepelim",
+          "qtd": 2800
+        },
+        {
+          "esp": "Paracheirodon simulans Neon verde",
+          "qtd": 5000
+        },
+        {
+          "esp": "Rineloricaria fallax Rabo de chicote",
+          "qtd": 135
+        },
+        {
+          "esp": "Carnegiella strigata Borboleta listrada",
+          "qtd": 18000
+        }
+      ]
+    },
+    {
+      "id": "nf9",
+      "numero": "1680851",
+      "fornecedor": "Eloisa Peres Aguiar",
+      "data": "2026-09-15",
+      "itens": [
+        {
+          "esp": "Corydoras robustus Coridora",
+          "qtd": 150
+        },
+        {
+          "esp": "Corydoras nijsseni Coridora",
+          "qtd": 400
+        }
+      ]
+    },
+    {
+      "id": "nf10",
+      "numero": "1685322",
+      "fornecedor": "Aramar Castro Pinheiro",
+      "data": "2026-09-24",
+      "itens": [
+        {
+          "esp": "Corydoras pulcher Coridora",
+          "qtd": 100
+        },
+        {
+          "esp": "Corydoras schwartzi Coridora",
+          "qtd": 400
+        },
+        {
+          "esp": "Symphysodon discus Disco",
+          "qtd": 200
+        }
+      ]
+    }
+  ],
+  "processos": [
+    {
+      "id": "pr1",
+      "pack": "011/2026",
+      "sei": "21010.002637/2026-39",
+      "destino": "Ruinemans Group",
+      "data": "2026-08-19",
+      "status": "ativo",
+      "historico": true,
+      "itens": [
+        {
+          "esp": "Paracheirodon axelrodi Cardinal",
+          "nfId": "nf3",
+          "qtd": 5000
+        },
+        {
+          "esp": "Otocinclus hoppei Limpa vidro",
+          "nfId": "nf5",
+          "qtd": 12000
+        },
+        {
+          "esp": "Paracheirodon simulans Neon verde",
+          "nfId": "nf3",
+          "qtd": 3000
+        },
+        {
+          "esp": "Tucanoichthys tucano Tucano",
+          "nfId": "nf2",
+          "qtd": 300
+        },
+        {
+          "esp": "Mesonauta festivus Acará festivo",
+          "nfId": "nf4",
+          "qtd": 60
+        },
+        {
+          "esp": "Corydoras schwartzi Coridora",
+          "nfId": "nf5",
+          "qtd": 2000
+        },
+        {
+          "esp": "Corydoras robustus Coridora",
+          "nfId": "nf1",
+          "qtd": 30
+        },
+        {
+          "esp": "Dianema urostriatum Dianema",
+          "nfId": "nf1",
+          "qtd": 30
+        }
+      ]
+    },
+    {
+      "id": "pr2",
+      "pack": "013/2026",
+      "sei": "21010.002960/2026-11",
+      "destino": "Ruinemans Aquarium Inc",
+      "data": "2026-09-01",
+      "status": "ativo",
+      "historico": true,
+      "itens": [
+        {
+          "esp": "Paracheirodon axelrodi Cardinal",
+          "nfId": "nf7",
+          "qtd": 9000
+        },
+        {
+          "esp": "Paracheirodon simulans Neon verde",
+          "nfId": "nf3",
+          "qtd": 3500
+        },
+        {
+          "esp": "Hemigrammus bleheri Rodostomus",
+          "nfId": "nf7",
+          "qtd": 2000
+        },
+        {
+          "esp": "Carnegiella strigata Borboleta listrada",
+          "nfId": "nf7",
+          "qtd": 2000
+        },
+        {
+          "esp": "Nannostomus marginatus Torpedinho",
+          "nfId": "nf7",
+          "qtd": 900
+        },
+        {
+          "esp": "Poecilocharax weitzmani Brilhante",
+          "nfId": "nf7",
+          "qtd": 900
+        },
+        {
+          "esp": "Corydoras schwartzi Coridora",
+          "nfId": "nf5",
+          "qtd": 2450
+        },
+        {
+          "esp": "Corydoras sodalis Coridora",
+          "nfId": "nf5",
+          "qtd": 500
+        },
+        {
+          "esp": "Corydoras incolicana Coridora",
+          "nfId": "nf5",
+          "qtd": 1000
+        },
+        {
+          "esp": "Corydoras elegans Coridora",
+          "nfId": "nf5",
+          "qtd": 500
+        },
+        {
+          "esp": "Dianema urostriatum Dianema",
+          "nfId": "nf7",
+          "qtd": 60
+        },
+        {
+          "esp": "Heros severus Acará severo",
+          "nfId": "nf7",
+          "qtd": 60
+        },
+        {
+          "esp": "Tucanoichthys tucano Tucano",
+          "nfId": "nf2",
+          "qtd": 300
+        }
+      ]
+    },
+    {
+      "id": "pr3",
+      "pack": "014/2026",
+      "sei": "21010.002906/2026-67",
+      "destino": "Ruinemans Group",
+      "data": "2026-09-16",
+      "status": "ativo",
+      "historico": true,
+      "itens": [
+        {
+          "esp": "Paracheirodon axelrodi Cardinal",
+          "nfId": "nf7",
+          "qtd": 8000
+        },
+        {
+          "esp": "Carnegiella strigata Borboleta listrada",
+          "nfId": "nf8",
+          "qtd": 10000
+        },
+        {
+          "esp": "Paracheirodon simulans Neon verde",
+          "nfId": "nf3",
+          "qtd": 6000
+        },
+        {
+          "esp": "Otocinclus hoppei Limpa vidro",
+          "nfId": "nf5",
+          "qtd": 3000
+        },
+        {
+          "esp": "Hemigrammus bleheri Rodostomus",
+          "nfId": "nf8",
+          "qtd": 1000
+        },
+        {
+          "esp": "Corydoras schwartzi Coridora",
+          "nfId": "nf5",
+          "qtd": 1000
+        },
+        {
+          "esp": "Corydoras eques Coridora",
+          "nfId": "nf6",
+          "qtd": 100
+        },
+        {
+          "esp": "Corydoras elegans Coridora",
+          "nfId": "nf5",
+          "qtd": 400
+        },
+        {
+          "esp": "Corydoras robustus Coridora",
+          "nfId": "nf9",
+          "qtd": 60
+        },
+        {
+          "esp": "Corydoras incolicana Coridora",
+          "nfId": "nf5",
+          "qtd": 100
+        },
+        {
+          "esp": "Corydoras nijsseni Coridora",
+          "nfId": "nf9",
+          "qtd": 300
+        },
+        {
+          "esp": "Nannostomus marginatus Torpedinho",
+          "nfId": "nf7",
+          "qtd": 600
+        },
+        {
+          "esp": "Poecilocharax weitzmani Brilhante",
+          "nfId": "nf7",
+          "qtd": 600
+        },
+        {
+          "esp": "Rineloricaria fallax Rabo de chicote",
+          "nfId": "nf8",
+          "qtd": 30
+        }
+      ]
+    },
+    {
+      "id": "pr4",
+      "pack": "016/2026",
+      "sei": "21010.003135/2026-25",
+      "destino": "Ruinemans Group",
+      "data": "2026-10-08",
+      "status": "ativo",
+      "historico": true,
+      "itens": [
+        {
+          "esp": "Otocinclus hoppei Limpa vidro",
+          "nfId": "nf5",
+          "qtd": 15000
+        },
+        {
+          "esp": "Paracheirodon simulans Neon verde",
+          "nfId": "nf3",
+          "qtd": 3600
+        },
+        {
+          "esp": "Hemigrammus bleheri Rodostomus",
+          "nfId": "nf8",
+          "qtd": 1000
+        },
+        {
+          "esp": "Paracheirodon axelrodi Cardinal",
+          "nfId": "nf7",
+          "qtd": 8000
+        },
+        {
+          "esp": "Carnegiella strigata Borboleta listrada",
+          "nfId": "nf8",
+          "qtd": 5500
+        },
+        {
+          "esp": "Corydoras schwartzi Coridora",
+          "nfId": "nf5",
+          "qtd": 1260
+        },
+        {
+          "esp": "Corydoras sodalis Coridora",
+          "nfId": "nf5",
+          "qtd": 200
+        },
+        {
+          "esp": "Poecilocharax weitzmani Brilhante",
+          "nfId": "nf7",
+          "qtd": 600
+        },
+        {
+          "esp": "Symphysodon discus Disco",
+          "nfId": "nf10",
+          "qtd": 24
+        }
+      ]
+    }
+  ],
+  "meta": {
+    "ultimoBackup": "2026-11-05T03:33:02.822Z"
+  }
+}

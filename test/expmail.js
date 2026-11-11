@@ -1,0 +1,13 @@
+const FC=require('../fretecore.js');let f=0;const ok=(c,m)=>{console.log((c?'  ok  ':'  FAIL ')+m);if(!c)f++};
+const M1=`Bom dia,\n\nSegue documentos.\n\nINV.: 016/2026\nMAWB: 074-70222390\nHAWB: DM-00058834\nLPCO IBAMA: E2600604683 Em resposta de exigência\nLPCO MAPA: E2600665213\nDU-E: 26BR001971465-1\n\nProgramação de entrega: 07/11/2026 (sabado) as 11 horas\nMAO/GRU – via gol\nG31545 – 01:35 – 06:30\n\nINTERNACIONAL\n\nGRU/AMS - KL0792 - 08/11/2026\n\nOBS:No aguardo da confirmação da reserva.`;
+const M2=`Boa tarde.\nSegue documentos:\nINV.: 013/2026\nMAWB : 549-42989181\n\nLPCO IBAMA: E2600519539 em resposta de exigência\nLPCO MAPA: E2600601097\nDU-E: 26BR001835598-4\n Entrega dia 14/10/2026 as 10:00 horas\nDOMÉSTICO:\nLA3297 – 16:45 – 21:45\nLA3567 – 18:25 – 23:10\nINTERNACIONAL:\n`;
+let a=FC.parseExpMail(M1); console.log(JSON.stringify(a));
+ok(a.inv.n===16&&a.inv.ano===2026&&a.mawb==='074-70222390'&&a.hawb==='DM-00058834','e-mail 1: INV, MAWB, HAWB');
+ok(a.lpcoIbama==='E2600604683'&&a.exigIbama&&a.lpcoMapa==='E2600665213'&&!a.exigMapa&&a.due==='26BR001971465-1','e-mail 1: LPCOs, exigência, DU-E');
+ok(a.entrega==='07/11/2026 às 11:00'&&a.dom.length===1&&a.dom[0].voo==='G31545'&&a.dom[0].chega==='06:30','e-mail 1: entrega e doméstico');
+ok(a.intl&&a.intl.voo==='KL0792'&&a.intl.data==='08/11/2026'&&a.intl.para==='AMS','e-mail 1: internacional');
+let b=FC.parseExpMail(M2); console.log(JSON.stringify(b));
+ok(b.inv.n===13&&b.mawb==='549-42989181'&&!b.hawb&&b.lpcoIbama==='E2600519539'&&b.lpcoMapa==='E2600601097'&&b.due==='26BR001835598-4','e-mail 2: campos');
+ok(b.entrega==='14/10/2026 às 10:00'&&b.dom.length===2&&b.dom[1].voo==='LA3567'&&!b.intl,'e-mail 2: entrega, 2 domésticos, internacional em imagem (sem texto)');
+ok(!FC.parseExpMail('oi tudo bem').ok,'texto qualquer: não ok');
+console.log(f?'FALHOU':'TUDO OK');process.exit(f?1:0);

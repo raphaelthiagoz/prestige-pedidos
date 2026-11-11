@@ -1,0 +1,7 @@
+node_modules/
+out/
+dist/
+*.zip
+test/__pycache__/
+test/dl/
+.DS_Store

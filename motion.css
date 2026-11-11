@@ -1,0 +1,94 @@
+/* ====================== v23 · movimento e vidro (tela Hoje + menu) ====================== */
+/* v24 · fundo desfocado (aquário) atrás do vidro, com deriva lenta */
+html.gl-on body{background:#050d0e!important}
+html.gl-on body::before{content:'';position:fixed;inset:-6%;z-index:-2;pointer-events:none;background:url(fundo.jpg) center/cover no-repeat;
+  filter:saturate(1.15) brightness(1.1);transform:scale(1.04)}
+html.mo-on body::before{animation:moDrift 38s ease-in-out infinite alternate}
+html.gl-on body::after{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
+  background:radial-gradient(60% 50% at 80% 0%,rgba(63,214,200,.14),transparent 70%),linear-gradient(180deg,rgba(5,13,14,.25),rgba(5,13,14,.55))}
+@keyframes moDrift{0%{transform:translate3d(0,0,0) scale(1.02)}50%{transform:translate3d(-2.5%,1.5%,0) scale(1.1)}100%{transform:translate3d(2%,-2%,0) scale(1.05)}}
+
+/* vidro em TODAS as telas (computador) */
+@media (min-width:901px){
+html.gl-on #side{backdrop-filter:blur(22px) saturate(1.2);-webkit-backdrop-filter:blur(22px) saturate(1.2)}
+html.gl-on main .card,html.gl-on main .step{position:relative;backdrop-filter:blur(18px) saturate(1.3);-webkit-backdrop-filter:blur(18px) saturate(1.3);
+  background:linear-gradient(180deg,rgba(255,255,255,.085),rgba(255,255,255,.03))!important;border-color:rgba(255,255,255,.11)!important;box-shadow:0 14px 38px rgba(0,0,0,.32),inset 0 1px 0 rgba(255,255,255,.07)}
+}
+
+/* cartões da tela Hoje: vidro com brilho que segue o mouse */
+body[data-view=hoje] #vHoje .card{position:relative;overflow:hidden;backdrop-filter:blur(18px) saturate(1.3);-webkit-backdrop-filter:blur(18px) saturate(1.3);
+  background:linear-gradient(180deg,rgba(255,255,255,.085),rgba(255,255,255,.03));border-color:rgba(255,255,255,.1);box-shadow:0 12px 34px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.06);
+  transition:transform .25s cubic-bezier(.2,.7,.2,1),border-color .25s,box-shadow .25s}
+body[data-view=hoje] #vHoje .card::before{content:'';position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .3s;
+  background:radial-gradient(280px circle at var(--mx,50%) var(--my,0%),rgba(63,214,200,.14),transparent 62%)}
+body[data-view=hoje] #vHoje .card:hover{border-color:rgba(63,214,200,.28);transform:translateY(-2px);box-shadow:0 16px 40px rgba(0,0,0,.34),inset 0 1px 0 rgba(255,255,255,.08)}
+body[data-view=hoje] #vHoje .card:hover::before{opacity:1}
+body[data-view=hoje] #vHoje .card>*{position:relative}
+
+/* entrada escalonada dos cartões: sobem saindo do desfoque */
+html.mo-on .mo-in{animation:moIn .85s cubic-bezier(.2,.7,.2,1) both;animation-delay:calc(var(--i,0) * 85ms + 120ms)}
+@keyframes moIn{from{opacity:0;transform:translateY(26px) scale(.965);filter:blur(14px)}to{opacity:1;transform:none;filter:none}}
+/* linhas de tabela e itens entram em cascata */
+html.mo-on .mo-row{animation:moRow .6s cubic-bezier(.2,.7,.2,1) both;animation-delay:calc(var(--r,0) * 38ms + 260ms)}
+@keyframes moRow{from{opacity:0;transform:translateX(-14px);filter:blur(5px)}to{opacity:1;transform:none;filter:none}}
+/* barras de progresso/saldo crescem */
+html.mo-on .mo-grow{transform-origin:0 50%;animation:moGrow .9s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--r,0) * 45ms + 350ms)}
+@keyframes moGrow{from{transform:scaleX(0);opacity:.2}to{transform:none;opacity:1}}
+
+/* gráfico: barras crescem, curva se desenha, pontos aparecem, destaque ao passar o mouse */
+html.mo-on .hchart svg rect{transform-box:fill-box;transform-origin:50% 100%;animation:moBar .75s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--bi,0) * 55ms + 250ms)}
+@keyframes moBar{from{transform:scaleY(0);opacity:0}to{transform:scaleY(1);opacity:1}}
+html.mo-on .hchart svg path[stroke="#f2f6f7"]{stroke-dasharray:var(--len,1000);stroke-dashoffset:var(--len,1000);animation:moDraw 1.3s cubic-bezier(.4,.1,.2,1) .55s forwards}
+@keyframes moDraw{to{stroke-dashoffset:0}}
+html.mo-on .hchart svg circle{animation:moDot .45s ease-out both;animation-delay:calc(var(--ci,0) * 55ms + 1.1s)}
+@keyframes moDot{from{opacity:0;transform:scale(.2)}to{opacity:1;transform:none}}
+.hchart svg circle{transform-box:fill-box;transform-origin:center}
+.hchart svg g[data-tip]{cursor:default}
+.hchart svg rect{transition:opacity .2s,filter .2s}
+.hchart svg:has(g[data-tip]:hover) g[data-tip]:not(:hover) rect{opacity:.42}
+.hchart svg g[data-tip]:hover rect{filter:brightness(1.25) drop-shadow(0 0 8px rgba(63,214,200,.45))}
+.mo-tip{position:fixed;z-index:9990;pointer-events:none;max-width:260px;padding:9px 12px;border-radius:12px;font-size:.78rem;line-height:1.45;color:#e9f0f2;
+  background:rgba(14,22,26,.88);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.12);box-shadow:0 12px 30px rgba(0,0,0,.45);opacity:0;transform:translateY(4px) scale(.98);transition:opacity .15s,transform .15s}
+.mo-tip.on{opacity:1;transform:none}.mo-tip b{display:block;font-size:.82rem;margin-bottom:2px}.mo-tip span{display:block;color:#a9bbc3}
+
+/* anel (percentual atrasado) no cartão "Aguardando pagamento" */
+.mo-ring{position:absolute!important;top:14px;right:14px;width:46px;height:46px}
+.mo-ring circle{fill:none;stroke-width:4.5;stroke-linecap:round}
+.mo-ring .rb{stroke:rgba(255,255,255,.09)}.mo-ring .rf{stroke:#ef7b7b;transform:rotate(-90deg);transform-origin:50% 50%;transition:stroke-dashoffset 1.2s cubic-bezier(.3,.7,.2,1) .35s}
+.mo-ring text{fill:#e9f0f2;font-size:11px;font-weight:700;text-anchor:middle;dominant-baseline:central}
+
+/* menu: marcador que desliza e ondinha no clique */
+#nav{position:relative}
+#nav.has-mark button[aria-selected=true]{background:none!important;box-shadow:none!important}
+#nav button{position:relative;z-index:1;overflow:hidden}
+#navMark{position:absolute;left:0;right:0;top:0;height:0;border-radius:13px;z-index:0;pointer-events:none;
+  background:linear-gradient(135deg,#46e3d2,#27b9c9);box-shadow:0 8px 26px rgba(63,214,200,.38),inset 0 1px 0 rgba(255,255,255,.35);
+  transition:transform .55s cubic-bezier(.34,1.45,.4,1),height .55s cubic-bezier(.34,1.45,.4,1)}
+html.mo-on #nav.has-mark button[aria-selected=true]{color:#04211f!important;font-weight:700;text-shadow:none}
+html.mo-on #nav.has-mark button[aria-selected=true] svg{color:#04211f}
+html.mo-on #nav button{transition:background .15s,color .25s,transform .2s}
+html.mo-on #nav button:hover:not([aria-selected=true]){transform:translateX(3px)}
+.mo-rip{position:absolute;border-radius:50%;pointer-events:none;background:rgba(255,255,255,.4);transform:scale(0);animation:moRip .7s ease-out forwards}
+@keyframes moRip{to{transform:scale(1);opacity:0}}
+
+/* troca de tela: a atual desfoca forte e some, a nova entra do desfoque (API nativa do navegador) */
+@supports (view-transition-name:x){
+  html.mo-on .wrap{view-transition-name:page}
+  html.mo-on ::view-transition-group(page){animation-duration:.8s}
+  html.mo-on ::view-transition-old(page){animation:moOut .34s cubic-bezier(.5,0,.8,.4) both}
+  html.mo-on ::view-transition-new(page){animation:moNew .62s cubic-bezier(.2,.7,.2,1) .2s both}
+  html.mo-on.vt-run .vin{animation:none}
+}
+@keyframes moOut{to{opacity:0;filter:blur(26px) saturate(1.4);transform:scale(.965)}}
+@keyframes moNew{from{opacity:0;filter:blur(28px) saturate(1.4);transform:scale(1.035) translateY(14px)}to{opacity:1;filter:none;transform:none}}
+
+@media (prefers-reduced-motion:reduce){
+  html.mo-on body::before,.mo-in,.mo-row,.mo-grow,.hchart svg rect,.hchart svg path,.hchart svg circle,.mo-rip{animation:none!important}
+  #navMark,.mo-ring .rf,body[data-view=hoje] #vHoje .card{transition:none!important}
+}
+
+/* v28.3 · MODO LEVE (padrão): o fundo já é desfocado, então o desfoque ao vivo por cartão quase não muda o visual e custa muita memória/GPU */
+html:not(.fx-full) #side,html:not(.fx-full) main .card,html:not(.fx-full) main .step,html:not(.fx-full) body[data-view=hoje] #vHoje .card{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+html.gl-on:not(.fx-full) main .card,html.gl-on:not(.fx-full) main .step,html.gl-on:not(.fx-full) body[data-view=hoje] #vHoje .card{background:linear-gradient(180deg,rgba(30,46,50,.74),rgba(17,28,32,.7))!important}
+html.gl-on:not(.fx-full) #side{background:rgba(9,17,19,.72)}
+html:not(.fx-full) body::before{animation:none!important}

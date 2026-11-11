@@ -1,0 +1,14 @@
+# Publicação automática: a cada envio para o GitHub, o Netlify monta a pasta dist e põe no ar.
+[build]
+  command = "./publicar.sh"
+  publish = "dist"
+
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "no-cache"

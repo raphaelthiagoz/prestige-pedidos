@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sistema de Pedidos - Prestige Aquarium Ltda</title>
+<link rel="icon" href="vendor/logo.png">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0a0e11">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="motion.css">
+</head>
+<body data-view="hoje">
+<div class="app">
+<aside id="side">
+  <div class="brand"><img src="logo-menu.png" alt="Prestige Aquarium" width="52" height="52"><div><b>Sistema de Pedidos</b><span>Prestige Aquarium Ltda</span></div></div>
+  <nav id="nav" role="tablist" aria-label="Telas do app"></nav>
+  <div id="assistSlot"></div>
+  <div class="sidefoot"><button type="button" id="btnCfg">Configurações</button><div class="sync" id="syncInfo">Dados só neste navegador</div></div>
+</aside>
+<main class="wrap">
+  <header>
+    <div class="htit"><h1 id="vtitle">Sistema de Pedidos - Prestige Aquarium Ltda</h1><span class="muted" id="catinfo">Nenhuma stocklist carregada</span><button type="button" id="stkTop" class="stktop" title="Baixa a sua stocklist com a coluna ESTOQUE já descontando as vendas salvas">⬇ Stocklist atualizada</button></div>
+    <button type="button" class="pill" id="btnSearch" aria-label="Buscar"><span class="st">Buscar cliente ou NF</span> <kbd>Ctrl K</kbd></button>
+  </header>
+  <div id="banners" role="status"></div>
+
+
+
+  <div id="vHoje" hidden></div>
+  <div id="vPedido" hidden>
+  <section class="step" aria-labelledby="h1">
+    <div class="row between"><h2 id="h1">1 · Pedido do cliente</h2><button id="novoPed" type="button">Novo pedido</button></div>
+    <div id="draftBar" class="warnbox" hidden></div>
+    <div class="row">
+      <div class="field grow pedcli"><label for="cliente">Cliente</label>
+        <div class="row nowrap"><select id="cliente"></select><button id="cliNovo" type="button">Novo</button><button id="pedDel" type="button" class="mortbtn" title="Apaga este pedido do histórico e da programação (dá para restaurar no Histórico)">Apagar</button></div></div>
+      <div class="field" style="flex:0 1 92px"><label for="inv">Invoice nº</label><input id="inv" type="number" min="0"></div>
+      <div class="field" style="flex:0 1 92px"><label for="atNum">Atestado nº</label><input id="atNum" type="number" min="0"></div>
+      <div class="field" style="flex:0 1 128px"><label for="nf">Nota Fiscal nº</label><input id="nf" placeholder="000008910"></div>
+      <div class="field" style="flex:0 1 150px"><label for="data">Data do pedido</label><input id="data" type="date"></div>
+      <div class="field" style="flex:0 1 158px"><label for="embData">Embarque (saída)</label><input id="embData" type="date"><span class="note" id="embDataNt" style="font-size:.72rem;margin-top:2px">Sem embarque marcado.</span></div>
+    </div>
+    <div class="row" id="cliEdit" hidden>
+      <div class="field grow"><label for="cliNome">Nome do cliente</label><input id="cliNome"></div>
+      <div class="field grow"><label for="cliEnd">Endereço (separe duas linhas com · )</label><input id="cliEnd" placeholder="FAZENDA BABILONIA S/N · VIEIRAS = MG"></div>
+      <div class="field" style="flex:0 1 100px"><label for="cliAero">Aeroporto</label><input id="cliAero" maxlength="4" placeholder="GRU" style="text-transform:uppercase"></div>
+      <div class="field" style="flex:0 1 190px"><label for="cliCidade">Cidade / UF (destino)</label><input id="cliCidade" placeholder="São Paulo – SP"></div>
+      <div class="field" style="flex:0 1 130px"><label for="cliDesc">Desconto (%)</label><input id="cliDesc" type="number" min="0" max="99" step="0.5" placeholder="0"></div>
+      <div class="field grow"><label for="cliPrecos">Preços especiais (um por linha: ESPÉCIE = 0,35)</label><textarea id="cliPrecos" spellcheck="false" style="min-height:44px" placeholder="NEON CARDINAL = 0,35"></textarea></div>
+      <div class="field" style="flex:0 0 auto;justify-content:flex-end"><button id="cliDel" type="button" class="danger">Remover cliente</button></div>
+    </div>
+    <div class="warnbox" id="credBox" hidden><label style="color:inherit"><input type="checkbox" id="credUse"> Descontar o crédito deste pedido. <span id="credTxt"></span></label></div>
+    <div class="split">
+      <div class="field"><label for="txt">Texto do WhatsApp (ou o texto lido do print)</label>
+        <textarea id="txt" spellcheck="false" placeholder="250 borboleta listrada&#10;1.600 neon cardinal&#10;300 limpa vidro"></textarea>
+        <div class="row" style="gap:8px"><button id="voz" type="button" title="Fale o pedido: 'duzentos e cinquenta borboleta listrada'">Falar o pedido</button><button id="limpaTxt" type="button">Limpar texto</button><span class="note" id="vozMsg" role="status"></span></div>
+        <p class="note">Para juntar espécies na mesma caixa, escreva <span class="mono">@1</span>, <span class="mono">@2</span>… no fim da linha. Mesmo número, mesma caixa.</p></div>
+      <div class="field"><label for="fPedido">Ou a stocklist devolvida pelo cliente (.xlsx)</label>
+        <input id="fPedido" type="file" accept=".xlsx">
+        <p class="note">Lê a coluna "Seu pedido aqui" (em caixas).</p>
+        <p class="note" id="pedmsg"></p>
+        <label for="fImg" style="margin-top:8px">Ou um print / foto do pedido</label>
+        <input id="fImg" type="file" accept="image/*" multiple>
+        <p class="note">Pode escolher vários prints de uma vez (o texto de cada um é somado) e colar com Ctrl+V. O texto lido aparece ao lado para você corrigir antes de gerar. Funciona bem com print de WhatsApp; letra à mão pode errar.</p>
+        <div class="thumbs" id="thumbs"></div>
+        <p class="note" id="imgmsg" role="status"></p>
+        <details id="ocrRaw" hidden><summary class="note">Ver tudo o que foi lido do print</summary><pre class="rawtxt" id="ocrRawTxt"></pre></details></div>
+    </div>
+    <div class="row"><button class="primary" id="ler">Ler pedido</button></div>
+  </section>
+
+  <section class="step" aria-labelledby="h2">
+    <h2 id="h2">2 · Conferir antes de gerar</h2>
+    <p class="note">Escolha a variação quando houver mais de uma e ajuste as caixas. Itens sem estoque ficam de fora até você marcar.</p>
+    <div id="ignored" class="warnbox" hidden></div>
+    <div class="tablewrap"><table id="conf"><thead><tr>
+      <th aria-label="Ordem"></th><th>Usar</th><th>Cliente escreveu</th><th>Item da stocklist</th><th>Embalagem</th><th class="n">Peixes</th><th class="n">R$ unit.</th><th class="n">Total R$</th><th>Situação</th>
+    </tr></thead><tbody></tbody></table></div>
+    <div class="row" id="ordRow" style="align-items:center">
+      <button id="ordSave" type="button">Guardar esta ordem como padrão</button>
+      <button id="ordClear" type="button">Limpar ordem padrão</button>
+      <span class="note" id="ordMsg" role="status">Arraste pela alça ⠿ (ou use ▲ ▼) para ordenar. A ordem guardada vale para os próximos pedidos.</span>
+    </div>
+    <div class="empty" id="confEmpty">Cole um pedido e clique em "Ler pedido".</div>
+    <div class="sum" id="sum"></div>
+    <h2 class="sub">Valores da notinha final</h2>
+    <div class="row">
+      <div class="field" style="flex:0 1 160px"><label for="dia">Embarque chega</label><select id="dia"><option>SEGUNDA-FEIRA</option><option>TERÇA-FEIRA</option><option>QUARTA-FEIRA</option><option selected>QUINTA-FEIRA</option><option>SEXTA-FEIRA</option></select></div>
+      <div class="field" style="flex:0 1 190px"><label for="vGta"><input id="gtaAuto" type="checkbox" checked> GTA automática (R$)</label><input id="vGta" type="number" step="0.01" readonly></div>
+      <div class="field" style="flex:0 1 160px"><label for="vAt"><input id="temAt" type="checkbox" checked> Atestado (R$)</label><input id="vAt" type="number" step="0.01"></div>
+      <div class="field" style="flex:0 1 160px"><label for="vEmb">Embalagem por caixa (R$)</label><input id="vEmb" type="number" step="0.01"></div>
+      <div class="field" style="flex:0 1 190px"><label for="qEmb2">Caixa maior (quantidade)</label><input id="qEmb2" type="number" min="0" value="0"></div>
+      <div class="field" style="flex:0 1 210px"><label for="moeda">Invoice em</label><select id="moeda"><option value="brl">Reais (português)</option><option value="en">Reais (inglês)</option><option value="usd">Dólar (inglês)</option></select></div>
+      <div class="field" style="flex:0 1 170px" id="taxaBox" hidden><label for="taxa">Cotação (R$ por US$)</label><input id="taxa" type="number" min="0" step="0.01" value="5.5"></div>
+    </div>
+  </section>
+
+  <section class="step" aria-labelledby="h3" id="sec3">
+    <h2 id="h3">3 · Documentos</h2>
+    <div id="checkBox" class="checkbox" hidden></div>
+    <div class="row between">
+      <div class="tabs" role="tablist" id="tabs"></div>
+      <div class="row nowrap"><button id="printDoc" type="button">Imprimir esta aba</button><button id="saveHist" type="button">Salvar no histórico</button><button class="primary" id="zip">Baixar todos (.zip)</button></div>
+    </div>
+    <p class="note" id="saveMsg" role="status"></p>
+    <div class="warnbox" id="embAsk" hidden></div>
+    <div id="doc"></div>
+  </section>
+  </div>
+  <div id="vHist" hidden></div>
+  <div id="vFinanceiro" hidden></div>
+  <div id="vPainel" hidden></div>
+  <div id="vEmbarque" hidden></div>
+  <div id="vRelat" hidden></div>
+  <div id="vEstoque" hidden></div>
+  <div id="vExp" hidden></div>
+  <div id="vFrete" hidden></div>
+  <div id="vMapa" hidden></div>
+  <div id="vTarefas" hidden></div>
+  <div id="vClientes" hidden></div>
+  <p class="note foot" id="footMsg">Os dados dos clientes e pedidos ficam só neste navegador. Nada é enviado para servidor.</p>
+<aside id="sideP" hidden aria-label="Resumo do pedido"></aside>
+</main>
+</div>
+<div id="bar" role="navigation" aria-label="Atalhos"></div>
+<div id="menuBack" hidden></div>
+<div id="cfgBack" hidden></div>
+  <details class="step" id="config">
+    <summary>Configurações</summary>
+    <div class="cfg">
+      <div class="block">
+        <h3>Stocklist</h3>
+        <p class="note">Envie a stocklist atualizada (.xlsx) sempre que mudar preços, estoque ou caixas. Ela fica salva neste navegador.</p>
+        <input id="fStock" type="file" accept=".xlsx" aria-label="Enviar stocklist">
+        <p class="note" id="stockmsg"></p>
+      </div>
+      <div class="block">
+        <h3>Valores padrão</h3>
+        <div class="grid" id="cfgValores"></div>
+      </div>
+      <div class="block">
+        <h3>Empresa</h3>
+        <div class="grid" id="cfgEmpresa"></div>
+      </div>
+      <div class="block">
+        <h3>Veterinária do atestado</h3>
+        <div class="grid" id="cfgVet"></div>
+      </div>
+      <div class="block">
+        <h3>Nomes nos documentos</h3>
+        <p class="note">Invoice, packing list, atestado e etiquetas. Uma linha por troca: NOME NA STOCKLIST = NOME NO DOCUMENTO.</p>
+        <textarea id="apDoc" spellcheck="false" style="min-height:90px"></textarea>
+      </div>
+      <div class="block">
+        <h3>Nomes na notinha</h3>
+        <p class="note">Mesmo formato. Corydoras sem troca saem como CORY + epíteto.</p>
+        <textarea id="apNota" spellcheck="false" style="min-height:90px"></textarea>
+      </div>
+      <div class="block">
+        <h3>Numeração e prazo</h3>
+        <p class="note">O próximo pedido usa o número seguinte. Corrija aqui se você pulou um número.</p>
+        <div class="grid" id="cfgNum"></div>
+      </div>
+      <div class="block">
+        <h3>Programação de embarques</h3>
+        <p class="note">Texto da dimensão que sai em cada caixa (o app escreve "06 CXS DE" na frente).</p>
+        <div class="grid" id="cfgEmb"></div>
+      </div>
+      <div class="block">
+        <h3>Etiquetas</h3>
+        <p class="note">6 por página (maiores) ou 8 por página (mais econômico, menores).</p>
+        <div class="grid" id="cfgEtiq"></div>
+      </div>
+      <div class="block">
+        <h3>Aparência e assistente</h3>
+        <p class="note">O visual é escuro e fixo (cansa menos a vista). Aqui você ajusta o nome da saudação e o assistente.</p>
+        <div class="grid" style="grid-template-columns:1fr"><div class="field"><label for="uNome">Seu nome (saudação da tela Hoje)</label><input id="uNome" placeholder="Raphael" autocomplete="off"></div></div>
+        <label style="color:var(--fg);display:block;margin-top:8px"><input type="checkbox" id="asOn"> Mostrar o assistente (cardinal) no menu</label>
+        <label style="color:var(--fg);display:block;margin-top:4px"><input type="checkbox" id="asAuto"> Abrir o balão sozinho quando houver pendência</label>
+        <label style="color:var(--fg);display:block;margin-top:10px"><input type="checkbox" id="fxFull"> Efeitos completos (desfoque ao vivo atrás dos cartões e fundo em movimento)</label>
+        <p class="note" style="margin-top:2px">Desligado, o app fica com o mesmo visual, mas bem mais leve (usa menos memória e placa de vídeo). Ligue só se o computador for forte.</p>
+      </div>
+      <div class="block">
+        <h3>Menu lateral</h3>
+        <p class="note">Escolha a ordem das abas do menu e quais aparecem. Use as setas (ou arraste pela alça). As mudanças valem na hora e acompanham você nos outros aparelhos. Os títulos (Início, Operação, Gestão) também podem ser movidos ou ocultados.</p>
+        <div id="menuCfg"></div>
+      </div>
+      <div class="block">
+        <h3>Backup</h3>
+        <p class="note">Guarda clientes, histórico de pedidos, valores e a stocklist. Use para levar tudo a outro computador. <span id="bkLast"></span></p>
+        <div class="row">
+          <button id="bkExport">Baixar backup</button>
+          <label class="filebtn">Restaurar backup<input id="bkImport" type="file" accept=".json"></label>
+        </div>
+      </div>
+      <div class="block">
+        <h3>Cópias automáticas (voltar como estava)</h3>
+        <p class="note">Sem você fazer nada, o app guarda neste aparelho uma cópia de como os seus dados estavam no começo de cada dia, dos últimos 7 dias. Se algo for apagado ou sobrescrito por engano, é só voltar para a cópia do dia anterior. As cópias ficam só neste navegador, então continue baixando o backup de vez em quando para ter uma fora daqui.</p>
+        <div id="bkAuto"></div>
+      </div>
+      <div class="block">
+        <h3>Nuvem (vários computadores)</h3>
+        <p class="note">Tudo o que você faz é salvo na nuvem sozinho. Em qualquer aparelho, abra o link, entre com e-mail e senha e continue de onde parou.</p>
+        <div id="cloudCard"></div>
+      </div>
+    </div>
+  </details>
+<div id="srch" hidden role="dialog" aria-label="Busca"><div class="sbox"><input id="srchIn" placeholder="Buscar cliente, NF, invoice, AWB ou CTE…" autocomplete="off" aria-label="Buscar"><div class="sres" id="srchRes"></div><div class="shint"><span>↑↓ navegar</span><span>Enter abrir</span><span>Esc fechar</span></div></div></div>
+<div id="toasts" aria-live="polite"></div>
+<div id="login" hidden></div>
+<div id="printArea" aria-hidden="true"></div>
+
+<script src="vendor/exceljs.min.js"></script>
+<script src="vendor/docx.iife.js"></script>
+<script src="vendor/jszip.min.js"></script>
+<script src="logos.js"></script>
+<script src="templates.js"></script>
+<script src="core.js"></script>
+<script src="features.js"></script>
+<script src="docs.js"></script>
+<script src="app.js"></script>
+<script src="cloudcfg.js"></script>
+<script src="extra.js"></script>
+<script src="templates_exp.js"></script>
+<script src="templates_frete.js"></script>
+<script src="fretecore.js"></script>
+<script src="exportdocs.js"></script>
+<script src="exportui.js"></script>
+<script src="freteui.js"></script>
+<script src="hoje.js"></script>
+<script src="financeiro.js"></script>
+<script src="motion.js"></script>
+<script src="assist.js"></script>
+<script src="menucfg.js"></script>
+<script src="cfgtabs.js"></script>
+<script src="kanban.js"></script>
+<script src="mapa.js"></script>
+<script src="nfpdf.js"></script>
+<script src="clientes.js"></script>
+<script src="relatorio.js"></script>
+<script src="side.js"></script>
+<script src="pednovo.js"></script>
+<script src="auth.js"></script>
+<script src="autobk.js"></script>
+</body>
+</html>

@@ -1,0 +1,425 @@
+PRESTIGE PEDIDOS
+================
+Site estático (sem servidor). Abra index.html por um endereço web (Netlify) para funcionar.
+
+COMO PUBLICAR NO NETLIFY (arrastar e soltar)
+1. Extraia o arquivo prestige-pedidos.zip numa pasta (botão direito > Extrair tudo).
+2. Entre em https://app.netlify.com/drop e faça login.
+3. Arraste a PASTA extraída (a que contém index.html) para a área "Drag and drop your site folder here".
+4. Aguarde o endereço aparecer (algo como https://nome-aleatorio.netlify.app). Esse é o seu app.
+5. Em "Site configuration > Change site name", troque por um nome fácil (ex.: prestige-pedidos).
+6. Para atualizar o app depois, arraste a pasta nova no mesmo site (aba Deploys > "drag and drop").
+
+PRIMEIRO USO
+1. Abra o endereço do app > Configurações > envie a sua STOCKLIST (.xlsx).
+2. Confira Valores padrão (GTA, embalagem, atestado), Empresa e Veterinária.
+3. Em "1 · Pedido do cliente", clique em Novo, cadastre o cliente, cole o pedido e clique em Ler pedido.
+
+OBSERVAÇÕES
+- Dados (stocklist, clientes, valores) ficam só no navegador do computador em que você usa. Use Configurações > Baixar backup para guardar/levar para outro computador.
+- Quem souber o endereço consegue abrir o app, mas não vê nenhum dado seu (eles ficam no seu navegador).
+
+ATUALIZAÇÃO (22/10/2026)
+- Notinha final: preenchida a partir do seu modelo NILVIA_JANETE.xlsx (cores, logos e formatação mantidos).
+- Etiquetas: preenchidas a partir do seu modelo ETIQUETAS_LENI_LUZINETE.docx (fontes e espaçamento mantidos).
+- Nomes nos documentos: "NEON CARDINAL" sai como CARDINAL (Configurações > Nomes nos documentos).
+- Para atualizar no Netlify: Deploys > arraste a pasta nova sobre o mesmo site.
+
+MODELOS PADRÃO (não mudar sem pedido)
+- Invoice: INVOICE_PISCICULTURA_ANDRADE.xls
+- Packing list: AGROQUIMICA.doc
+- Etiquetas: ETIQUETAS_NILVIA.docx (6 por página, mesmo tamanho, com espaço entre elas)
+- Notinha final: NILVIA_JANETE.xlsx
+Os modelos ficam dentro do app (templates.js). O app só preenche; não recria.
+
+=== NOVIDADES (versão 3) ===
+- Rascunho automático, "Novo pedido", histórico de pedidos (Editar / Repetir), numeração editável (Configurações > Numeração e prazo).
+- Estoque restante: pedidos salvos descontam da stocklist. Tela "Estoque e reposição" baixa a stocklist atualizada e a lista de reposição.
+- Preço por cliente (desconto % e preços especiais) e preço só do pedido (campo R$ unit. na conferência).
+- Conferência automática entre documentos e reabertura dos arquivos gerados.
+- Pós-venda: mortalidade (crédito + notinha corrigida), situação/pagamento, mensagem de cobrança.
+- Romaneio do dia, painel, relatório IBAMA (modelo provisório), invoice em inglês/dólar, pedido por voz (Chrome), vários prints.
+- Instalável no celular/computador (menu do navegador > Instalar app) e abre sem internet.
+
+=== NUVEM (opcional, vários computadores) ===
+1. Crie uma conta grátis em supabase.com e um projeto.
+2. No projeto: SQL Editor > cole e rode:
+   create table pp_sync (id text primary key, data text not null, updated_at timestamptz not null default now());
+   alter table pp_sync enable row level security;
+   create policy "pp ler" on pp_sync for select to anon using (true);
+   create policy "pp inserir" on pp_sync for insert to anon with check (true);
+   create policy "pp atualizar" on pp_sync for update to anon using (true) with check (true);
+3. Em Project Settings > API copie "Project URL" e a chave "anon public".
+4. No app: Configurações > Nuvem. Cole o endereço e a chave, escolha um nome de espaço e uma SENHA, clique "Conectar".
+5. Nos outros computadores, repita com o MESMO espaço e a MESMA senha.
+Os dados saem cifrados com a sua senha (quem não souber a senha não lê). Se esquecer a senha, não há como recuperar: guarde também o backup.
+
+=== PROGRAMAÇÃO DE EMBARQUES (versão 4) ===
+- Aba "Programação de embarques": um embarque por dia de saída, com cliente, aeroporto, cidade, caixas, peso, dimensão, conhecimento (AWB), situação (programado/embarcado/chegou/problema), data de chegada e observação. Tudo editável.
+- "Puxar pedidos do histórico" traz os pedidos salvos naquele dia. Aeroporto e cidade ficam no cadastro do cliente.
+- "Baixar no seu modelo (.docx)" preenche o PROGRAMAÇÃO DE EMBARQUES.docx dele (mesmo visual). Dimensão padrão em Configurações.
+
+=== EXPORTAÇÃO ✈ (versão 5) ===
+- Use a aba "Exportação ✈". Escolha o destino: AMS · Holanda, Miami · EUA ou Japão.
+  O consignee, os atestados e os CZIs mudam sozinhos. O consignee fica cadastrado e pode ser editado (salva para as próximas).
+- Pedido: envie a stocklist de exportação respondida (.xlsx, coluna "Order ...") ou cole linhas como "8 corydoras schwartzi".
+  Peso padrão 8 kg por caixa (editável por linha). Nome comum em português editável.
+- Dados de cada pedido (você digita): NF, DU-E, MAWB, HAWB, AWB, voo, partida, GTA e série, package fee, embalagem/oxigênio/temperatura,
+  LPCO MAPA (vai no CZI; o app acrescenta /SEV-GRU, e -1/-2 no Japão) e LPCO IBAMA (vai nas etiquetas).
+- Quadro "Numeração da invoice" (dentro da Exportação, recolhível): última usada (hoje 017 → próxima 018/2026). O mesmo número vale para invoice, packing list, atestados e CZI. Só exportações.
+- Gera, nos SEUS modelos: Invoice US$, Invoice convertida em R$ (uso interno, para a nota), Packing List, Etiquetas (1 por caixa),
+  Atestados SISA + VIGIAGRO e CZIs de cada destino. "Baixar todos (.zip)" também salva no histórico de exportações.
+- Cotação: botão "Buscar PTAX do dia" (Banco Central, compra; volta até 7 dias se for fim de semana/feriado) ou digite o valor.
+- Sub-aba "Roteiro ✓" (dentro da Exportação): checklist de revisão (Pendente / Refazer / OK), com resumo do que falta, anotações, imprimir e texto de e-mail para o despachante.
+  Fica salvo junto com a exportação no histórico.
+- Backup e nuvem também levam as exportações.
+
+=== VERSÃO 6: NOVA ORGANIZAÇÃO + FRETE 🚚 ===
+ABAS (nesta ordem): Nacional · Exportação ✈ · Programação de voos · Frete 🚚 · Histórico · Painel · Romaneio e relatórios · Estoque e reposição
+- Roteiro e numeração da invoice agora ficam DENTRO da Exportação (sub-abas "Pedido de exportação | Roteiro ✓").
+- Histórico: mostra pedidos nacionais e exportações, com filtro Todos | Nacionais | Exportações ✈. "Abrir" numa exportação leva de volta à aba Exportação.
+- Exportação: ordem das espécies pela maior quantidade; arraste ou ▲▼ para mudar; "Guardar esta ordem" vale para as próximas. A prévia dos documentos abre num botão (e dá para editar ali).
+
+FRETE 🚚 (só pedidos nacionais)
+1. Escolha o embarque (dia) da Programação de voos: os clientes dele aparecem na lista.
+2. Anexe os PDFs dos CT-e (pode vários de uma vez). O app lê AWB, nº do CT-e, NF, volumes, peso, voo e o "valor a receber" e associa ao cliente
+   (pela NF do pedido no Histórico; se não achar, pelo nome; se ainda assim não achar, você escolhe numa lista).
+   Funciona com PDF de texto (o que o despachante envia). Foto/PDF escaneado não é lido: digite o frete.
+3. Taxa do despachante: R$ 90 (editável). Total = frete + taxa.
+4. Digite a hora de chegada. O app monta "EMBARQUE CHEGARÁ {hora} HORAS / FRETE: R$ {total}". O texto é editável (modelo geral e por cliente),
+   com opções "mostrar detalhe (frete + taxa)" e "incluir voo e AWB". "Copiar todos" gera um bloco por cliente para enviar à sua chefe.
+5. O CT-e NÃO traz a hora de chegada (só nº do voo e data prevista). O app lê o "Número operacional" (= AWB, ex.: 957-42510926) e
+   o AWB na tabela vira um link, e há o botão "✈ Abrir rastreio LATAM" que abre o rastreio da LATAM Cargo já com o AWB preenchido.
+   Você vê o horário lá e digita aqui. Também há "Buscar voo no Google" e "Copiar AWB".
+6. "Dar baixa" marca como pago (verde); em aberto fica vermelho. "Controle de fretes (todos)": filtros Em aberto/Pagos/Todos e quem está devendo.
+7. "Baixar planilha": FRETE_dd.mm.xlsx no seu modelo, com linha de TOTAL.
+- Backup e nuvem também levam os fretes.
+
+=== VERSÃO 7 · NOVO VISUAL, TELA "HOJE" E ASSISTENTE (04/11/2026) ===
+VISUAL
+- Tema escuro "vidro" (grafite + turquesa). Menu lateral com grupos: Início (Hoje), Operação (Nacional, Exportação,
+  Programação de voos, Frete) e Gestão (Histórico, Painel, Romaneio e relatórios, Estoque e reposição).
+- Largura fixa em todas as abas (a tela não "pula" ao trocar) e transição suave.
+- Configurações agora abre numa gaveta à direita (fecha no ✕, no Esc ou clicando fora).
+- Celular: barra inferior (Hoje, Pedido, Export., Frete, Mais) e menu lateral que desliza.
+TELA "HOJE"
+- Embarques de hoje, fretes em aberto, aguardando pagamento, última/próxima exportação, gráfico de 8 semanas e lista
+  "Precisa de atenção" com botões de ação.
+BUSCA
+- Ctrl+K (ou o botão 🔍): procura cliente, pedido, NF, invoice, AWB e CT-e e abre direto.
+ASSISTENTE (cardinal neon, no canto do menu)
+- Faz as perguntas do dia: "A reserva ao despachante já foi solicitada?", "Os boletos foram gerados?",
+  "Faltam CT-es", "Aviso de chegada enviado?", "Frete pago?", pedidos atrasados e backup.
+- Respostas: "Já solicitei", "Sim, todos", "Dar baixa", "Copiar cobrança", "Ver" (abre a tela certa) e "Depois" (volta em 4 h).
+- Programação de voos tem a seção "Etapas do embarque" (reserva, boleto, CT-e, aviso, frete pago por cliente).
+  CT-e, aviso e frete pago se preenchem sozinhos conforme você usa a aba Frete.
+- 🔔/🔕 silencia. Nome e comportamento em Configurações > Aparência e assistente.
+FRETE
+- O AWB vira link para o rastreio da LATAM Cargo (prefixo + número).
+LOGIN (OPCIONAL, usa o Supabase Auth)
+- Configurações > Nuvem > "Exigir login". Cadastre o e-mail e a senha em Supabase > Authentication > Users e
+  desligue "Allow new users to sign up".
+- IMPORTANTE: o login protege a TELA. A proteção real dos dados na nuvem é a regra (RLS) da tabela pp_sync:
+  apague as políticas para "anon" e crie políticas só para "authenticated" (o SQL está em Configurações > Nuvem).
+  Os dados já vão cifrados com a sua senha de criptografia.
+- Sem login ligado, tudo continua como antes.
+ATUALIZAR NO NETLIFY: arraste a pasta nova sobre o mesmo site (um deploy só). Se o navegador mostrar a versão antiga,
+feche e abra o app de novo (o cache atualiza sozinho).
+
+=== v9: TAREFAS + NOTAS DE ENTRADA (MAPA) ===
+O app externo "Meu Controle" saiu: agora tudo fica dentro deste sistema, em um só lugar.
+
+TAREFAS (menu Gestão > Tarefas)
+- Quadro com 4 colunas: A fazer, Em andamento, Aguardando, Feito. Só para o trabalho do aquário.
+- Categorias: Pedidos, Exportação, Frete, Financeiro, Compras. Prioridade, prazo e repetição (todo dia / semana / mês).
+- Mover: arraste o cartão ou use as setinhas ‹ ›. No celular as colunas viram abas.
+- Tarefa que vence hoje ou atrasou aparece no Assistente (cardinal) e no Hoje, com "Feita / Ver / Depois".
+
+NOTAS DE ENTRADA (menu Operação > Notas de entrada)
+- É o antigo app "Conferência MAPA" dentro do sistema. 4 abas: Verificar pedido | NFs de entrada | Saldo por espécie | Processos.
+- Backup, nuvem e tema do app antigo foram retirados: valem o backup, a nuvem e o login do sistema (os dados do MAPA
+  seguem junto na nuvem e no backup).
+- IMPORTAR O QUE VOCÊ JÁ TINHA: aba "NFs de entrada" (ou "Processos") > "Importar backup do app antigo (.json)" e escolha
+  o arquivo que você baixou do app antigo. Os seus dados reais NÃO vêm dentro do site (o endereço é público).
+- Painel "Conferência de NFs" dentro da Exportação: para cada espécie do pedido mostra as NFs sugeridas, o saldo depois
+  e o status. Se uma NF já foi usada em processo anterior, avisa em vermelho e mostra quais. Botões: Protocolar e
+  gravar consumo, Folha de grifos e Abrir em Notas de entrada.
+- O nº da exportação (ex.: 018/2026) vira o nº do pack. Nada é descontado das NFs antes de clicar em Protocolar.
+- Assistente/Hoje: avisa quando uma exportação sai em até 4 dias e as NFs ainda não foram protocoladas
+  (ou faltam NFs com saldo). O aviso some depois de protocolar.
+- A busca (Ctrl K) também acha NFs e packs.
+- Folha de grifos / Resumo / Carta ao MAPA: na aba Processos e no painel da Exportação.
+
+RODAPÉ: a frase muda sozinha - sem nuvem: "ficam só neste navegador"; com nuvem ligada: "também na nuvem (Supabase), cifrados".
+
+ATUALIZAR NO NETLIFY: arraste a pasta nova sobre o mesmo site (um deploy só). Depois importe o backup do app antigo.
+
+=== v10: TAREFA POR VOZ + CLIENTES ===
+TAREFA POR VOZ (botão redondo de microfone no canto da tela, em qualquer parte do app)
+- Toque, fale ("amanhã ligar pro despachante, frete, urgente") e confira a janela de nova tarefa já preenchida. Só salva quando você tocar em Salvar.
+- Entende: hoje, amanhã, depois de amanhã, dias da semana, "dia 15", "daqui a 3 dias"; "urgente" / "prioridade baixa"; categoria pelas palavras (frete, boleto, comprar, pedido, voo...); "todo dia" / "toda segunda".
+- Precisa de internet e de permitir o microfone na primeira vez. Funciona melhor no Chrome/Edge (PC e Android). Se o navegador não tiver voz (iPhone), digite no campo do painel (dá para usar o microfone do teclado do celular).
+
+CLIENTES (menu Gestão > Clientes)
+- Lista com busca e filtros (com saldo em aberto, sem pedir há tempo, nunca pediu) + ficha do cliente: último pedido, nº de pedidos, total comprado, ticket médio, em aberto, o que mais pede, pedidos anteriores (botão Abrir), exportações e fretes dele.
+- + Novo pedido abre o Nacional com o cliente escolhido. ✎ Dados edita cadastro (CNPJ/CPF, telefone, e-mail, observações...).
+- Renomear um cliente pergunta se atualiza o nome nos pedidos antigos (para não perder o histórico).
+- Importar planilha (.xlsx ou .csv): o app reconhece as colunas pelo título, mostra a prévia e deixa escolher o que fazer com quem já existe. "Modelo (.csv)" baixa uma planilha de exemplo.
+- Os clientes continuam sincronizando com a nuvem e entram no backup do sistema.
+ATUALIZAR NO NETLIFY: arraste a pasta nova sobre o mesmo site (um deploy só).
+
+=== v11: CONFIGURAÇÕES EM 6 ABAS ===
+A gaveta de Configurações agora tem 6 abas (menu à esquerda no computador;
+faixa de botões no topo, deslizando de lado, no celular):
+  1. Empresa e documentos   -> Empresa, Veterinária do atestado
+  2. Valores e numeração    -> Valores padrão (GTA, embalagem...), Numeração e prazo
+  3. Nomes e etiquetas      -> Nomes nos documentos, Nomes na notinha, Programação de embarques, Etiquetas
+  4. Stocklist              -> planilha de estoque e preços
+  5. Aparência e assistente -> sua saudação, cardinal, assistente
+  6. Dados e nuvem          -> Backup, Nuvem (vários computadores), login
+Nada mudou dentro dos campos: tudo que você já tinha configurado continua lá.
+O aviso "Comece por aqui" abre direto na aba Stocklist.
+Para publicar: arraste a pasta/zip no Netlify de novo e aperte F5 (no celular,
+feche e abra o app).
+
+=== v12: RELATÓRIO DE VENDAS EM PDF (aba Painel) ===
+No topo do Painel há o cartão "Relatório de vendas (PDF)":
+  - Períodos: Esta semana, Semana passada (segunda a domingo), Este mês, Mês passado, ou Datas livres.
+  - Cotação do dólar: o app busca sozinho a PTAX do dia no Banco Central (precisa de internet).
+    Você pode corrigir o valor. Embarque que já tem cotação salva usa a dele; os demais usam a do dia.
+  - Botões: Baixar PDF | Compartilhar (WhatsApp) | Baixar Excel | Ver prévia.
+  - O PDF tem: capa com logo, resumo em texto, nacional (R$) e exportação (US$ e ≈ R$) com comparativo
+    com o período anterior, caixas por dia, destaques, evolução (8 semanas ou 6 meses), top 10 espécies,
+    tabela de caixas e peixes por espécie, quem mais comprou, exportação por país/destino e perdas
+    (mortalidade por espécie).
+  - A mortalidade vem do que você lança no Histórico (pedido nacional > Mortalidade / crédito).
+  - No celular, "Compartilhar" abre o WhatsApp com o PDF. No computador, baixa o PDF e abre o WhatsApp Web com o resumo.
+Para publicar: arraste a pasta/zip no Netlify e aperte F5 (no celular, feche e abra o app).
+
+v12 (continuação): EDITAR O RELATÓRIO ANTES DE GERAR O PDF
+No cartão do relatório, abra "Personalizar o relatório":
+  - Título, "Preparado por", texto do resumo (editável) e Observações (caixa no fim do resumo).
+  - Páginas do PDF: marque só as que quer (ex.: tirar Capa ou Perdas). Sempre fica pelo menos 1 página.
+  - Título, "Preparado por" e páginas escolhidas ficam salvos. O texto do resumo volta ao automático
+    quando você troca o período ou a cotação; as Observações valem só enquanto a tela está aberta.
+  - A prévia ("Ver prévia") mostra na hora o que vai sair no PDF.
+O PDF em si continua sendo uma imagem (não dá para editar depois de baixado); o que vale é ajustar antes.
+
+=== v13: VISUAL DO CELULAR (preto puro, bem arredondado) ===
+Só vale para tela de celular/tablet pequeno; no computador nada mudou.
+  - Fundo preto liso (sem o brilho nos cantos), cartões e campos bem arredondados, botões em pílula.
+  - Barra de baixo flutuante e arredondada, com o item ativo destacado.
+  - Microfone e cardinal viraram dois círculos lisos empilhados no canto direito (sem halo),
+    com o ícone e o peixe no centro. O balão do assistente abre por cima do microfone.
+
+v14/v15 (novembro/2026)
+- Instalar como app: manifest.json + _headers (Netlify) + ícones maskable; endereço de início "./" e cache do app mais robusto (sw pp-v25).
+- Histórico > "＋ Adicionar exportação": registro rápido de uma exportação que ficou de fora (você digita o nº). Entra no histórico e no relatório de vendas; não gera documentos.
+- Dentro do registro rápido: "📄 Importar invoice (Excel ou PDF)" preenche nº, data, cliente, espécies, caixas, valores e taxa.
+- Tela larga: conteúdo centralizado em todas as telas e, no Pedido nacional, painel lateral (resumo ao vivo, cliente, pendências, vendas). Em telas menores o painel não aparece.
+- Nacional: depois de salvar (Salvar no histórico ou Baixar todos), aparece "Colocar este pedido na Programação de voos?". Você escolhe o embarque (ou cria um novo) e confirma; a linha entra com cliente, aeroporto, cidade e caixas. Se salvar de novo, as caixas são atualizadas.
+- Histórico > "＋ Adicionar pedido": registra um pedido nacional que ficou de fora. "Importar invoice" lê o .xlsx (ou o .zip que o app baixou). Entra no histórico, painel e relatório de vendas; não mexe no estoque. Dá para editar e repetir depois.
+- Programação de voos agora tem duas abas: Nacionais e Exportações ✈. A aba Exportações lista sozinha cada exportação salva (próximas no topo, antigas em "Anteriores") com saída do aquário, saída de GRU, voo nacional, voo internacional, AWB/DU-E, roteiro e situação (Em preparo, Programada, Em trânsito, Chegou, Problema). Tudo editável na linha.
+
+v16 (novembro/2026) — Notas de entrada (MAPA)
+- NFs de entrada > anexar o PDF que você já marcou com marca-texto: o app lê os destaques (anotações de PDF) e mostra, por nota, quais espécies você marcou. Funciona com NF-e e NFS-e; só vale para destaque feito como "marca-texto" no leitor de PDF (não vale para risco à mão/foto).
+- Card "Marcações do PDF para vincular": para cada espécie marcada o app sugere o pack (pelas exportações cadastradas que levaram aquela espécie, a mais próxima da data do destaque) e a quantidade da invoice; você confirma em "Vincular". Se o pack não existir no app, escolha "Outro pack (digitar)". "Ignorar" descarta a marcação.
+- Ao vincular, grava um processo "histórico" (não bloqueia por saldo, só avisa) e desconta da NF. Vários vínculos do mesmo pack entram no mesmo processo. Dá para "＋ Vincular outro pack" quando a mesma linha foi usada em mais de um pack. Reler o mesmo PDF não duplica nada; se a NF já está cadastrada, só as marcações são importadas.
+- Nova sub-aba "Saldo por nota": cada NF × espécie com Entrou, Usado, Saldo, Situação (Serve / Quase esgotada = restam 15% ou menos / Esgotada) e em quais packs foi usada; filtros e busca.
+
+v17 (novembro/2026) — Tela inicial
+- Cartão "Embarques hoje": quando não há embarque no dia, vira "Próximo embarque" com a data, nº de clientes e caixas.
+- Gráfico "Vendas programadas · caixas e quantidade de vendas por semana": a partir da semana atual (8 semanas). Barras = caixas (nacionais verde-água, exportações amarelo); curva branca = quantidade de vendas (1 por cliente em cada embarque nacional + 1 por exportação). "Ver detalhes →" abre uma janela com abas Por dia (30 dias) e Por semana, totais, gráfico e tabela com clientes e exportações de cada dia.
+- Microfone (tarefa por voz) aparece só na tela inicial.
+- Programação de voos (Nacionais): linhas ligadas a um pedido salvo ganham o botão "Mortalidade", que abre direto o pedido no Histórico, no bloco "Ajuste de chegada (mortalidade)" (informa os mortos, calcula o crédito e baixa a notinha corrigida .xlsx).
+
+== v18 — Invoice ORIGINAL e ADUANA (Exportação) ==
+- Novos campos em "Dados da exportação": Discount, DOA, Frete pré-pago (ou tarifa por kg). Só preencha quando houver.
+- Com qualquer um preenchido, saem 2 arquivos: INVOICE_xxx.ano_-_ORIGINAL.xlsx (com DISCOUNT e DOA em negativo)
+  e INVOICE_xxx.ano_-_ADUANA.xlsx (preços recalculados sozinho para peixes + package fee = líquido da original, + PRE-PAID FREIGHT).
+- Na prévia, aba "Invoice ADUANA": se digitar um preço à mão, os outros se acertam; botão "Recalcular tudo" volta ao automático.
+- Sem Discount/DOA/frete: tudo como antes (uma só invoice).
+- A invoice convertida em R$ continua como antes (valores da original, sem discount/DOA).
+
+== v19 — Login ao abrir + dados na nuvem (Supabase) ==
+- Ao abrir o link aparece a tela de login (e-mail + senha). Depois de entrar, os dados são os mesmos em qualquer aparelho.
+- "Manter conectado neste aparelho": marque só em aparelho seu. Desmarcado, pede senha ao fechar o navegador.
+- Sincronização quase ao vivo: grava ~2 s depois de cada alteração e confere a nuvem a cada ~20 s (e ao voltar para a aba). O chip "☁ e-mail · hora" no topo mostra o estado.
+- Aparelho novo (sem dados): entra e puxa tudo da nuvem. Os dois lados com dados: junta (o mais recente vence em cada item).
+- Sem internet: o app continua funcionando e avisa "pendente"; envia ao voltar a conexão.
+- Sair da conta: Configurações > Dados e nuvem. O app avisa se houver algo ainda não enviado.
+- Não precisa mais baixar/restaurar backup entre PCs (o backup continua disponível como segurança extra).
+- Requisitos no Supabase: usuário criado em Authentication, tabela pp_sync com RLS só para "authenticated", e cadastro público (sign-up) desligado.
+- Primeiro uso: no PC do trabalho (onde estão os dados) entre e espere o chip mostrar a hora; depois, em casa, só faça login — NÃO restaure backup.
+
+== v20 — PDF único das notas de entrada, Roteiro do despachante e Pescadores (CTF/RGP) ==
+PDF ÚNICO DAS NFs DE ENTRADA (para anexar no SEI do MAPA)
+- Botão "PDF das NFs (SEI)" em: Notas de entrada > Verificar pedido, Notas de entrada > Processos, painel de Conferência da Exportação
+  e no Roteiro (item "Notas de entrada").
+- O app junta, num PDF só e sem capa, as páginas das NFs usadas no pack (ordem por data da NF) e grifa em amarelo a linha da espécie usada
+  (descrição até a quantidade). Funciona com NF-e (DANFE) e NFS-e de serviço (grifa o trecho "ESPÉCIE - NOME - QTD").
+- Nome do arquivo: NOTAS_ENTRADA_018-2026.pdf (nº do pack).
+- Os PDFs das NFs passam a ser guardados: neste aparelho e, com login, na nuvem (tabela pp_files), então qualquer PC consegue gerar.
+- NFs cadastradas ANTES desta versão não têm PDF guardado: na primeira vez o app mostra "Faltam os PDFs de N nota(s)" e você escolhe os PDFs
+  de uma vez; depois fica tudo guardado. Também funciona arrastando os PDFs em "NFs de entrada" (as NFs já cadastradas só ganham o PDF).
+- Se o app não achar a linha de alguma espécie, ele avisa na janela para você grifar à mão.
+- Sem o SQL da tabela pp_files, os PDFs ficam só neste aparelho (o app avisa).
+ROTEIRO DA EXPORTAÇÃO
+- Despachante agora tem 2 envios: (1) pedir a LPCO: NF em R$, invoice e packing assinados, notas de entrada, CTF e RGP do pescador;
+  (2) documentos do dia (atestados assinados, CZI, etiquetas, GTA), com voo, AWB, MAWB e LPCOs no texto. Cada um com e-mail pronto.
+- Saiu MAWB/HAWB da lista do primeiro e-mail (quem manda esses dados é o despachante).
+- "Anexar no MAPA > Notas de entrada" ganhou o botão que gera o PDF único.
+PESCADORES (CTF/RGP)
+- Notas de entrada > nova aba "Pescadores (CTF/RGP)": os fornecedores das NFs aparecem sozinhos. Você informa a validade do CTF, marca se tem CTF e RGP salvos
+  no computador (os arquivos continuam com você), RGP com validade opcional.
+- Avisos: ao montar um pedido, mostra CTF vencido/vencendo (30 dias) dos pescadores das NFs usadas; o Assistente também avisa dos pescadores com saldo.
+NUVEM DOS PDFs: no Supabase > SQL Editor > New query, cole o conteúdo de SQL_pp_files.sql e clique em Run (uma vez só).
+
+==== v21 ====
+1) Tela inicial (gráfico "Vendas programadas"): agora mostra só os DIAS que têm venda
+   (embarques nacionais e exportações), em vez de semanas de 7 em 7 dias. Dias sem venda
+   não aparecem mais. Exportação sem data fica fora do gráfico e aparece num aviso embaixo.
+2) Exportação: no campo Data há a opção "Sem data marcada ainda (inserir depois)".
+   Os documentos saem com a data em branco (__/__/____); ao baixar, o app avisa antes.
+   No Histórico aparece "sem data". Para preencher depois, desmarque a opção e escolha a data.
+3) Invoice em R$ (uso interno para emitir a NF): usa os valores da invoice ADUANA
+   (preços recalculados), incluindo a linha PRE-PAID FREIGHT quando existir frete,
+   e o total geral em US$ e em R$ já com o frete.
+Não precisa rodar nenhum SQL novo nesta versão.
+
+==== v22 ====
+1) Notas de entrada > Pescadores: agora você ANEXA o PDF do CTF e do RGP de cada pescador (botão Anexar),
+   e baixa quando precisar (botão Baixar; Trocar para substituir). O app tenta ler a validade escrita no PDF
+   ("lida do PDF"); se não conseguir, você digita a data. Mostra Em dia / Vence em breve / Vencido (solicitar
+   outro) / Sem CTF anexado, com 3 cartões de resumo. Os arquivos ficam no app e na nuvem (tabela pp_files,
+   a mesma da v20: nada de SQL novo).
+2) Notas de entrada: faixa "Passo a passo" (1 Cadastrar NFs, 2 Conferir o pedido, 3 Gerar o PDF único,
+   4 Protocolar, 5 Saldo atualizado) com o quadro "Agora, faça isto" e o botão do próximo passo.
+   As abas ficaram na ordem de uso: 1 · NFs de entrada, 2 · Verificar pedido, ...
+3) Nova aba lateral "Financeiro": A receber, Atrasado, Recebido no mês e Faturamento do mês; lista por
+   cliente (clique no nome para abrir os pedidos), Registrar pagamento (total ou parcial) e Copiar cobrança
+   (mensagem pronta para o WhatsApp). O cartão "Aguardando pagamento" da tela inicial tem o atalho
+   "ver quem deve". Vale para pedidos nacionais.
+4) O PDF unificado das NFs agora baixa como NOTAS_DE_ENTRADA_UNIFICADAS_018-2026.pdf (nº do pack no fim).
+5) Exportação: o campo de frete pré-pago é o valor da cotação do despachante (a tarifa por kg virou opcional);
+   no Roteiro, o texto do e-mail tem o botão "Abrir em tela cheia".
+
+==== v23 ====
+Visual "vidro" + movimento sutil (mantém o azul turquesa atual). Sem SQL novo.
+1) Tela Hoje: cartões de vidro com brilho que segue o mouse, entrada escalonada (desfoca -> nítido),
+   números que contam até o valor, gráfico que cresce/desenha, anel de % atrasado em "Aguardando pagamento",
+   passar o mouse numa barra/ponto escurece o resto e mostra a dica (tooltip).
+2) Menu lateral: marcador que desliza até o item ativo + ondinha ao clicar.
+3) Troca de telas com transição suave (desfoque) na área principal.
+4) Respeita "reduzir movimento" do sistema. Para desligar manualmente: no console, localStorage.setItem('pp.motion','0') e F5.
+Arquivos novos: motion.css e motion.js.
+
+==== v24 ====
+Movimento mais forte, no estilo do vídeo de referência. Sem SQL novo.
+1) Fundo desfocado (aquário, arquivo fundo.jpg) atrás dos cartões de vidro, com deriva lenta; vidro em todas as telas.
+2) Troca de tela bem mais marcante: a tela desfoca forte e some, a nova entra do desfoque.
+3) Menu: o item ativo é um bloco turquesa cheio que desliza com efeito elástico.
+4) Todas as telas (Financeiro, Histórico, etc.): cartões entram em cascata, linhas de tabela em sequência,
+   números dos resumos contam, barras de saldo crescem.
+Desligar: no console, localStorage.setItem('pp.motion','0') e F5.
+
+==== v25 ====
+Financeiro: exportações e gráfico. Sem SQL novo.
+1) Financeiro tem agora a chave "Nacional · R$" / "Exportação · US$".
+2) Exportação (US$): valor = original líquido (peixes + package fee - discount - DOA) + frete pré-pago.
+   Cobrança SÓ depois da chegada ao cliente (data de chegada do voo internacional, no Roteiro/Programação):
+   chegada ainda não aconteceu = "em trânsito"; até 10 dias depois = "cobrar em N dias"; de 10 a 15 dias = "hora de cobrar";
+   depois de 15 dias = atrasado. Nunca cobra no dia do embarque. Sem a data de chegada o app estima embarque + 3 dias (marca "~").
+   Os prazos 10 e 15 mudam em Configurações (aba de numeração/prazos).
+3) Registrar pagamento (total ou parcial) e "Copiar cobrança" em inglês para exportação.
+4) Gráfico "Faturado x recebido x atrasado" dos últimos 6 meses, nas duas visões (passe o mouse nas barras).
+
+==== v26 ====
+Ajustes pedidos: Histórico, Clientes, Tarefas, Orçamento, Notas de entrada, Mortalidade, Stocklist. Sem SQL novo.
+1) Histórico: "quadro de conferência" compara a Programação de embarques com o Histórico (ex.: 11 embarques x 8 pedidos).
+   Os que faltam aparecem com "Criar pedido" / "Copiar último pedido" e já ficam ligados à linha da programação.
+2) Clientes: lista compacta (A–Z / Recentes) com TIRA DE LETRAS (clique em M e só aparecem os clientes da letra M; a lista rola dentro da própria caixa, a página não estica) + ficha ao lado com abas Resumo, Pedidos, Dados · CNPJ/IE e Preços.
+   Na aba Dados, "Buscar CNPJ" preenche razão social, endereço, CEP, cidade e (quando a base pública tiver) a inscrição estadual.
+   A internet pública nem sempre tem a IE: se vier vazia, digite à mão. Só preenche endereço vazio (não sobrescreve) e oferece "Usar este endereço".
+3) Tarefas: "venceu há N dias · dd/mm/aaaa" só aparece depois da data (no dia aparece "vence hoje").
+4) Nacional > aba "Orçamento": igual à notinha final, para mandar ANTES do embarque. Desconto Sem/5%/10%/outro % sobre o valor dos peixes,
+   GTA, atestado (só VCP/CNF) e embalagem. Baixa em Excel (no seu modelo, com logo e fórmulas) e em PDF.
+   Não entra no histórico, estoque nem numeração; não vai no "Baixar todos (.zip)".
+5) Notas de entrada: "Gravar consumo" e "Protocolar" agora são coisas separadas. Gravar consumo desconta o saldo das NFs na hora;
+   o pack fica "Falta protocolar no SEI/MAPA". Quando protocolar de verdade: Processos > "Marcar como protocolado" (pergunta o nº SEI, guarda a data).
+   Aparece aviso na Hoje enquanto houver pack sem protocolo. Processos antigos contam como já protocolados.
+6) Notas de entrada: PDFs arrastados são lidos em qualquer lugar da aba "NFs de entrada" (não só pelo botão de escolher arquivo).
+7) Pescadores (CTF/RGP): Notas de entrada > Pescadores (CTF/RGP) > escolha o pescador > Anexar. O botão "Abrir pescadores" (avisos) agora abre essa aba de qualquer tela.
+8) Mortalidade em 3 lugares: Histórico (faixa + botão por pedido), aviso na Hoje ("Teve mortalidade no embarque de dd/mm?") e botão no Nacional/Clientes.
+   Registrar crédito/desconto lá; o valor entra como linha de crédito na próxima notinha do cliente.
+9) Stocklist: botão "⬇ Stocklist atualizada" no topo de todas as telas (e em Estoque e reposição). Sai igual à sua, só com a coluna ESTOQUE descontando as vendas salvas.
+
+Revisão de testes (v26.1): 44 testes automáticos rodados; os que falhavam eram testes antigos desatualizados (botões que mudaram de lugar) ou frágeis
+(um dependia do dia da semana). Todos ajustados; nenhuma falha de funcionamento do app foi encontrada.
+
+==== v26.2 ====
+Frete / CT-e. Sem SQL novo.
+1) O CT-e da LATAM traz a DATA prevista de entrega, mas NÃO traz horário. A tabela de Frete agora mostra "prev. dd/mm" embaixo da hora.
+2) O app memoriza a hora que você digita por VOO + AEROPORTO (ex.: voo 3747 em BSB = 09:40) e, nas próximas semanas, já preenche
+   ao anexar o CT-e, marcando "sugerida · confirme" (confira no rastreio; a hora do voo pode mudar).
+3) Corrigido: o número do voo não era lido quando o CT-e escreve "VOO 3747 12 11" (sem o código do aeroporto).
+4) Corrigido: CT-e com razão social diferente do apelido da programação (MAEDA PEIXES ORNAMENTAIS LTDA x MAEDA AQUARIOS) agora casa pelo nome
+   parcial (só se for a única linha que serve; senão continua pedindo para você escolher).
+
+==== v26.3 ====
+Frete: colar o e-mail do despachante. Sem SQL novo.
+1) Na tela Frete há o bloco "✉ Colar o e-mail do despachante". Copie a tabela do e-mail (linhas com AWB, destino, voo e horário), cole e clique "Ler e-mail e preencher horas".
+2) O app acha cada cliente pelo AWB do CT-e já anexado (ou pelo nome; ou por aeroporto + nº de caixas se só uma linha servir) e preenche a HORA de chegada prevista (última hora da linha)
+   e o voo, inclusive conexões (ex.: LA3847/12 → LA3420/12). Mostra "e-mail do despachante" embaixo da hora. Dá para corrigir à mão.
+3) Avisa quem ficou sem linha no e-mail e quais linhas do e-mail não casaram com nenhum cliente.
+4) Hora vinda do e-mail tem prioridade sobre a hora "sugerida" pela memória do voo.
+
+=== v27 ===
+- Logo da Prestige Aquarium no topo do menu lateral (arquivo logo-menu.png).
+- Ícones do menu lateral mantidos. Saíram os ícones/emojis decorativos dos botões e títulos (✈ 🐟 🚚 📎 ✉ 📄 🎤 🔍 etc.), ex.: "Anexar CTEs", "Programação de voos", "Exportações", "Mortalidade dos embarques recentes".
+- Configurações > "Aparência e assistente" > "Menu lateral": reordene as abas (setas ▲▼ ou arrastando), oculte as que não usa
+  e mova/oculte os títulos (Início, Operação, Gestão). "Voltar à ordem padrão" desfaz. Fica salvo e sincroniza com a nuvem.
+  A aba Hoje não pode ser ocultada. Telas ocultas continuam acessíveis pelos botões da tela Hoje e pela busca.
+- CTF/RGP dos pescadores: leitura da validade bem mais esperta (Validade / Válido até / Vencimento, datas com . ou -,
+  "10 de janeiro de 2027", rótulos numa linha e datas na outra). PDF escaneado/foto é lido por OCR (leva alguns segundos).
+  Se a data veio só por dedução, aparece "lida do PDF · confira".
+- Novo: "Reler validade" em cada arquivo e "Reler validade de todos os PDFs" para os CTF que você já tinha anexado.
+
+=== v28 ===
+AUDITORIA (falhas reais corrigidas)
+- Sincronização entre aparelhos: o que você APAGA num aparelho não "volta" mais quando o outro aparelho também tinha mudanças.
+- Dois aparelhos mexendo no MESMO embarque (clientes diferentes) ao mesmo tempo: agora junta as linhas em vez de ficar só com um lado.
+- Pedidos do histórico: toda alteração (mortalidade, NF, pagamento, cancelamento) carimba a hora, para a versão mais nova vencer.
+- Se o navegador ficar sem espaço, o app AVISA (antes a alteração era perdida em silêncio).
+FRETE: UM FLUXO SÓ
+- Caixa única: solte os CT-es (PDF) e/ou cole o e-mail do despachante com Ctrl+V direto na tela, em qualquer ordem.
+- 3 passos mostram o que falta (CT-e, hora, avisos) e o botão "Copiar próximo aviso: CLIENTE" vai de cliente em cliente.
+EXPORTAÇÃO
+- "Colar o e-mail do despachante": preenche MAWB, HAWB, LPCO IBAMA, LPCO MAPA, DU-E, entrega da carga, voos domésticos e voo
+  internacional. Avisa "em resposta de exigência" e se o e-mail é de outra invoice. Voo que vem como IMAGEM no e-mail não é lido.
+LEITURA DE DOCUMENTOS (calibrada com os seus PDFs)
+- CTF do IBAMA (Certificado de Regularidade): lê "CR válido até" e o NOME do pescador.
+- Novo "Anexar vários CTFs de uma vez": o app coloca cada CTF no pescador certo (ou cria o pescador).
+- Carteira do RGP não tem validade: fica só guardada, sem data inventada.
+
+=== v28.1 ===
+- CORRIGIDO (pedido que sumia): com um pedido salvo aberto, trocar o cliente e salvar gravava o pedido novo POR CIMA do anterior
+  (no histórico e na programação). Agora trocar de cliente vira pedido NOVO, e o app nunca grava um cliente por cima de outro.
+- Histórico > "Pedidos apagados": tudo que sai do histórico (apagado ou removido pela sincronização) fica guardado para Restaurar.
+- Nacional: botão "Apagar pedido" no lugar de "Mortalidade" (a mortalidade continua no Histórico).
+- Nacional: campo "Embarque (saída)" no cabeçalho. Ao salvar, o pedido entra na programação desse dia; mudar a data move o cliente.
+- "Stocklist atualizada" aparece só em Estoque e reposição.
+- Visual de vidro (fundo de aquário + cartões translúcidos) agora vale em TODAS as telas mesmo quando o Windows está com as animações desligadas (antes só a tela Hoje ficava assim).
+
+=== v28.3 ===
+- Frete: cole o PRINT do e-mail do despachante (Ctrl+V) ou escolha a imagem: o app lê a tabela da imagem e preenche as horas.
+- Mensagem padrão: "EMBARQUE CHEGARÁ {dia} ÀS {hora} HORAS" ({dia} = HOJE / AMANHÃ / DIA dd/mm, pela data de chegada).
+- Modo leve (padrão): mesmo visual, sem desfoque ao vivo nem fundo em movimento. Para ligar: Configurações > Aparência > Efeitos completos.
+- Nacional: cabeçalho reorganizado (nome do cliente sempre visível; botão "Apagar").
+
+=== v28.4 ===
+- Programação de voos: "Excluir embarque" (qualquer um, inclusive os que já passaram), "Excluir os embarques vazios",
+  "Juntar os embarques do mesmo dia em um só" e "Desfazer a última exclusão". "+ Novo embarque" não cria mais vazio repetido.
+
+=== v28.5 / v28.6 ===
+- Programação de voos: botões "+ Nova programação", "Duplicar esta programação", "Excluir esta programação" e "Limpar programações repetidas e vazias"; ícone (i) com a explicação ao lado dos botões.

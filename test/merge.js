@@ -1,0 +1,12 @@
+const F=require('../features.js');let f=0;const ok=(c,m)=>{console.log((c?'  ok  ':'  FAIL ')+m);if(!c)f++};
+const base=F.idIndex({embarques:[{id:'e1',linhas:[{id:'l1'},{id:'l2'}]},{id:'e2',linhas:[]}],mapa:{nfs:[{id:'n1'}]}});
+ok(base['embarques'].join()=='e1,e2'&&base['embarques/e1.linhas'].join()=='l1,l2'&&base['mapa.nfs'].join()=='n1','idIndex caminhos');
+let mine=[{id:'e1',t:'A',linhas:[{id:'l1',cx:1},{id:'l2',cx:2},{id:'l9',cx:9}]}], rem=[{id:'e1',t:'A',linhas:[{id:'l1',cx:5}]},{id:'e2',linhas:[]},{id:'e3',linhas:[]}];
+let r=F.mergeData(mine,rem,true,base,'embarques');
+ok(r.map(x=>x.id).join()=='e1,e3','apagado aqui não volta; novo da nuvem entra');
+ok(r[0].linhas.map(x=>x.id).join()=='l1,l9'&&r[0].linhas[0].cx===5,'linhas: apagada some, nova fica, editada = mais nova');
+ok(F.mergeData(mine,rem,false,base,'embarques')[0].linhas[0].cx===1,'bNovo=false: vence a daqui');
+r=F.mergeData(mine,rem,true); ok(r.length===3&&r[0].linhas.length===3,'sem base: união');
+ok(F.mergeData(null,rem,true,base,'embarques').length===3,'lado nulo não apaga nada');
+ok(F.mergeData({a:1,o:['x']},{a:2,b:3,o:['y','z']},true).o.join()=='y,z','lista sem id: lado mais novo');
+console.log(f?'FALHOU':'TUDO OK');process.exit(f?1:0);

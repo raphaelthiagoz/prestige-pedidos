@@ -1,0 +1,107 @@
+import sys, json; sys.path.insert(0,'test')
+from seed import SEED
+from playwright.sync_api import sync_playwright
+NF='/tmp/claude-0/-home-claude/48154143-1c92-5c72-a63a-d8264194645f/scratchpad/nf/nf.html'
+BK='test/mapa_backup_real.json'
+fails=[]
+def ok(c,m):
+    print(('  ok  ' if c else '  FAIL ')+m)
+    if not c: fails.append(m)
+with sync_playwright() as p:
+    b=p.chromium.launch(); ctx=b.new_context(viewport={'width':1400,'height':900}, service_workers='block', accept_downloads=True); pg=ctx.new_page()
+    errs=[]; pg.on('pageerror', lambda e: errs.append(str(e))); pg.on('dialog', lambda d: d.accept())
+    pg.goto('http://localhost:8765/index.html'); pg.wait_for_timeout(400); pg.evaluate(SEED); pg.evaluate("sessionStorage.setItem('pp.asShown','1')"); pg.reload(); pg.wait_for_timeout(600)
+    pg.click('#nav [data-view="mapa"]'); pg.wait_for_timeout(300)
+    ok(pg.locator('#mpTabs button').count()==6,'6 sub-abas (Verificar, NFs, Saldo por nota, Saldo, Processos, Pescadores)')
+    ok('Backup' not in pg.inner_text('#mpTabs'),'sem aba Backup/nuvem/tema')
+    ok(pg.evaluate("document.title")!='' ,'titulo')
+    # --- importar o backup real do app antigo
+    pg.click('#mpTabs [data-tab="nfs"]'); pg.wait_for_timeout(200)
+    pg.set_input_files('#imp', BK); pg.wait_for_timeout(500)
+    st=pg.evaluate("PP.store.get('mapa')")
+    ok(len(st['nfs'])==10 and len(st['processos'])==4,'importou 10 NFs e 4 processos')
+    ok(pg.locator('#nflist details').count()==10,'lista mostra 10 NFs')
+    # --- saldos iguais aos do app original
+    nfp=ctx.new_page(); html=open(NF,encoding='utf-8').read()
+    nfp.route('http://nf.local/**', lambda r: r.fulfill(body=html, content_type='text/html'))
+    nfp.goto('http://nf.local/'); nfp.evaluate("localStorage.setItem('conferencia_mapa_v1', %s)"%json.dumps(json.dumps(json.load(open(BK))))); nfp.reload(); nfp.wait_for_timeout(400)
+    orig=nfp.evaluate("painelEspecies(S).map(o=>({e:o.esp,en:o.entrada,u:o.usado,s:o.saldo,st:o.status,c:o.nfsComSaldo,m:o.media}))")
+    mine=pg.evaluate("PP.mapa.core.painelEspecies(PP.mapa.estado()).map(o=>({e:o.esp,en:o.entrada,u:o.usado,s:o.saldo,st:o.status,c:o.nfsComSaldo,m:o.media}))")
+    ok(len(orig)>5 and orig==mine,'saldo por espécie idêntico ao app original (%d espécies)'%len(orig))
+    ro=nfp.evaluate("S.nfs.map(n=>resumoNF(S,n).status)"); rm=pg.evaluate("(()=>{const S=PP.mapa.estado();return S.nfs.map(n=>PP.mapa.core.resumoNF(S,n).status)})()")
+    ok(ro==rm,'status de cada NF idêntico ao original')
+    ok(nfp.evaluate("conflitosEstado(S).length")==pg.evaluate("PP.mapa.core.conflitosEstado(PP.mapa.estado()).length"),'conflitos de saldo iguais')
+    # --- telas
+    pg.click('#mpTabs [data-tab="saldo"]'); pg.wait_for_timeout(200)
+    ok(pg.locator('#saldolist tbody tr').count()==len(orig),'tabela de saldo com todas as espécies')
+    pg.fill('#buscaE','cardinal'); pg.wait_for_timeout(150); ok(pg.locator('#saldolist tbody tr').count()>=1,'busca por espécie')
+    pg.click('#mpTabs [data-tab="processos"]'); pg.wait_for_timeout(200)
+    ok(pg.locator('#mpView .card').count()==4,'4 processos listados')
+    pg.locator('#mpView [data-act="grifosproc"]').first.click(); pg.wait_for_timeout(200)
+    ok(pg.locator('#mpModal.on .grifo').count()>0,'folha de grifos abre'); pg.keyboard.press('Escape'); pg.wait_for_timeout(100); ok(pg.locator('#mpModal.on').count()==0,'Esc fecha o modal')
+    pg.locator('#mpView [data-act="cartaproc"]').first.click(); pg.wait_for_timeout(200); ok('MAPA' in pg.inner_text('#mpModal'),'carta ao MAPA abre'); pg.keyboard.press('Escape')
+    # --- Verificar pedido
+    pg.click('#mpTabs [data-tab="verificar"]'); pg.wait_for_timeout(200)
+    pg.fill('[data-f="pack"]','017/2026')
+    pg.fill('#colar','Paracheirodon axelrodi Cardinal 1.000\nEspecie inexistente zzz 500'); pg.click('[data-act="ler"]'); pg.wait_for_timeout(300)
+    ok(pg.locator('#linhas .card').count()>=2,'ler pedido cria linhas')
+    ok(pg.locator('#banner .banner.b-e').count()==1,'banner vermelho (espécie sem NF)')
+    pg.locator('#linhas [data-act="rmlinha"]').last.click(); pg.wait_for_timeout(200)
+    ok(pg.locator('#banner .banner.b-ok').count()==1,'banner verde quando tudo coberto')
+    pg.click('[data-act="protocolar"]'); pg.wait_for_timeout(300)
+    st=pg.evaluate("PP.store.get('mapa')"); ok(len(st['processos'])==5 and st['processos'][-1]['pack']=='017/2026','protocolar grava o consumo (5 processos)')
+    ok(pg.evaluate("PP.mapa.core.painelEspecies(PP.mapa.estado()).find(o=>/axelrodi/i.test(o.esp)).usado")==[o for o in mine if 'axelrodi' in o['e'].lower()][0]['u']+1000,'saldo da NF abatido em 1.000 após protocolar')
+    ok(pg.evaluate("PP.store.get('mapa').draft.linhas.length")==0,'pedido em andamento limpo')
+    # --- Exportação: painel de conferência
+    ex_ok=[o for o in pg.evaluate("PP.mapa.core.painelEspecies(PP.mapa.estado()).filter(o=>o.saldo>=5000).map(o=>o.esp)")][0]
+    amanha=pg.evaluate("PP.Features.addDays(PP.Features.todayISO(),1)")
+    pg.evaluate("""([sp,dep])=>{const S=PP.exp.state();S.items=[{sci:sp,pt:'',boxes:5,qpb:1000,price:'0.1',kg:'8'},{sci:'Especie nunca cadastrada',pt:'',boxes:2,qpb:500,price:'0.1',kg:'8'}];S.ex.dep=dep+'T10:00';PP.go('exp');}""",[ex_ok,amanha]); pg.wait_for_timeout(500)
+    ok(pg.locator('#xMapaPanel .mpPanel').count()==1,'painel Conferência de NFs aparece na Exportação')
+    t=pg.inner_text('#xMapaPanel'); ok('Problema' in t and 'OK' in t,'painel mostra OK e Problema por espécie')
+    ok(pg.locator('#xMapaPanel [data-mpx="prot"]').is_disabled(),'Protocolar bloqueado enquanto há problema')
+    ok(pg.locator('#xMapaPanel [data-mpx="pdf"]').count()==1,'painel tem o botão PDF das NFs (SEI)')
+    num=pg.evaluate("PP.exp.mapaInfo().num"); ok(num.endswith('/2026') or num.endswith('/'+str(pg.evaluate("new Date().getFullYear()"))),'nº da exportação vira o pack: '+num)
+    # tira a espécie com problema -> libera
+    pg.evaluate("()=>{const S=PP.exp.state();S.items=S.items.slice(0,1);PP.exp.render('exp');}"); pg.wait_for_timeout(400)
+    ok(pg.locator('#xMapaPanel [data-mpx="prot"]').is_enabled(),'Protocolar liberado quando tudo coberto')
+    # aviso no assistente/Hoje antes de protocolar
+    pen=pg.evaluate("PP.mapa.pendencias()"); ok(len(pen)==1 and not pen[0]['sem'],'pendência: saída amanhã e NF ainda não protocolada')
+    ok(any(i['key'].startswith('mp:') for i in pg.evaluate("PP.assist.items()")),'assistente lembra de protocolar')
+    pg.click('#xMapaPanel [data-mpx="grifos"]'); pg.wait_for_timeout(200); ok(pg.locator('#mpModal.on .grifo').count()>=1,'folha de grifos pelo painel'); pg.keyboard.press('Escape')
+    pg.fill('#mpxSei','21010.000001/2026-01')
+    pg.click('#xMapaPanel [data-mpx="prot"]'); pg.wait_for_timeout(400)
+    ok('Consumo gravado' in pg.inner_text('#xMapaPanel') and 'falta protocolar' in pg.inner_text('#xMapaPanel'),'painel muda para Consumo gravado · falta protocolar')
+    pr=pg.evaluate("PP.store.get('mapa').processos.slice(-1)[0]"); ok(pr['protocolado']==False and not pr.get('dataProt'),'gravar consumo NÃO protocola: pack fica aguardando protocolo')
+    ok(any(i['key'].startswith('mpp:') for i in pg.evaluate("PP.assist.items()")),'assistente lembra de protocolar no SEI/MAPA depois de gravar o consumo')
+    ok(pg.evaluate("PP.mapa.aProtocolar().length")==2,'aProtocolar() lista os 2 packs gravados nesta sessão de teste')
+    ok(pg.locator('#xMapaPanel [data-mpx="marcarprot"]').count()==1,'painel da exportação oferece Marcar como protocolado')
+    pg.evaluate("PP.go('mapa')"); pg.wait_for_timeout(200); pg.click('#mpTabs [data-tab="processos"]'); pg.wait_for_timeout(250)
+    ok('falta protocolar no sei/mapa' in pg.inner_text('#mpView').lower() and pg.locator('#mpView [data-act="marcarprot"]').count()==2,'Processos mostra o selo "Falta protocolar" e o botão')
+    ok(pg.locator('#mpTabs [data-tab="processos"] .badge').count()==1,'aba Processos mostra o contador de pendentes')
+    import os; os.makedirs('/tmp/claude-0/-home-claude/48154143-1c92-5c72-a63a-d8264194645f/scratchpad/e2e46/',exist_ok=True); pg.set_viewport_size({'width':1500,'height':1000}); pg.screenshot(path='/tmp/claude-0/-home-claude/48154143-1c92-5c72-a63a-d8264194645f/scratchpad/e2e46/processos.png')
+    pg.locator('#mpView [data-act="marcarprot"]').first.click(); pg.wait_for_timeout(400)
+    pr=pg.evaluate("PP.store.get('mapa').processos.slice(-1)[0]"); ok(pr['protocolado']==True and bool(pr['dataProt']),'Marcar como protocolado grava data e libera')
+    ok('protocolado' in pg.inner_text('#mpView').lower() and pg.evaluate("PP.mapa.aProtocolar().length")==1,'selo vira Protocolado e sobra só 1 pendente')
+    ok(pg.evaluate("PP.mapa.core.painelEspecies(PP.mapa.estado()).find(o=>/axelrodi/i.test(o.esp)).usado")>0,'saldo continuou descontado')
+    pg.evaluate("PP.go('exp')"); pg.wait_for_timeout(300)
+    ok(pg.locator('#xMapaPanel [data-mpx="pdfproc"]').count()==1,'painel protocolado também tem o botão PDF das NFs'); pg.click('#xMapaPanel [data-mpx="pdfproc"]'); pg.wait_for_timeout(800); ok('Faltam os PDFs' in pg.inner_text('#mpModal'),'NF cadastrada à mão (sem PDF) pede para anexar os PDFs'); pg.keyboard.press('Escape'); pg.evaluate("document.getElementById('mpModal').className=''")
+    last=pg.evaluate("PP.store.get('mapa').processos.slice(-1)[0]"); ok(last['pack']==num and last['sei']=='21010.000001/2026-01','processo gravado com nº da exportação e SEI')
+    ok(len(pg.evaluate("PP.mapa.pendencias()"))==0 and not any(i['key'].startswith('mp:') for i in pg.evaluate("PP.assist.items()")),'aviso some depois de protocolar')
+    # mudou depois de protocolar
+    pg.evaluate("()=>{const S=PP.exp.state();S.items[0].boxes=9;PP.exp.render('exp');}"); pg.wait_for_timeout(300)
+    ok('mudou depois de protocolar' in pg.inner_text('#xMapaPanel'),'avisa se o pedido mudou depois de protocolar')
+    # abrir em Notas de entrada
+    pg.evaluate("()=>{const S=PP.exp.state();S.items=[{sci:'%s',pt:'',boxes:1,qpb:1000,price:'0.1',kg:'8'}];S.n=null;S.curId=null;PP.exp.render('exp');}"%ex_ok.replace("'","")); 
+    # busca global
+    pg.evaluate("PP.go('hoje')"); pg.wait_for_timeout(200)
+    ok(len([x for x in pg.evaluate("PP.mapa.searchItems(s=>String(s||'').toLowerCase())")])>=10,'busca global encontra NFs e packs')
+    # sincronização (chave na lista)
+    ok(pg.evaluate("PP.snapshot().mapa!=null && PP.snapshot().mapa.nfs.length")==10,'backup do sistema inclui o mapa')
+    ok(len(errs)==0,'sem erros de JS %s'%errs)
+    # mobile
+    m=b.new_context(viewport={'width':390,'height':800}, service_workers='block'); mp=m.new_page(); mp.on('pageerror', lambda e: errs.append(str(e)))
+    mp.goto('http://localhost:8765/index.html'); mp.wait_for_timeout(300); mp.evaluate(SEED); mp.evaluate("sessionStorage.setItem('pp.asShown','1')"); mp.evaluate("(s)=>localStorage.setItem('pp.mapa',s)", json.dumps(json.load(open(BK)))); mp.reload(); mp.wait_for_timeout(500)
+    mp.evaluate("PP.go('mapa')"); mp.wait_for_timeout(300)
+    ok(mp.evaluate("document.documentElement.scrollWidth<=window.innerWidth+1"),'mobile: sem rolagem horizontal na aba')
+    b.close()
+print('\nFALHAS:',fails if fails else 'nenhuma'); print('TUDO OK' if not fails else 'COM FALHAS')

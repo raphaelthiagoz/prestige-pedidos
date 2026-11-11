@@ -1,0 +1,13 @@
+const { chromium } = require('playwright');
+(async()=>{const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium'});const p=await (await b.newContext({viewport:{width:1250,height:900}})).newPage();const errs=[];p.on('pageerror',e=>errs.push(''+e));
+await p.goto('http://localhost:8765/index.html');await p.setInputFiles('#fStock','test/stocklist.xlsx');await p.waitForFunction(()=>__app.S.catalog.length>0);
+await p.evaluate(()=>{document.getElementById('config').open=false});
+await p.fill('#txt','2 cx neon verde com 700 un\n1 cx corydoras elegans\n1 cx rodostomus');
+await p.waitForFunction(()=>__app.S.rows.length===3);
+const f=()=>p.evaluate(()=>__app.S.rows.map(r=>__app.Core.byId(__app.S.catalog,r.sel).comum+':'+r.boxes+'x'+__app.Core.perBoxOf(r,__app.Core.byId(__app.S.catalog,r.sel))).join(' | ')+' → peixes '+__app.currentPlan().peixes);
+console.log('texto:',await f());
+await p.fill('input[data-k="perBox"][data-i="1"]','200'); await p.keyboard.press('Tab'); console.log('após editar elegans p/cx=200:',await f());
+await p.fill('input[data-k="perBox"][data-i="0"]','600'); await p.keyboard.press('Tab'); console.log('neon verde voltou p/ 600:',await f(), '| chip:',await p.innerText('#conf tbody tr:first-child .chip'));
+await p.click('[data-tab=invoice]'); console.log((await p.innerText('#doc')).replace(/\s+/g,' ').slice(0,260));
+await p.screenshot({path:'/tmp/prev/perbox.png',fullPage:true,clip:{x:0,y:560,width:1250,height:700}});
+console.log('erros',errs);await b.close()})();

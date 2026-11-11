@@ -1,0 +1,50 @@
+import sys, json, datetime; sys.path.insert(0,'test')
+from seed import SEED
+from playwright.sync_api import sync_playwright
+fails=[]
+def ok(c,m):
+    print(('  ok  ' if c else '  FAIL ')+m)
+    if not c: fails.append(m)
+hoje=datetime.date.today()
+with sync_playwright() as p:
+    b=p.chromium.launch(); ctx=b.new_context(viewport={'width':1500,'height':1000}, service_workers='block'); pg=ctx.new_page()
+    errs=[]; pg.on('pageerror', lambda e: errs.append(str(e))); pg.on('dialog', lambda d: d.accept())
+    pg.goto('http://localhost:8765/index.html'); pg.wait_for_timeout(400); pg.evaluate(SEED); pg.evaluate("sessionStorage.setItem('pp.asShown','1')"); pg.reload(); pg.wait_for_timeout(600)
+    pg.evaluate("PP.go('mapa')"); pg.wait_for_timeout(400); pg.click('[data-tab=nfs]'); pg.wait_for_timeout(200)
+    pg.set_input_files('#nfpdf','test/fx/modelo_sem_grifos.pdf'); pg.wait_for_timeout(5000); pg.click('[data-act=salvarrev]'); pg.wait_for_timeout(600)
+    # --- Pescadores
+    pg.click('[data-tab=pesc]'); pg.wait_for_timeout(300)
+    rows=pg.locator('#mpView tbody tr').count(); forn=pg.evaluate("[...new Set(PP.mapa.estado().nfs.map(n=>n.fornecedor))].length")
+    ok(rows==forn and rows>=3,'lista os fornecedores das NFs sozinha (%d)'%rows)
+    ontem=(hoje-datetime.timedelta(days=1)).isoformat(); em10=(hoje+datetime.timedelta(days=10)).isoformat(); em90=(hoje+datetime.timedelta(days=90)).isoformat()
+    r0=pg.locator('#mpView tbody tr').first
+    nome=r0.locator('td').first.inner_text().split('\n')[0].replace('· sem saldo','').strip()
+    r0.locator('[data-pf=ctf]').fill(ontem); r0.locator('[data-pf=ctf]').dispatch_event('change'); pg.wait_for_timeout(300)
+    ok('vencido há 1 dia' in pg.inner_text('#mpView tbody tr:first-child'),'CTF de ontem aparece como vencido')
+    pg.locator('#mpView tbody tr').nth(1).locator('[data-pf=ctf]').fill(em10); pg.locator('#mpView tbody tr').nth(1).locator('[data-pf=ctf]').dispatch_event('change'); pg.wait_for_timeout(300)
+    ok('vence em 10 dia' in pg.inner_text('#mpView tbody tr:nth-child(2)'),'CTF em 10 dias aparece como vencendo')
+    pg.locator('#mpView tbody tr').nth(2).locator('[data-pf=ctf]').fill(em90); pg.locator('#mpView tbody tr').nth(2).locator('[data-pf=ctf]').dispatch_event('change'); pg.wait_for_timeout(300)
+    ok('Em dia (90' in pg.inner_text('#mpView tbody tr:nth-child(3)'),'CTF em 90 dias: em dia')
+    pg.locator('#mpView tbody tr').first.locator('input[data-pfile=rgp]').set_input_files('test/fx/rgp_sem_data.pdf'); pg.wait_for_timeout(2000)
+    st=pg.evaluate("PP.mapa.estado().meta.pesc"); ok(len(st)==3 and st[0]['rgpSalvo']==True and bool(st[0]['rgpArq']),'guarda no estado (meta.pesc): %s'%[x['nome'] for x in st])
+    pg.fill('#pescNovo','Pescador Teste'); pg.click('[data-act=addpesc]'); pg.wait_for_timeout(300)
+    ok('Pescador Teste' in pg.inner_text('#mpView'),'adiciona pescador manualmente')
+    # --- aviso no pedido: usa a NF do primeiro pescador (vencido)
+    nf=pg.evaluate("""(n)=>{const S=PP.mapa.estado();const x=S.nfs.find(z=>z.fornecedor===n);return {id:x.id,esp:x.itens[0].esp,qtd:x.itens[0].qtd,numero:x.numero}}""",nome)
+    pg.evaluate("""(o)=>{const S=PP.mapa.estado();const d=S.draft;d.pack='020/2026';d.linhas=[{esp:o.esp,qtd:10,aloc:[{nfId:o.id,qtd:10}]}];PP.store.set('mapa',{nfs:S.nfs,processos:S.processos,meta:S.meta,draft:S.draft,marcas:S.marcas||[]});PP.mapa.invalidate();}""",nf)
+    pg.evaluate("PP.go('mapa')"); pg.wait_for_timeout(300); pg.click('[data-tab=verificar]'); pg.wait_for_timeout(400)
+    t=pg.inner_text('#pescAv'); ok('vencido há 1 dia' in t and nome.split()[0] in t,'Verificar pedido avisa CTF vencido do pescador usado: '+t[:120].replace('\n',' '))
+    # --- Assistente
+    it=pg.evaluate("PP.assist.items().filter(x=>x.key.startsWith('ct:')).map(x=>x.title)")
+    ok(any('CTF vencido' in x for x in it),'Assistente: alerta de CTF vencido %s'%it)
+    ok(any('CTF vencendo' in x for x in it),'Assistente: alerta de CTF vencendo')
+    # --- Roteiro: e-mails separados
+    pg.evaluate("PP.go('exp')"); pg.wait_for_timeout(500)
+    pg.evaluate("document.querySelector('[data-xa=vrot]').click()"); pg.wait_for_timeout(400)
+    a=pg.input_value('#xMail_lpco'); d=pg.input_value('#xMail_dia')
+    ok('CTF do pescador' in a and 'RGP do pescador' in a and 'Notas de entrada' in a and 'Invoice (assinada)' in a and 'MAWB / HAWB' not in a,'e-mail 1 (LPCO): lista certa e sem MAWB/HAWB')
+    ok('Atestados' in d and 'CZI' in d and 'Etiquetas' in d and 'AWB' in d,'e-mail 2 (documentos do dia): atestados, CZI, etiquetas e AWB')
+    ok(pg.locator('[data-xa=pdfnfs]').count()==1,'Roteiro: botão do PDF das notas de entrada')
+    ok('1) PEDIR A LPCO' in pg.inner_text('#vExp') and '2) DOCUMENTOS DO DIA' in pg.inner_text('#vExp'),'Roteiro: dois envios ao despachante')
+    ok(not errs,'sem erros de página %s'%errs)
+print('FALHAS',fails)
