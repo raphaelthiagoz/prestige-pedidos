@@ -110,6 +110,9 @@
   }
   const agenda = () => (window.requestIdleCallback ? requestIdleCallback(tick, { timeout: 8000 }) : setTimeout(tick, 4000));
   if (document.readyState === 'complete') agenda(); else window.addEventListener('load', agenda);
+  // app aberto o dia inteiro (ou virando a noite): confere de hora em hora se já existe a cópia do dia
+  setInterval(() => { if (!document.hidden) tick(); }, 36e5);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) tick(); });
 
   PP.autobk = { criar, carregar, lista: () => ST.lista, voltar, abrir, get };
 })();
