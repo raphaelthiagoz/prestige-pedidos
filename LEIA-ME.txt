@@ -423,3 +423,18 @@ LEITURA DE DOCUMENTOS (calibrada com os seus PDFs)
 
 === v28.5 / v28.6 ===
 - Programação de voos: botões "+ Nova programação", "Duplicar esta programação", "Excluir esta programação" e "Limpar programações repetidas e vazias"; ícone (i) com a explicação ao lado dos botões.
+
+=== v28.7 ===
+CÓPIAS AUTOMÁTICAS (nunca mais perder dado)
+- Sem você fazer nada, o app guarda neste aparelho uma cópia de como os dados estavam no começo de cada dia,
+  dos últimos 7 dias. As cópias ficam comprimidas (poucos KB cada) e não atrapalham o uso.
+- Configurações > Dados e nuvem > "Cópias automáticas (voltar como estava)": lista as cópias com data,
+  nº de pedidos/clientes/NFs e tamanho. Botões "Voltar para esta cópia" e "Baixar".
+- Antes de voltar no tempo, o app guarda uma cópia de AGORA ("Antes de você voltar no tempo"), então dá para
+  desfazer a restauração. Ficam guardadas as 3 últimas.
+- As cópias são deste navegador. O backup baixado continua valendo para ter uma cópia fora do computador.
+
+PUBLICAÇÃO AUTOMÁTICA (arquivos novos no projeto)
+- .gitignore, publicar.sh e netlify.toml: com o projeto no GitHub, o Netlify monta a pasta "dist" e publica
+  sozinho a cada envio. Acaba o arrastar zip. A pasta dist leva tudo da raiz, menos test/, node_modules/, out/
+  e os arquivos de desenvolvimento.
