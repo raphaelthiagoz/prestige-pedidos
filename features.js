@@ -78,7 +78,22 @@
       moeda: x.moeda || null,
     };
   }
-  const devido = e => r2(e.totais.total - (e.mort && e.mort.destino === 'abater' ? e.mort.credito : 0));
+  /* desconto para pagamento à vista: dado DEPOIS, num pedido já salvo (e.avista = { pct, valor, em }).
+     É uma % sobre o valor dos peixes (sem GTA, embalagem, atestado nem créditos), igual ao orçamento. */
+  // pedidos do "Pedido rápido" não guardam as linhas da notinha: monta a partir das espécies e preços do pedido
+  const notaDe = e => {
+    const nr = (e.nota && e.nota.rows) || [];
+    if (nr.length || !(e.lines || []).length) return { rows: nr.map(r => Object.assign({}, r)), ex: Object.assign({}, e.nota && e.nota.ex, { gtaAuto: false, gta: e.totais.gta }) };
+    const rows = e.lines.map(l => ({ nome: l.nome || l.comum || l.sci, cxs: null, qtd: l.peixes, unit: l.preco }));
+    return { rows, ex: { temAt: !!(e.nota && e.nota.ex && e.nota.ex.temAt) || e.totais.atestado > 0, atestado: e.totais.atestado || 0, gtaAuto: false, gta: e.totais.gta || 0, embalagem: 0, qCaixaMaior: e.totais.emb > 0 ? 1 : 0, caixaMaior: e.totais.emb || 0 } };
+  };
+  const baseAvista = e => {
+    const f = notaDe(e).rows.reduce((a, r) => a + (r.credito ? 0 : Core.notinhaLineTotal(r)), 0);
+    return Math.max(0, r2(f - (e.mort && e.mort.destino === 'abater' ? e.mort.credito || 0 : 0)));
+  };
+  const valorAvista = (e, pct) => Math.round(baseAvista(e) * Math.max(0, Math.min(100, +pct || 0))) / 100;
+  const avistaRow = av => ({ nome: 'DESCONTO PAGAMENTO À VISTA (' + String(av.pct).replace('.', ',') + '%)', cxs: null, qtd: -1, unit: r2(av.valor), credito: true });
+  const devido = e => r2(e.totais.total - (e.mort && e.mort.destino === 'abater' ? e.mort.credito : 0) - (e.avista ? e.avista.valor || 0 : 0));
   const saldo = e => r2(Math.max(0, devido(e) - ((e.pay && e.pay.pago) || 0)));
   // crédito guardado do cliente (mortalidade "guardar") menos o que já foi descontado em pedidos novos
   function creditoCliente(hist, nome) {
@@ -104,8 +119,8 @@
   }
   // notinha corrigida: linhas originais + créditos; GTA e atestado ficam como foram cobrados
   function notaCorrigida(e, mort) {
-    const rows = e.nota.rows.map(r => Object.assign({}, r)).concat(mort.rows);
-    const ex = Object.assign({}, e.nota.ex, { gtaAuto: false, gta: e.totais.gta });
+    const nd = notaDe(e), rows = nd.rows.concat(mort.rows, e.avista && e.avista.valor > 0 ? [avistaRow(e.avista)] : []);
+    const ex = nd.ex;
     const totals = Core.notinhaTotals(rows, ex, Core.DEFAULT_CFG.valores);
     return { rows, ex, totals, dia: e.nota.dia };
   }
@@ -341,6 +356,6 @@
     return bNovo ? b : a;
   }
 
-  return { todayISO, addDays, daysBetween, r2, parsePrecos, priceFor, soldBoxes, effCatalog, usoOf, makeEntry, devido, saldo, creditoCliente, creditRow, mortalidade, notaCorrigida,
+  return { todayISO, addDays, daysBetween, r2, parsePrecos, priceFor, soldBoxes, effCatalog, usoOf, makeEntry, devido, baseAvista, valorAvista, saldo, creditoCliente, creditRow, mortalidade, notaCorrigida,
     STATUS, situacao, msgCobranca, crossCheck, romaneio, painel, reposicao, ibamaRows, spokenToDigits, deriveKeys, encryptJSON, decryptJSON, cloudMod, mergeData, idIndex, mergeHist, mergeClientes, cloudPull, cloudPush, active };
 });

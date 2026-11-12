@@ -9,7 +9,7 @@
   const prazo = () => S.cfg.prazoPag || 7;
   const msg = (id, t) => { const el = $(id); if (el) el.textContent = t; };
   const ST = {
-    hist: { q: '', st: '', open: null, mort: {} },
+    hist: { q: '', st: '', open: null, mort: {}, av: {} },
     painel: { r: '30' }, relat: { dia: F.todayISO(), de: F.addDays(F.todayISO(), -29), ate: F.todayISO() },
     estoque: { dias: 30, meta: 2, so: 'vendidos' },
   };
@@ -65,6 +65,22 @@
     PP.pn.prefill({ cli: l.cliente, data: em.saida, link: { eid: em.id, lid: l.id }, from: u });
   });
   document.addEventListener('click', ev => { const b = ev.target.closest('[data-htipo]'); if (b && $('vHist').contains(b)) { ST.hist.tipo = b.dataset.htipo; renderHist(); } });
+  /* ---------- desconto para pagamento à vista (dado depois, no pedido já salvo) ---------- */
+  const avPrevTxt = (e, pct) => {
+    const v = F.valorAvista(e, pct), antes = F.r2(e.totais.total - (e.mort && e.mort.destino === 'abater' ? e.mort.credito || 0 : 0));
+    return +pct > 0 ? `Desconto de ${String(+pct).replace('.', ',')}%: <b>− R$ ${fmt(v)}</b> · total a pagar: <b>R$ ${fmt(F.r2(antes - v))}</b>` : 'Escolha a % do desconto.';
+  };
+  function avistaBox(e) {
+    const av = e.avista, pct = ST.hist.av[e.id] != null ? ST.hist.av[e.id] : (av ? av.pct : '');
+    return `<div class="block" id="avBox" style="margin-top:14px"><h3>Desconto para pagamento à vista</h3>
+      <p class="note">Para o cliente que decidiu pagar à vista depois do pedido. O desconto é sobre o valor dos peixes (R$ ${fmt(F.baseAvista(e))}), sem GTA, embalagem e atestado.</p>
+      <div class="row" style="align-items:center"><button type="button" data-h="avchip" data-v="5">5%</button><button type="button" data-h="avchip" data-v="10">10%</button>
+        <label style="color:var(--fg)">outro: <input id="avPct" type="number" min="0" max="100" step="0.5" value="${pct === '' ? '' : esc(String(pct))}" style="width:84px" aria-label="Desconto à vista em %"> %</label></div>
+      <p id="avPrev" style="margin:8px 0">${avPrevTxt(e, pct)}</p>
+      <div class="row"><button type="button" class="primary" data-h="avSave" data-id="${e.id}">Aplicar desconto</button>${av ? `<button type="button" data-h="avDel" data-id="${e.id}">Remover desconto</button>` : ''}<button type="button" data-h="avNota" data-id="${e.id}" ${av ? '' : 'disabled'}>Baixar nota do pedido com desconto (.xlsx)</button></div>
+      <p class="note" id="avMsg" role="status">${av ? `Desconto aplicado: ${String(av.pct).replace('.', ',')}% = R$ ${fmt(av.valor)}. Total a pagar agora: R$ ${fmt(F.devido(e))}.` : ''}</p></div>`;
+  }
+  document.addEventListener('input', ev => { const t = ev.target; if (t.id !== 'avPct' || S.view !== 'hist') return; const e = S.hist.find(x => x.id === ST.hist.open); if (!e) return; ST.hist.av[e.id] = t.value; if ($('avPrev')) $('avPrev').innerHTML = avPrevTxt(e, t.value); });
   function detail(e, hoje) {
     const s = F.situacao(e, hoje, prazo()), mt = ST.hist.mort[e.id] || (ST.hist.mort[e.id] = (e.mort && e.mort.dead) || {}), calc = F.mortalidade(e, mt);
     const dest = (e.mort && e.mort.destino) || 'abater';
@@ -79,6 +95,7 @@
           <p class="note">Situação agora: ${chip(s.kind, s.label)}. “Atrasado” aparece sozinho quando passam mais de ${prazo()} dias sem pagamento (mude em Configurações).</p>
           ${s.saldo > 0 ? `<div class="field"><label for="cobr">Mensagem de cobrança</label><textarea id="cobr" readonly style="min-height:110px">${esc(F.msgCobranca(e, S.cfg.empresa.nome))}</textarea></div>
           <div class="row"><button type="button" data-h="copycobr">Copiar mensagem</button><span class="note" id="cobrMsg"></span></div>` : ''}
+          ${avistaBox(e)}
           <div class="row"><button type="button" class="danger" data-h="del" data-id="${e.id}">Excluir do histórico</button></div>
         </div>
         <div class="mortbox ${ST.hist.flash === e.id ? 'flash' : ''}" id="mortBox"><h3>Mortalidade na chegada</h3>
@@ -118,6 +135,19 @@
       const c = F.mortalidade(e, ST.hist.mort[e.id] || {}), dest = (document.querySelector('input[name=mdest]:checked') || {}).value || 'abater';
       e.mortOk = c.credito > 0 ? 0 : Date.now(); e.mort = c.credito > 0 ? { dead: Object.assign({}, ST.hist.mort[e.id]), credito: c.credito, mortos: c.mortos, destino: dest, em: F.todayISO() } : null; e.upd = Date.now();
       PP.saveHist(); PP.renderClientes(); renderHist();
+    }
+    else if (k === 'avchip' && e) { const i = $('avPct'); if (i) { i.value = b.dataset.v; ST.hist.av[e.id] = b.dataset.v; $('avPrev').innerHTML = avPrevTxt(e, b.dataset.v); } }
+    else if (k === 'avSave' && e) {
+      const pct = parseFloat(String(($('avPct') || {}).value || '').replace(',', '.'));
+      if (!(pct > 0 && pct <= 100)) { msg('avMsg', 'Digite a % do desconto (entre 0 e 100) ou toque em 5% ou 10%.'); return; }
+      e.avista = { pct, valor: F.valorAvista(e, pct), em: F.todayISO() }; e.upd = Date.now(); delete ST.hist.av[e.id];
+      PP.saveHist(); PP.renderClientes(); renderHist(); if (PP.assist) PP.assist.refresh(); PP.toast('Desconto à vista aplicado.', 'ok');
+    }
+    else if (k === 'avDel' && e) { e.avista = null; e.upd = Date.now(); delete ST.hist.av[e.id]; PP.saveHist(); PP.renderClientes(); renderHist(); if (PP.assist) PP.assist.refresh(); PP.toast('Desconto removido: o pedido voltou ao valor de antes.', 'ok'); }
+    else if (k === 'avNota' && e && e.avista) {
+      const dead = e.mort && e.mort.destino === 'abater' ? (e.mort.dead || {}) : {}, nc = F.notaCorrigida(e, F.mortalidade(e, dead));
+      const bytes = await PP.docs.notinhaXlsx({ cliente: e.cliente, dataISO: e.dataISO, nota: nc });
+      saveBlob(`NOTA_COM_DESCONTO_${PP.slug(e.cliente.nome)}.xlsx`, new Blob([bytes], { type: XLSX }));
     }
     else if (k === 'mortNota' && e) {
       const c = F.mortalidade(e, ST.hist.mort[e.id] || {}), nc = F.notaCorrigida(e, c);

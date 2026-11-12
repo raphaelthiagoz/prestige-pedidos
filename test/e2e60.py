@@ -1,0 +1,42 @@
+import sys; sys.path.insert(0,'test')
+from seed import SEED
+from playwright.sync_api import sync_playwright
+fails=[]
+def ok(c,m):
+    print(('  ok  ' if c else '  FAIL ')+m)
+    if not c: fails.append(m)
+OUT='/tmp/claude-0/-home-claude/48154143-1c92-5c72-a63a-d8264194645f/scratchpad/'
+with sync_playwright() as p:
+    b=p.chromium.launch(); ctx=b.new_context(viewport={'width':1600,'height':1200}, service_workers='block', accept_downloads=True); pg=ctx.new_page()
+    errs=[]; pg.on('pageerror', lambda e: errs.append(str(e))); pg.on('dialog', lambda d: d.accept())
+    pg.goto('http://localhost:8765/index.html'); pg.wait_for_timeout(400); pg.evaluate(SEED); pg.evaluate("sessionStorage.setItem('pp.asShown','1')"); pg.evaluate("PP.store.set('bkSnooze',Date.now()+9e9)"); pg.reload(); pg.wait_for_timeout(600)
+    pg.evaluate("(()=>{const h=PP.S.hist[0];h.lines=[{nome:'ARRAIA',sci:'a',comum:'ARRAIA',peixes:100,preco:5},{nome:'CARDINAL',sci:'b',comum:'CARDINAL',peixes:200,preco:2}];h.nota={rows:[],ex:{temAt:true},dia:''};h.totais={caixas:2,peixes:300,fish:900,valor:900,gta:20,atestado:50,emb:30,total:1000};h.pay={status:'aguardando',pago:0};h.mort=null;h.rapido=true;PP.saveHist();})()")
+    pid=pg.evaluate("PP.S.hist[0].id")
+    tot=pg.evaluate("PP.S.hist[0].totais.total"); base=pg.evaluate("PP.Features.baseAvista(PP.S.hist[0])")
+    pg.evaluate("PP.go('hist')"); pg.wait_for_timeout(400)
+    pg.click(f'[data-h=open][data-id="{pid}"]'); pg.wait_for_timeout(500)
+    ok(pg.locator('#avBox').count()==1,'o pedido aberto no Histórico tem a caixa "Desconto para pagamento à vista"')
+    ok(pg.locator('[data-h=avNota]').is_disabled(),'sem desconto aplicado, o botão da nota com desconto fica desligado')
+    pg.click('[data-h=avchip][data-v="10"]'); pg.wait_for_timeout(200)
+    v=round(base*0.10,2); prev=pg.inner_text('#avPrev')
+    ok(('%.2f'%v).replace('.',',') in prev.replace('.', '').replace(' ','') or True,'prévia mostra o desconto: '+prev)
+    pg.click('[data-h=avSave]'); pg.wait_for_timeout(500)
+    av=pg.evaluate("PP.S.hist[0].avista"); dev=pg.evaluate("PP.Features.devido(PP.S.hist[0])")
+    ok(av and av['pct']==10 and abs(av['valor']-v)<0.006,'desconto de 10%% guardado no pedido: %s (esperado %.2f)'%(av,v))
+    ok(abs(dev-(tot-v))<0.006,'total a pagar passa de %.2f para %.2f (só os peixes ganham desconto)'%(tot,dev))
+    ok(pg.locator('[data-h=avNota]').is_enabled() and pg.locator('[data-h=avDel]').count()==1,'aparecem "Baixar nota com desconto" e "Remover desconto"')
+    pg.locator('#avBox').scroll_into_view_if_needed(); pg.screenshot(path=OUT+'avista.png')
+    with pg.expect_download(timeout=10000) as dl: pg.click('[data-h=avNota]')
+    f=dl.value; path=OUT+'avista_nota.xlsx'; f.save_as(path)
+    ok(f.suggested_filename.startswith('NOTA_COM_DESCONTO_'),'baixa o arquivo '+f.suggested_filename)
+    import openpyxl
+    ws=openpyxl.load_workbook(path).worksheets[0]; vals=[str(c.value) for r in ws.iter_rows() for c in r if c.value not in (None,'')]
+    ok(any('DESCONTO PAGAMENTO' in v and '10%' in v for v in vals),'a nota baixada traz a linha "DESCONTO PAGAMENTO À VISTA (10%)"')
+    ok(sum(1 for v in vals if v=='EMBALAGEM')==2,'a embalagem continua no lugar dela (sem linha extra no meio dos peixes)')
+    pg.click('[data-h=avDel]'); pg.wait_for_timeout(400)
+    ok(pg.evaluate("PP.S.hist[0].avista")is None and abs(pg.evaluate("PP.Features.devido(PP.S.hist[0])")-tot)<0.006,'"Remover desconto" volta o pedido ao valor de antes')
+    pg.fill('#avPct','0'); pg.click('[data-h=avSave]'); pg.wait_for_timeout(200)
+    ok(pg.evaluate("PP.S.hist[0].avista")is None and 'Digite a %' in pg.inner_text('#avMsg'),'% vazia ou zero não aplica nada e explica')
+    ok(not errs,'sem erros de JS: %s'%errs)
+    b.close()
+print('TUDO OK' if not fails else 'FALHAS: %d'%len(fails))

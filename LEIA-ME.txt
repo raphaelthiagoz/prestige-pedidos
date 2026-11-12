@@ -467,3 +467,16 @@ O sistema agora confere o aeroporto de cada cliente antes de você mandar ao des
 IMPORTANTE: antes, o aeroporto digitado na programação ia sozinho para o cadastro do cliente, e por isso
 um erro se repetia sem ninguém notar. Agora o cadastro só muda quando você confirma no aviso.
 O seletor da programação passou a se chamar "Programação" (antes "Embarque").
+
+==================================================
+v29.0 — DESCONTO PARA PAGAMENTO À VISTA (DEPOIS DO PEDIDO)
+==================================================
+Para o cliente que decide pagar a notinha à vista depois que o pedido já foi feito:
+  Histórico -> abrir o pedido (Detalhes) -> caixa "Desconto para pagamento à vista".
+  1. Toque em 5%, 10% ou digite outra % em "outro".
+  2. A tela mostra na hora: "Desconto de 10%: - R$ 90,00 · total a pagar: R$ 910,00".
+  3. "Aplicar desconto" grava. "Baixar nota do pedido com desconto (.xlsx)" gera a nota com a linha
+     "DESCONTO PAGAMENTO À VISTA (10%)". "Remover desconto" volta ao valor de antes.
+O desconto é sobre o VALOR DOS PEIXES (igual ao orçamento). GTA, embalagem e atestado não entram na %.
+O "total a pagar", o saldo, a mensagem de cobrança e o Financeiro já passam a usar o valor com desconto.
+Funciona também junto com a mortalidade abatida e em pedidos feitos pelo "Pedido rápido".

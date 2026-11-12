@@ -45,6 +45,17 @@ let fail=0; const ok=(c,m)=>{console.log((c?'  ok  ':' FALHA ')+m); if(!c) fail+
  A.e.mort={credito:exp,destino:'abater'}; ok(F.devido(A.e)===F.r2(A.e.totais.total-exp),'devido abate crédito');
  ok(F.situacao(A.e,'2026-11-05',7).key==='aguardando','situação aguardando'); ok(F.situacao(A.e,'2026-11-20',7).key==='atrasado','situação atrasado');
  A.e.pay.pago=F.devido(A.e); ok(F.situacao(A.e,'2026-11-20',7).key==='pago','pago integral');
+ // desconto à vista (depois, no pedido salvo)
+ { const e0=JSON.parse(JSON.stringify(A.e)); e0.mort=null; const base=F.baseAvista(e0), v10=F.valorAvista(e0,10);
+   ok(base>0&&v10===Math.round(base*10)/100,'desconto à vista 10% = '+v10+' sobre os peixes ('+base+')');
+   e0.avista={pct:10,valor:v10,em:'2026-11-12'}; ok(F.devido(e0)===F.r2(e0.totais.total-v10),'devido desconta o à vista');
+   const nc0=F.notaCorrigida(e0,F.mortalidade(e0,{})); ok(Math.abs(nc0.totals.total-(e0.totais.total-v10))<0.005,'nota com desconto: '+nc0.totals.total+' = '+(e0.totais.total-v10));
+   e0.pay.pago=F.devido(e0); ok(F.situacao(e0,'2026-11-20',7).key==='pago','pagando o valor com desconto quita o pedido');
+   const e1=JSON.parse(JSON.stringify(e0)); e1.mort={credito:50,destino:'abater'}; ok(F.devido(e1)===F.r2(e1.totais.total-50-v10),'à vista junto com mortalidade abatida'); }
+ // pedido rápido (sem linhas de notinha): usa as espécies e preços
+ { const r={id:'r1',cliente:{nome:'X'},dataISO:'2026-11-10',lines:[{nome:'ARRAIA',sci:'a',peixes:100,preco:5},{nome:'CARDINAL',sci:'b',peixes:200,preco:2}],nota:{rows:[],ex:{temAt:true},dia:''},totais:{caixas:2,peixes:300,fish:900,gta:20,atestado:50,emb:30,total:1000},pay:{status:'aguardando',pago:0},rapido:true};
+   ok(F.baseAvista(r)===900,'rápido: base à vista = valor dos peixes (900)'); r.avista={pct:10,valor:F.valorAvista(r,10),em:'x'}; ok(r.avista.valor===90&&F.devido(r)===910,'rápido: 10% = 90, total a pagar 910');
+   const nc=F.notaCorrigida(r,F.mortalidade(r,{})); ok(Math.abs(nc.totals.total-910)<0.005,'rápido: nota com desconto soma 910 (deu '+nc.totals.total+')'); }
  A.e.mort={credito:50,destino:'guardar'}; ok(F.creditoCliente([A.e],'cliente a')===50,'crédito guardado'); A.e.creditoAplicado=20; ok(F.creditoCliente([A.e],'CLIENTE A')===30,'crédito após aplicar 20');
  // crédito aplicado não mexe na GTA
  const rowsC=A.nr.concat([F.creditRow(30)]); ok(Core.notinhaTotals(rowsC,A.ex,cfg.valores).gta===A.totals.gta&&Math.abs(Core.notinhaTotals(rowsC,A.ex,cfg.valores).total-(A.totals.total-30))<0.005,'crédito aplicado desconta e não muda a GTA');
