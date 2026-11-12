@@ -485,3 +485,6 @@ v29.1 — a nota com desconto à vista segue o modelo dele (NOTINHA_FINAL_HUGO_R
   cabeçalho "NOTA PEDIDO"; depois da lista dos peixes vem o subtotal, a linha "10% DESCONTO" (valor negativo),
   o subtotal com desconto, duas linhas em branco e então ATESTADO, GTA, EMBALAGEM e VALOR TOTAL.
   A nota normal (sem desconto) não mudou: continua com "EMBARQUE CHEGARÁ ...".
+
+v29.2 — nota com desconto à vista, pedido rápido: N. CXS × QTD P/ CX = TOTAL como no modelo, nomes em maiúscula
+  e sempre as duas linhas EMBALAGEM (sem cobrança aparece "-"). Valores e total do pedido não mudaram.

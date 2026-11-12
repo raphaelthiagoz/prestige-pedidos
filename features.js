@@ -84,8 +84,11 @@
   const notaDe = e => {
     const nr = (e.nota && e.nota.rows) || [];
     if (nr.length || !(e.lines || []).length) return { rows: nr.map(r => Object.assign({}, r)), ex: Object.assign({}, e.nota && e.nota.ex, { gtaAuto: false, gta: e.totais.gta }) };
-    const rows = e.lines.map(l => ({ nome: l.nome || l.comum || l.sci, cxs: null, qtd: l.peixes, unit: l.preco }));
-    return { rows, ex: { temAt: !!(e.nota && e.nota.ex && e.nota.ex.temAt) || e.totais.atestado > 0, atestado: e.totais.atestado || 0, gtaAuto: false, gta: e.totais.gta || 0, embalagem: 0, qCaixaMaior: e.totais.emb > 0 ? 1 : 0, caixaMaior: e.totais.emb || 0 } };
+    // como no modelo dele: N. CXS × QTD P/ CX = TOTAL, nome em maiúscula; sem caixas fechadas (ou conta que não fecha) cai para o total de peixes
+    const rows = e.lines.map(l => { const nome = String(l.nome || l.comum || l.sci || '').toUpperCase(), fecha = l.boxes > 0 && !l.mista && l.qtyBox > 0 && l.boxes * l.qtyBox === l.peixes;
+      return { nome, cxs: fecha ? l.boxes : null, qtd: fecha ? l.qtyBox : l.peixes, unit: l.preco }; });
+    // embalagem do pedido rápido é um valor só; as duas linhas EMBALAGEM do modelo aparecem sempre (sem cobrança fica "-")
+    return { rows, ex: { temAt: !!(e.nota && e.nota.ex && e.nota.ex.temAt) || e.totais.atestado > 0, atestado: e.totais.atestado || 0, gtaAuto: false, gta: e.totais.gta || 0, embalagem: 0, qCaixaMaior: e.totais.emb > 0 ? 1 : 0, caixaMaior: e.totais.emb > 0 ? e.totais.emb : Core.DEFAULT_CFG.valores.caixaMaior } };
   };
   const baseAvista = e => {
     const f = notaDe(e).rows.reduce((a, r) => a + (r.credito ? 0 : Core.notinhaLineTotal(r)), 0);

@@ -181,7 +181,7 @@
         let k;
         if (ex.temAt || nota.avista) { k = rn++; lin(k, 'ATESTADO', T.atestado); }
         k = rn++; lin(k, 'GTA', T.gta);
-        const e1 = ex.qCaixaMaior > 0 ? rn++ : null; e2 = rn++;
+        const e1 = ex.qCaixaMaior > 0 || nota.avista ? rn++ : null; e2 = rn++;   // nota com desconto: sempre as duas linhas EMBALAGEM do modelo
         if (e1) out += R(e1, aItem, [istr(`A${e1}`, 5, 'EMBALAGEM'), emp(`B${e1}`, 3), emp(`C${e1}`, 11), num(`D${e1}`, 13, ex.qCaixaMaior > 0 ? ex.qCaixaMaior : null), emp(`E${e1}`, 13), emp(`F${e1}`, 16), num(`G${e1}`, 20, ex.caixaMaior), fml(`H${e1}`, 30, `(D${e1}*G${e1})`, T.emb2), emp(`I${e1}`, 26), emp(`J${e1}`, 2)]);
         out += R(e2, aEmb2, [istr(`A${e2}`, 7, 'EMBALAGEM'), emp(`B${e2}`, 8), emp(`C${e2}`, 12), fml(`D${e2}`, 14, `SUM(D10:D${e2 - 1})`, T.caixas + (ex.qCaixaMaior > 0 ? ex.qCaixaMaior : 0)), emp(`E${e2}`, 15), emp(`F${e2}`, 15), num(`G${e2}`, 21, ex.embalagem), fml(`H${e2}`, 18, `(D${e2}*G${e2})`, T.emb), emp(`I${e2}`, 25), emp(`J${e2}`, 2)]);
         tot = e2 + 1;
