@@ -148,19 +148,19 @@
     const em = S.curId && PP.extra && PP.extra.embDoPedido ? PP.extra.embDoPedido(S.curId) : null;
     if (em) S.embData = em.saida;
     el.value = S.embData || '';
-    if (nt) nt.textContent = em ? 'Na programação de ' + dBR(em.saida) + '. Mude a data para mover.' : S.embData ? 'Entra na programação ao salvar.' : 'Sem embarque marcado.';
+    if (nt) nt.textContent = em ? 'Na programação de ' + dBR(em.saida) + '. Mude a data para mover.' : S.embData ? 'Entra na programação ao salvar.' : 'Sem programação marcada.';
   }
   $('embData').addEventListener('change', ev => {
     S.embData = ev.target.value || '';
     const e = S.curId ? S.hist.find(x => x.id === S.curId) : null;
-    if (e && S.embData && PP.extra && PP.extra.embMove) { const em = PP.extra.embMove(e, S.embData); if (em) PP.toast(`Embarque de ${e.cliente.nome} agora é ${dBR(em.saida)}. A Programação de voos já foi atualizada.`, 'ok'); }
+    if (e && S.embData && PP.extra && PP.extra.embMove) { const em = PP.extra.embMove(e, S.embData); if (em) PP.toast(`Saída de ${e.cliente.nome} agora é ${dBR(em.saida)}. A Programação de voos já foi atualizada.`, 'ok'); }
     syncEmbData();
   });
   $('pedDel').addEventListener('click', () => {
     const e = S.curId ? S.hist.find(x => x.id === S.curId) : null;
     if (!e) { if (!S.rows.length && !$('txt').value.trim()) { PP.toast('Não há pedido aberto para apagar.'); return; } if (confirm('Apagar o que está na tela? Este pedido ainda não foi salvo no histórico.')) { newOrder(); go('pedido'); } return; }
     const em = PP.extra && PP.extra.embDoPedido ? PP.extra.embDoPedido(e.id) : null;
-    if (!confirm(`Apagar o pedido de ${e.cliente.nome} (invoice ${e.inv})?\n\nEle sai do histórico${em ? ' e da programação do embarque de ' + dBR(em.saida) : ''}. Se foi engano, dá para restaurar em Histórico > "Pedidos apagados".`)) return;
+    if (!confirm(`Apagar o pedido de ${e.cliente.nome} (invoice ${e.inv})?\n\nEle sai do histórico${em ? ' e da programação de ' + dBR(em.saida) : ''}. Se foi engano, dá para restaurar em Histórico > "Pedidos apagados".`)) return;
     if (PP.extra && PP.extra.embTira) PP.extra.embTira(e.id);
     S.hist = S.hist.filter(x => x.id !== e.id); saveHist(); renderClientes(); newOrder(); go('pedido');
     PP.toast(`Pedido de ${e.cliente.nome} apagado. Para desfazer: Histórico > Pedidos apagados.`, 'ok');
@@ -355,11 +355,11 @@
 
   function renderSum() {
     const P = currentPlan(), N = notaState(P);
-    $('sum').innerHTML = P.L.length ? `<div><b>${P.L.length}</b><span>itens</span></div><div><b>${P.total}</b><span>caixas</span></div><div><b>${fmtInt(P.peixes)}</b><span>peixes</span></div><div><b>R$ ${fmt(P.valor)}</b><span>valor dos peixes</span></div><div><b>${P.total * S.cfg.valores.kgCaixa} kg</b><span>peso</span></div><div><b>R$ ${fmt(N.totals.total)}</b><span>total da notinha</span></div>` : '';
+    $('sum').innerHTML = P.L.length ? `<div><b>${P.L.length}</b><span>itens</span></div><div><b>${P.total}</b><span>caixas</span></div><div><b>${fmtInt(P.peixes)}</b><span>peixes</span></div><div><b>R$ ${fmt(P.valor)}</b><span>valor dos peixes</span></div><div><b>${P.total * S.cfg.valores.kgCaixa} kg</b><span>peso</span></div><div><b>R$ ${fmt(N.totals.total)}</b><span>total da nota do pedido</span></div>` : '';
   }
 
   /* ---------- documentos: tela ---------- */
-  const TABS = [['invoice', 'Invoice'], ['atestado', 'Atestado'], ['packing', 'Packing list'], ['etiquetas', 'Etiquetas'], ['notinha', 'Notinha final'], ['orcamento', 'Orçamento'], ['nf', 'Dados p/ Nota Fiscal']];
+  const TABS = [['invoice', 'Invoice'], ['atestado', 'Atestado'], ['packing', 'Packing list'], ['etiquetas', 'Etiquetas'], ['notinha', 'Nota do pedido'], ['orcamento', 'Orçamento'], ['nf', 'Dados p/ Nota Fiscal']];
   const range = l => (l.ini === l.fim ? String(l.ini) : `${l.ini}-${l.fim}`);
   const dataBR = () => Docs.dataBR($('data').value);
   function renderDoc() {
@@ -413,7 +413,7 @@
       ${ex.qCaixaMaior > 0 ? `<tr><td>EMBALAGEM (caixa maior)</td><td>${ex.qCaixaMaior}</td><td colspan="2"></td><td>${fmt(ex.caixaMaior)}</td><td>${fmt(T.emb2)}</td></tr>` : ''}
       <tr><td>EMBALAGEM</td><td>${T.caixas}</td><td colspan="2"></td><td>${fmt(ex.embalagem)}</td><td>${fmt(T.emb)}</td></tr>
       <tr class="tot"><td colspan="5">VALOR TOTAL</td><td class="hl">R$ ${fmt(T.total)}</td></tr></tbody></table></div>
-      <p class="note">Os campos em amarelo são editáveis: ajuste o que chegou ao cliente e o total se recalcula. O arquivo baixado já leva as fórmulas.</p>${dl('notinha', 'Baixar notinha final (.xlsx)')}`;
+      <p class="note">Os campos em amarelo são editáveis: ajuste o que chegou ao cliente e o total se recalcula. O arquivo baixado já leva as fórmulas.</p>${dl('notinha', 'Baixar nota do pedido (.xlsx)')}`;
     } else {
       const tsv = L.map(l => [l.it.sci, l.it.comum, l.peixes, String(l.it.preco).replace('.', ','), l.valor.toFixed(2).replace('.', ',')].join('\t')).join('\n');
       h = `<div class="tablewrap"><table><thead><tr><th>Descrição</th><th class="n">Quantidade</th><th class="n">Valor unit.</th><th class="n">Total</th></tr></thead><tbody>
@@ -600,7 +600,7 @@
     if (prev) S.hist[S.hist.indexOf(prev)] = e; else S.hist.push(e);
     S.curId = id; saveHist(); renderClientes();
     $('saveMsg').textContent = `Pedido salvo no histórico (invoice ${e.inv}, ${e.cliente.nome}). O estoque da conferência já considera estas caixas.`;
-    if (S.embData && PP.extra && PP.extra.embMove) { const em = PP.extra.embMove(e, S.embData), box = $('embAsk'); if (em && box) { box.hidden = false; box.dataset.id = e.id; box.innerHTML = `<span>✓ Este pedido está na programação do embarque de <b>${dBR(em.saida)}</b>.</span> <button type="button" data-ea="ver">Abrir programação</button>`; } }
+    if (S.embData && PP.extra && PP.extra.embMove) { const em = PP.extra.embMove(e, S.embData), box = $('embAsk'); if (em && box) { box.hidden = false; box.dataset.id = e.id; box.innerHTML = `<span>✓ Este pedido está na programação de <b>${dBR(em.saida)}</b>.</span> <button type="button" data-ea="ver">Abrir programação</button>`; } }
     else embAsk(e);
     syncEmbData();
     return e;
@@ -611,13 +611,13 @@
   function embAsk(e) {
     const box = $('embAsk'), X = PP.extra; if (!box || !X) return;
     const ja = X.embDoPedido(e.id);
-    if (ja) { X.embAtualiza(e); box.hidden = false; box.innerHTML = `<span>✓ Este pedido está na programação do embarque de <b>${dBR(ja.saida)}</b> (caixas atualizadas).</span> <button type="button" data-ea="ver">Abrir programação</button>`; box.dataset.id = e.id; return; }
+    if (ja) { X.embAtualiza(e); box.hidden = false; box.innerHTML = `<span>✓ Este pedido está na programação de <b>${dBR(ja.saida)}</b> (caixas atualizadas).</span> <button type="button" data-ea="ver">Abrir programação</button>`; box.dataset.id = e.id; return; }
     if (embAskDismissed.has(e.id)) { box.hidden = true; return; }
     const L = X.embAbertos(), padrao = (L.find(x => x.saida === e.dataISO) || L[0] || {}).id || 'new';
     box.dataset.id = e.id; box.hidden = false;
     box.innerHTML = `<div><b>Colocar este pedido na Programação de voos?</b> <span class="muted">${esc(e.cliente.nome)} · ${e.totais.caixas} caixa(s)</span></div>
-      <div class="row" style="margin-top:8px;align-items:flex-end"><div class="field grow"><label for="eaSel">Em qual embarque</label><select id="eaSel">${L.map(x => `<option value="${x.id}" ${x.id === padrao ? 'selected' : ''}>${esc(X.embLabel(x))}</option>`).join('')}<option value="new" ${padrao === 'new' ? 'selected' : ''}>＋ Criar novo embarque</option></select></div>
-      <div class="field" id="eaNovoF" style="flex:0 1 160px" ${padrao === 'new' ? '' : 'hidden'}><label for="eaNovo">Saída do novo embarque</label><input id="eaNovo" type="date" value="${e.dataISO}"></div>
+      <div class="row" style="margin-top:8px;align-items:flex-end"><div class="field grow"><label for="eaSel">Em qual programação</label><select id="eaSel">${L.map(x => `<option value="${x.id}" ${x.id === padrao ? 'selected' : ''}>${esc(X.embLabel(x))}</option>`).join('')}<option value="new" ${padrao === 'new' ? 'selected' : ''}>＋ Criar nova programação</option></select></div>
+      <div class="field" id="eaNovoF" style="flex:0 1 160px" ${padrao === 'new' ? '' : 'hidden'}><label for="eaNovo">Saída da nova programação</label><input id="eaNovo" type="date" value="${e.dataISO}"></div>
       <button type="button" class="primary" data-ea="ok">Colocar na programação</button><button type="button" data-ea="no">Agora não</button></div>`;
   }
   document.addEventListener('change', ev => { if (ev.target && ev.target.id === 'eaSel') { const f = $('eaNovoF'); if (f) f.hidden = ev.target.value !== 'new'; } });
@@ -629,7 +629,7 @@
     if (k === 'ok' && e) {
       const v = $('eaSel').value, em = PP.extra.embColoca(e, v, v === 'new' ? ($('eaNovo').value || e.dataISO) : null);
       if (!em) return;
-      box.innerHTML = `<span>✓ Pedido colocado na programação do embarque de <b>${dBR(em.saida)}</b> (${em.linhas.length} cliente(s)). Complete peso, AWB e situação lá.</span> <button type="button" data-ea="ver">Abrir programação</button>`;
+      box.innerHTML = `<span>✓ Pedido colocado na programação de <b>${dBR(em.saida)}</b> (${em.linhas.length} cliente(s)). Complete peso, AWB e situação lá.</span> <button type="button" data-ea="ver">Abrir programação</button>`;
     }
   });
   $('saveHist').onclick = () => { if (!saveOrder()) $('saveMsg').textContent = 'Leia um pedido primeiro.'; renderConf(); };

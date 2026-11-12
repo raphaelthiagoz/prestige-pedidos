@@ -52,13 +52,13 @@
   }
   function importMail(text, ocr) {
     const e = curEmb(); ST.mail = text; ST.mailOpen = true; ST.nextMsg = '';
-    if (!e) { ST.mailMsg = 'Crie primeiro o embarque na Programação de voos.'; render(); return; }
+    if (!e) { ST.mailMsg = 'Crie primeiro uma programação em Programação de voos.'; render(); return; }
     let rows = ocr ? [] : FC.parseEmail(text); if (!rows.length) rows = FC.parseEmailOcr(text);
     if (!rows.length) { ST.mailMsg = ocr ? 'Não consegui ler a tabela neste print. Tire o print só da tabela (bem de perto, sem cortar a última coluna) e tente de novo.' : 'Não achei nenhuma linha com AWB (ex.: 957-43219691). Cole a tabela do e-mail, com as linhas dos clientes.'; render(); return; }
     const out = [], usados = new Set();
     rows.forEach(w => {
       const m = w.ocr ? FC.matchEmailRowOcr(w, e.linhas, l => R(e, l)) : FC.matchEmailRow(w, e.linhas, l => R(e, l)), conx = w.voos.filter(v => v.num).map(v => `${v.cia}${v.num}/${v.dia}`).join(' → ');
-      if (!m) { out.push(`? ${w.awb ? 'AWB ' + w.awb : 'Linha'} (${w.cliente || '—'} · ${w.dest || '—'}${w.hora ? ' · ' + w.hora : ''}): não achei o cliente neste embarque.`); return; }
+      if (!m) { out.push(`? ${w.awb ? 'AWB ' + w.awb : 'Linha'} (${w.cliente || '—'} · ${w.dest || '—'}${w.hora ? ' · ' + w.hora : ''}): não achei o cliente nesta programação.`); return; }
       const r = R(e, m.linha), p = { avisado: false, msg: null };
       if (w.hora) { p.hora = w.hora; p.horaAuto = false; p.horaMail = true; }
       if (conx) p.vooMail = conx;
@@ -76,7 +76,7 @@
     catch (err) { ST.nextMsg = 'Não consegui ler o print: ' + (err.message || err); render(); }
   }
   async function importCtes(files) {
-    const e = curEmb(); if (!e) { ST.msg = 'Crie primeiro o embarque na Programação de voos.'; render(); return; }
+    const e = curEmb(); if (!e) { ST.msg = 'Crie primeiro uma programação em Programação de voos.'; render(); return; }
     const out = []; ST.msg = 'Lendo…'; ST.nextMsg = ''; render();
     for (const f of files) {
       try {
@@ -137,11 +137,11 @@
   }
   function viewDia() {
     const L = embs(), e = curEmb();
-    if (!e) return '<section class="step"><h2>Frete</h2><p class="note">Ainda não há embarques. Crie um na aba <b>Programação de voos</b>; os clientes dele aparecem aqui.</p></section>';
+    if (!e) return '<section class="step"><h2>Frete</h2><p class="note">Ainda não há programações. Crie uma na aba <b>Programação de voos</b>; os clientes dele aparecem aqui.</p></section>';
     const s = summary(e);
     const pend = ST.pend.map(p => `<div class="row" style="align-items:center"><span class="chip warn">CTE ${esc(p.c.awb || p.c.cte)}</span><span>${esc(p.c.dest || '')} · R$ ${money(p.c.total)} · NF ${esc(p.c.nf || '—')}</span><select data-fi="pendsel" data-p="${p.id}"><option value="">Escolher cliente…</option>${e.linhas.map(l => `<option value="${l.id}">${esc(l.cliente)}</option>`).join('')}</select><button type="button" data-fr="pendok" data-p="${p.id}">Usar</button><button type="button" data-fr="penddel" data-p="${p.id}">Descartar</button></div>`).join('');
-    return `<section class="step"><div class="row between" style="align-items:center"><h2>Frete do embarque · controle de pagamento</h2>${subTabs()}</div>
-      <div class="row" style="align-items:flex-end"><div class="field" style="flex:0 1 340px"><label for="frEmb">Embarque (da Programação de voos)</label><select id="frEmb">${L.map(x => `<option value="${x.id}" ${x.id === e.id ? 'selected' : ''}>${cap(diaDe(x.saida))} ${dBR(x.saida).slice(0, 5)} · ${x.linhas.length} cliente(s)</option>`).join('')}</select></div>
+    return `<section class="step"><div class="row between" style="align-items:center"><h2>Frete da programação · controle de pagamento</h2>${subTabs()}</div>
+      <div class="row" style="align-items:flex-end"><div class="field" style="flex:0 1 340px"><label for="frEmb">Programação de voos</label><select id="frEmb">${L.map(x => `<option value="${x.id}" ${x.id === e.id ? 'selected' : ''}>${cap(diaDe(x.saida))} ${dBR(x.saida).slice(0, 5)} · ${x.linhas.length} cliente(s)</option>`).join('')}</select></div>
         <div class="field" style="flex:0 1 160px"><label for="frTaxa">Taxa do despachante (R$)</label><input id="frTaxa" data-fi="taxa" value="${money(D.cfg.taxa)}"></div>
         <input type="file" id="frFile" accept="application/pdf,.pdf" multiple hidden></div>
       ${fluxo(e)}
@@ -150,9 +150,9 @@
         <textarea id="frMail" rows="6" placeholder="PRESTIGE&#9;MAEDA&#9;BSB&#9;957-43219691&#9;6,0&#9;48,0&#9;11/nov&#9;tarde&#9;LA3747/12&#9;&#9;08:30">${esc(ST.mail || '')}</textarea>
         <div class="row"><button type="button" class="primary" data-fr="mailgo">Ler e-mail e preencher horas</button>${ST.mail ? '<button type="button" data-fr="mailclr">Limpar</button>' : ''}</div>${ST.mailMsg ? `<div class="warnbox" style="white-space:pre-line;margin-top:8px">${esc(ST.mailMsg)}</div>` : ''}</details>
       ${ST.msg ? `<div class="warnbox" style="white-space:pre-line">${esc(ST.msg)}</div>` : ''}${pend}
-      <div class="kp"><div><span class="muted">Total do embarque</span><b>${money(s.tot)}</b></div><div><span class="muted">Recebido</span><b class="grn">${money(s.rec)}</b></div><div><span class="muted">Em aberto</span><b class="${s.abre ? 'red' : ''}">${money(s.abre)}</b></div><div><span class="muted">Falta frete / hora</span><b>${s.semF} / ${s.semH}</b></div></div>
+      <div class="kp"><div><span class="muted">Total da programação</span><b>${money(s.tot)}</b></div><div><span class="muted">Recebido</span><b class="grn">${money(s.rec)}</b></div><div><span class="muted">Em aberto</span><b class="${s.abre ? 'red' : ''}">${money(s.abre)}</b></div><div><span class="muted">Falta frete / hora</span><b>${s.semF} / ${s.semH}</b></div></div>
       ${e.linhas.length ? `<div class="tablewrap"><table class="fr"><thead><tr><th>Cliente</th><th>NF</th><th>CTE · AWB</th><th class="n">Vol.</th><th class="n">Frete (CTE)</th><th class="n">Taxa DM</th><th class="n">Total</th><th>Chega às</th><th>Aviso</th><th>Pagamento</th></tr></thead><tbody>${rowsDia(e)}
-      <tr class="tot"><td colspan="3">TOTAL (${e.linhas.length} cliente${e.linhas.length > 1 ? 's' : ''})</td><td class="n">${e.linhas.reduce((a, l) => a + (+R(e, l).vol || +l.caixas || 0), 0)}</td><td class="n">${money(e.linhas.reduce((a, l) => a + (+R(e, l).frete || 0), 0))}</td><td class="n">${money(e.linhas.reduce((a, l) => a + (+R(e, l).frete > 0 ? (R(e, l).taxa != null && R(e, l).taxa !== '' ? +R(e, l).taxa : +D.cfg.taxa) : 0), 0))}</td><td class="n">${money(s.tot)}</td><td colspan="3"></td></tr></tbody></table></div>` : '<p class="note">Este embarque não tem clientes. Use "Puxar pedidos do histórico" na Programação de voos.</p>'}
+      <tr class="tot"><td colspan="3">TOTAL (${e.linhas.length} cliente${e.linhas.length > 1 ? 's' : ''})</td><td class="n">${e.linhas.reduce((a, l) => a + (+R(e, l).vol || +l.caixas || 0), 0)}</td><td class="n">${money(e.linhas.reduce((a, l) => a + (+R(e, l).frete || 0), 0))}</td><td class="n">${money(e.linhas.reduce((a, l) => a + (+R(e, l).frete > 0 ? (R(e, l).taxa != null && R(e, l).taxa !== '' ? +R(e, l).taxa : +D.cfg.taxa) : 0), 0))}</td><td class="n">${money(s.tot)}</td><td colspan="3"></td></tr></tbody></table></div>` : '<p class="note">Esta programação não tem clientes. Use "Puxar pedidos do histórico" na Programação de voos.</p>'}
       <div class="row"><button type="button" class="primary" data-fr="xlsx">⬇ Baixar planilha (.xlsx)</button><button type="button" data-fr="copylist">Copiar lista</button><span class="note" id="frList"></span></div></section>${msgPane(e)}`;
   }
 
@@ -167,13 +167,13 @@
     const list = all.filter(x => (ST.filt === 'todos' || (ST.filt === 'aberto' ? !x.r.pago : x.r.pago)) && (!q || (x.l.cliente + ' ' + (x.r.cte || '')).toLowerCase().includes(q)));
     const abre = all.filter(x => !x.r.pago), recM = all.filter(x => x.r.pago && (x.r.pagoEm || '').slice(0, 7) === mes);
     const dev = {}; abre.forEach(x => { (dev[x.l.cliente] = dev[x.l.cliente] || { v: 0, n: 0 }); dev[x.l.cliente].v += x.t; dev[x.l.cliente].n++; });
-    return `<section class="step"><div class="row between" style="align-items:center"><h2>Controle de fretes · todos os embarques</h2>${subTabs()}</div>
+    return `<section class="step"><div class="row between" style="align-items:center"><h2>Controle de fretes · todas as programações</h2>${subTabs()}</div>
       <div class="kp"><div><span class="muted">Em aberto (todos)</span><b class="${abre.length ? 'red' : ''}">R$ ${money(abre.reduce((a, x) => a + x.t, 0))}</b></div><div><span class="muted">Recebido no mês</span><b class="grn">R$ ${money(recM.reduce((a, x) => a + x.t, 0))}</b></div><div><span class="muted">Clientes devendo</span><b class="${Object.keys(dev).length ? 'red' : ''}">${Object.keys(dev).length}</b></div></div>
       <div class="row" style="align-items:center"><div class="chips">${[['aberto', 'Em aberto'], ['pago', 'Pagos'], ['todos', 'Todos']].map(([k, n]) => `<button type="button" class="xchip" data-fr="filt" data-v="${k}" aria-pressed="${ST.filt === k}">${n}</button>`).join('')}</div><div class="field" style="flex:0 1 240px"><input id="frQ" data-fi="q" placeholder="Buscar cliente ou CTE…" value="${esc(ST.q)}"></div></div>
       ${list.length ? `<div class="tablewrap"><table class="fr"><thead><tr><th>Embarque</th><th>Cliente</th><th>CTE</th><th class="n">Total (frete + taxa)</th><th>Situação</th><th></th></tr></thead><tbody>${list.map(x => `<tr class="${x.r.pago ? 'pg' : 'dev'}"><td>${dBR(x.e.saida).slice(0, 5)}</td><td>${esc(x.l.cliente)}</td><td>${esc(x.r.cte || '—')}</td><td class="n">${money(x.t)}</td><td>${x.r.pago ? `<span class="chip ok">PAGO ${x.r.pagoEm ? dBR(x.r.pagoEm).slice(0, 5) : ''}</span>` : `<span class="chip bad">EM ABERTO · ${diasAbertos(x.e)} dia(s)</span>`}</td><td><button type="button" class="${x.r.pago ? '' : 'baixa'}" data-fr="${x.r.pago ? 'desfaz' : 'baixa'}" data-k="${x.k}">${x.r.pago ? 'Desfazer' : 'Dar baixa'}</button></td></tr>`).join('')}</tbody></table></div>` : '<p class="note">Nada por aqui com este filtro.</p>'}
-      ${Object.keys(dev).length ? `<p class="note"><b>Quem está devendo:</b> ${Object.entries(dev).sort((a, b) => b[1].v - a[1].v).map(([n, v]) => `${esc(n)} R$ ${money(v.v)} (${v.n} embarque${v.n > 1 ? 's' : ''})`).join(' · ')}</p>` : ''}</section>`;
+      ${Object.keys(dev).length ? `<p class="note"><b>Quem está devendo:</b> ${Object.entries(dev).sort((a, b) => b[1].v - a[1].v).map(([n, v]) => `${esc(n)} R$ ${money(v.v)} (${v.n} ${v.n > 1 ? 'programações' : 'programação'})`).join(' · ')}</p>` : ''}</section>`;
   }
-  const subTabs = () => `<div class="tabs"><button type="button" data-fr="sub" data-v="dia" aria-selected="${ST.sub === 'dia'}">Embarque do dia</button><button type="button" data-fr="sub" data-v="ctl" aria-selected="${ST.sub === 'ctl'}">Controle de fretes (todos)</button></div>`;
+  const subTabs = () => `<div class="tabs"><button type="button" data-fr="sub" data-v="dia" aria-selected="${ST.sub === 'dia'}">Programação do dia</button><button type="button" data-fr="sub" data-v="ctl" aria-selected="${ST.sub === 'ctl'}">Controle de fretes (todos)</button></div>`;
   function render() { $('vFrete').innerHTML = ST.sub === 'ctl' ? viewCtl() : viewDia(); }
 
   /* ---------- planilha e cópia ---------- */

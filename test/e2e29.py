@@ -17,7 +17,7 @@ with sync_playwright() as p:
       const h=(PP.S.hist||[]);PP.S.embarques[0].linhas[0].pedidoId=h[0]&&h[0].id;PP.S.embarques[1].linhas[0].pedidoId=h[1]&&h[1].id;PP.S.embarques[2].linhas[0].pedidoId=h[2]&&h[2].id;PP.store.set('embarques',PP.S.embarques);}""")
     pg.evaluate("PP.go('embarque');PP.go('hoje')"); pg.wait_for_timeout(500)
     t=pg.inner_text('#vHoje'); print(t[:900].replace('\n',' | '))
-    ok('PRÓXIMO EMBARQUE' in t.upper() and '11' in t,'cartão mostra Próximo embarque quando hoje não tem')
+    ok('PRÓXIMA PROGRAMAÇÃO' in t.upper() and '11' in t,'cartão mostra Próxima programação quando hoje não tem')
     ok('VENDAS PROGRAMADAS' in t.upper() and 'quantidade de vendas' in t.lower(),'gráfico: Vendas programadas · quantidade de vendas')
     ok('últimas 8 semanas' not in t and 'R$ 50 mil' not in t and 'mil' not in t.split('VENDAS')[1][:400],'sem valores em R$ no gráfico')
     ok('Caixas nacionais · 77' in t and 'Caixas exportação · 64' in t and 'Vendas (curva) · 6' in t,'legenda: 77 cx nacionais, 64 cx exportação, 6 vendas')
@@ -39,6 +39,6 @@ with sync_playwright() as p:
     pg.evaluate("PP.go('hoje')"); pg.wait_for_timeout(250); ok(pg.locator('#kbMic').is_visible(),'microfone volta na tela inicial')
     # embarque hoje
     pg.evaluate("""()=>{const t=PP.Features.todayISO();PP.S.embarques[0].saida=t;PP.store.set('embarques',PP.S.embarques);PP.hoje.render();}""")
-    t=pg.inner_text('#vHoje').upper(); ok('EMBARQUES HOJE' in t and '32 CAIXAS' in t,'com embarque hoje volta ao cartão Embarques hoje')
+    t=pg.inner_text('#vHoje').upper(); ok('PROGRAMAÇÕES HOJE' in t and '32 CAIXAS' in t,'com embarque hoje volta ao cartão Programações hoje')
     ok(not errs,'sem erros JS %s'%errs); b.close()
 print('FALHAS:',fails or 'nenhuma')

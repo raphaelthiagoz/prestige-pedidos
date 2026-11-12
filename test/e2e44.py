@@ -32,10 +32,10 @@ with sync_playwright() as p:
     # cliente de VCP (Azul) leva atestado; CNF também
     for aero,esperado in (('VCP',True),('CNF',True),('GRU',False)):
         pg.evaluate("(a)=>{PP.S.clientes.find(c=>c.nome.startsWith('A.S.R')).aero=a;PP.store.set('clientes',PP.S.clientes);}",aero)
-        pg.click('#tabs button:has-text("Notinha final")'); pg.click('#tabs button:has-text("Orçamento")'); pg.wait_for_timeout(250)
+        pg.click('#tabs button:has-text("Nota do pedido")'); pg.click('#tabs button:has-text("Orçamento")'); pg.wait_for_timeout(250)
         ok(('ATESTADO' in pg.inner_text('.orcpg'))==esperado,'aeroporto %s: atestado no orçamento = %s'%(aero,esperado))
     pg.evaluate("(a)=>{PP.S.clientes.find(c=>c.nome.startsWith('A.S.R')).aero=a;PP.store.set('clientes',PP.S.clientes);}",'VCP')
-    pg.click('#tabs button:has-text("Notinha final")'); pg.click('#tabs button:has-text("Orçamento")'); pg.wait_for_timeout(250)
+    pg.click('#tabs button:has-text("Nota do pedido")'); pg.click('#tabs button:has-text("Orçamento")'); pg.wait_for_timeout(250)
     ok('ATESTADO' in pg.inner_text('#doc') and 'ATESTADO' in pg.inner_text('.orcpg'),'volta a VCP: atestado presente')
     pg.fill('[data-orc=pct]','7.5'); pg.wait_for_timeout(250)
     ok('7,5% DESCONTO' in pg.inner_text('#doc'),'desconto personalizado 7,5%')

@@ -35,8 +35,8 @@
     const linhasProg = []; (S.embarques || []).forEach(em => (em.linhas || []).forEach(l => { if (l.status !== 'cancelado') linhasProg.push({ em, l }); }));
     const faltam = linhasProg.filter(({ l }) => !(l.pedidoId && S.hist.some(x => x.id === l.pedidoId))).sort((a, b) => String(b.em.saida).localeCompare(String(a.em.saida)));
     const mp = mortPend();
-    const mortHTML = mp.length ? `<section class="step hmort" id="hMort"><div class="row between"><div><h2 style="margin:0">Mortalidade dos embarques recentes</h2><p class="note" style="margin:2px 0 0">Algum cliente teve peixe morto na chegada? Clique no cliente, digite quantos morreram e o app já desconta na notinha. Se não teve, marque "sem mortalidade".</p></div></div>
-      ${mp.map(({ em, its }) => `<div class="row" style="align-items:center;gap:8px;margin:8px 0"><b style="min-width:130px">Embarque ${dBR(em.saida)}</b>${its.map(h => `<button type="button" class="mortbtn" data-h="mortgo" data-id="${h.id}">${esc(h.cliente.nome)}</button>`).join('')}<span style="flex:1"></span><button type="button" data-h="mortok" data-eid="${em.id}">Nenhum teve mortalidade</button></div>`).join('')}</section>` : '';
+    const mortHTML = mp.length ? `<section class="step hmort" id="hMort"><div class="row between"><div><h2 style="margin:0">Mortalidade das programações recentes</h2><p class="note" style="margin:2px 0 0">Algum cliente teve peixe morto na chegada? Clique no cliente, digite quantos morreram e o app já desconta na nota do pedido. Se não teve, marque "sem mortalidade".</p></div></div>
+      ${mp.map(({ em, its }) => `<div class="row" style="align-items:center;gap:8px;margin:8px 0"><b style="min-width:130px">Programação ${dBR(em.saida)}</b>${its.map(h => `<button type="button" class="mortbtn" data-h="mortgo" data-id="${h.id}">${esc(h.cliente.nome)}</button>`).join('')}<span style="flex:1"></span><button type="button" data-h="mortok" data-eid="${em.id}">Nenhum teve mortalidade</button></div>`).join('')}</section>` : '';
     const confHTML = linhasProg.length ? `<section class="step hconf" id="hConf"><div class="row between"><div><h2 style="margin:0">Conferência: Programação × Histórico</h2><p class="note" style="margin:2px 0 0">Cada venda da Programação de voos precisa ter um pedido no histórico. O que falta aparece aqui.</p></div><button type="button" data-hc="prog">Abrir Programação</button></div>
       <div class="kpis"><div><b>${linhasProg.length}</b><span>vendas na programação</span></div><div><b style="color:var(--ok,#4cc58a)">${linhasProg.length - faltam.length}</b><span>com pedido no histórico</span></div><div><b style="color:${faltam.length ? 'var(--warn,#e8c15a)' : 'var(--ok,#4cc58a)'}">${faltam.length}</b><span>sem pedido no histórico</span></div></div>
       ${faltam.length ? `<div class="tablewrap"><table><thead><tr><th>Embarque</th><th>Cliente</th><th class="n">Caixas</th><th>Situação</th><th></th></tr></thead><tbody>${faltam.map(({ em, l }) => { const u = [...S.hist].filter(x => F.active(x) && PP.up(x.cliente.nome) === PP.up(l.cliente)).sort((a, b) => b.ts - a.ts)[0]; return `<tr><td>${dBR(em.saida)}</td><td><b>${esc(l.cliente || '(sem nome)')}</b></td><td class="n">${l.caixas || 0}</td><td><span class="chip warn">sem pedido</span></td><td style="white-space:nowrap"><button type="button" class="primary" data-hc="novo" data-eid="${em.id}" data-lid="${l.id}">Criar pedido</button> ${u ? `<button type="button" data-hc="copia" data-eid="${em.id}" data-lid="${l.id}" title="Começa com os mesmos peixes e preços do último pedido dele">Copiar último pedido</button>` : ''}</td></tr>`; }).join('')}</tbody></table></div>` : '<p class="note" style="color:var(--ok,#4cc58a)">Tudo certo: todas as vendas da programação têm pedido no histórico. ✓</p>'}</section>` : '';
@@ -46,7 +46,7 @@
       <div class="field" style="flex:0 1 220px"><label for="hst">Situação</label><select id="hst"><option value="">Todas</option>${['aguardando', 'atrasado', 'pago', 'embarcado', 'entregue', 'cancelado'].map(k => `<option value="${k}" ${h.st === k ? 'selected' : ''}>${k === 'atrasado' ? 'Atrasado' : F.STATUS[k]}</option>`).join('')}</select></div></div>
       ${list.length ? `<div class="tablewrap"><table id="histTb"><thead><tr><th>Data</th><th>Cliente</th><th>Invoice</th><th>NF</th><th class="n">Caixas</th><th class="n">Peixes</th><th class="n">Total R$</th><th>Situação</th><th></th></tr></thead><tbody>
       ${list.map(e => { const s = F.situacao(e, hoje, prazo()); return `<tr class="${h.open === e.id ? 'sel' : ''}"><td>${dBR(e.dataISO)}</td><td>${esc(e.cliente.nome)}</td><td>${esc(e.inv)}</td><td>${esc(e.nf || '—')}</td><td class="n">${e.totais.caixas}</td><td class="n">${fmtInt(e.totais.peixes)}</td><td class="n">${fmt(F.devido(e))}</td><td>${chip(s.kind, s.label)}${e.mort && e.mort.credito ? ' ' + chip('warn', 'mortalidade') : ''}</td>
-        <td style="white-space:nowrap"><button type="button" data-h="open" data-id="${e.id}">Detalhes</button> <button type="button" data-h="edit" data-id="${e.id}">Editar</button> <button type="button" data-h="repeat" data-id="${e.id}">Repetir</button> <button type="button" class="mortbtn" data-h="mortgo" data-id="${e.id}" title="Registrar mortalidade e descontar na notinha">Mortalidade</button></td></tr>`; }).join('')}</tbody></table></div>` : `<p class="empty">${all.length ? 'Nenhum pedido com esse filtro.' : 'Os pedidos aparecem aqui quando você baixa os documentos ou clica em "Salvar no histórico".'}</p>`}
+        <td style="white-space:nowrap"><button type="button" data-h="open" data-id="${e.id}">Detalhes</button> <button type="button" data-h="edit" data-id="${e.id}">Editar</button> <button type="button" data-h="repeat" data-id="${e.id}">Repetir</button> <button type="button" class="mortbtn" data-h="mortgo" data-id="${e.id}" title="Registrar mortalidade e descontar na nota do pedido">Mortalidade</button></td></tr>`; }).join('')}</tbody></table></div>` : `<p class="empty">${all.length ? 'Nenhum pedido com esse filtro.' : 'Os pedidos aparecem aqui quando você baixa os documentos ou clica em "Salvar no histórico".'}</p>`}
       </section>`;
     const open = h.open && S.hist.find(e => e.id === h.open);
     if (open) html += detail(open, hoje);
@@ -82,15 +82,15 @@
           <div class="row"><button type="button" class="danger" data-h="del" data-id="${e.id}">Excluir do histórico</button></div>
         </div>
         <div class="mortbox ${ST.hist.flash === e.id ? 'flash' : ''}" id="mortBox"><h3>Mortalidade na chegada</h3>
-          <p class="note">Digite quantos peixes morreram na chegada. O app calcula o crédito pelo preço cobrado e mostra como fica a notinha.</p>
-          <div class="kpis"><div><b>R$ ${fmt(e.totais.total)}</b><span>total do pedido</span></div><div><b style="color:var(--bad,#ef6b6b)">− R$ ${fmt(calc.credito)}</b><span>mortalidade (${fmtInt(calc.mortos)} peixes)</span></div><div><b style="color:var(--ok,#4cc58a)">R$ ${fmt(F.r2(e.totais.total - (dest === 'abater' ? calc.credito : 0)))}</b><span>${dest === 'abater' ? 'fica na notinha' : 'total (crédito vai para o próximo pedido)'}</span></div></div>
+          <p class="note">Digite quantos peixes morreram na chegada. O app calcula o crédito pelo preço cobrado e mostra como fica a nota do pedido.</p>
+          <div class="kpis"><div><b>R$ ${fmt(e.totais.total)}</b><span>total do pedido</span></div><div><b style="color:var(--bad,#ef6b6b)">− R$ ${fmt(calc.credito)}</b><span>mortalidade (${fmtInt(calc.mortos)} peixes)</span></div><div><b style="color:var(--ok,#4cc58a)">R$ ${fmt(F.r2(e.totais.total - (dest === 'abater' ? calc.credito : 0)))}</b><span>${dest === 'abater' ? 'fica na nota do pedido' : 'total (crédito vai para o próximo pedido)'}</span></div></div>
           <div class="tablewrap"><table><thead><tr><th>Espécie</th><th class="n">Enviados</th><th class="n">R$ unit.</th><th class="n">Mortos</th></tr></thead><tbody>
           ${e.lines.map((l, i) => `<tr><td>${esc(l.nome || l.comum)}</td><td class="n">${fmtInt(l.peixes)}</td><td class="n">${fmt(l.preco)}</td><td class="n"><input type="number" min="0" max="${l.peixes}" data-dead="${i}" value="${mt[i] || ''}" aria-label="Mortos ${esc(l.comum)}" style="width:84px"></td></tr>`).join('')}</tbody></table></div>
           <p><b>Crédito: R$ ${fmt(calc.credito)}</b> <span class="note">(${fmtInt(calc.mortos)} peixes)</span></p>
           <div class="field"><label>O que fazer com o crédito</label>
             <label style="color:var(--fg)"><input type="radio" name="mdest" value="abater" ${dest === 'abater' ? 'checked' : ''}> Abater do saldo deste pedido</label>
             <label style="color:var(--fg)"><input type="radio" name="mdest" value="guardar" ${dest === 'guardar' ? 'checked' : ''}> Guardar como crédito para o próximo pedido do cliente</label></div>
-          <div class="row"><button type="button" class="primary" data-h="mortSave" data-id="${e.id}">Aplicar ajuste</button><button type="button" data-h="mortNota" data-id="${e.id}" ${calc.credito > 0 ? '' : 'disabled'}>Baixar notinha corrigida (.xlsx)</button></div>
+          <div class="row"><button type="button" class="primary" data-h="mortSave" data-id="${e.id}">Aplicar ajuste</button><button type="button" data-h="mortNota" data-id="${e.id}" ${calc.credito > 0 ? '' : 'disabled'}>Baixar nota do pedido corrigida (.xlsx)</button></div>
           <p class="note" id="mortMsg" role="status">${e.mort && e.mort.credito ? `Ajuste aplicado: crédito de R$ ${fmt(e.mort.credito)} (${e.mort.destino === 'guardar' ? 'guardado para o próximo pedido' : 'abatido do saldo'}).` : ''}</p>
         </div>
       </div></section>`;
@@ -101,7 +101,7 @@
     if (lx && S.view === 'hist') {
       const LX = store.get('histLixo', []), it = LX[+lx.dataset.lixo]; if (!it) return;
       if (S.hist.some(z => z.id === it.e.id)) { PP.toast('Este pedido já está no histórico.'); }
-      else { S.hist.push(it.e); S.hist.sort((a, b) => (a.ts || 0) - (b.ts || 0)); PP.saveHist(); PP.toast(`Pedido de ${(it.e.cliente || {}).nome || ''} restaurado no histórico. Abra-o e marque o embarque para voltar à programação.`, 'ok'); }
+      else { S.hist.push(it.e); S.hist.sort((a, b) => (a.ts || 0) - (b.ts || 0)); PP.saveHist(); PP.toast(`Pedido de ${(it.e.cliente || {}).nome || ''} restaurado no histórico. Abra-o e marque a programação para voltar.`, 'ok'); }
       LX.splice(+lx.dataset.lixo, 1); store.set('histLixo', LX); ST.lixoOpen = true; PP.renderClientes(); renderHist(); return;
     }
     const b = ev.target.closest('[data-h]'); if (!b || S.view !== 'hist') return;
@@ -396,7 +396,7 @@
         <td><select data-lf="status" aria-label="Situação ${i + 1}" class="st-${l.status}">${stOpts(l.status)}</select></td>
         <td><input type="date" data-lf="chegou" value="${esc(l.chegou)}" aria-label="Chegou em ${i + 1}"></td>
         <td><input data-lf="obs" value="${esc(l.obs)}" style="min-width:150px" aria-label="Observação ${i + 1}"></td>
-        <td style="white-space:nowrap">${l.pedidoId && S.hist.some(x => x.id === l.pedidoId) ? `<button type="button" class="mv" data-em="mort" data-id="${l.id}" title="Registrar a mortalidade deste pedido e gerar a notinha corrigida" style="width:auto;padding:0 8px">Mortalidade</button> ` : ''}<button type="button" class="mv" data-em="up" data-id="${l.id}" aria-label="Subir">▲</button><button type="button" class="mv" data-em="down" data-id="${l.id}" aria-label="Descer">▼</button> <button type="button" class="mv" data-em="del" data-id="${l.id}" aria-label="Remover linha">✕</button></td></tr>`).join('')}</tbody></table></div>
+        <td style="white-space:nowrap">${l.pedidoId && S.hist.some(x => x.id === l.pedidoId) ? `<button type="button" class="mv" data-em="mort" data-id="${l.id}" title="Registrar a mortalidade deste pedido e gerar a nota do pedido corrigida" style="width:auto;padding:0 8px">Mortalidade</button> ` : ''}<button type="button" class="mv" data-em="up" data-id="${l.id}" aria-label="Subir">▲</button><button type="button" class="mv" data-em="down" data-id="${l.id}" aria-label="Descer">▼</button> <button type="button" class="mv" data-em="del" data-id="${l.id}" aria-label="Remover linha">✕</button></td></tr>`).join('')}</tbody></table></div>
       <datalist id="emClis">${S.clientes.map(c => `<option value="${esc(c.nome)}">`).join('')}</datalist>
       <div class="row"><button type="button" data-em="add">+ Linha</button><span class="note">Tudo é editável. Peso e dimensão se preenchem sozinhos pelas caixas (${S.cfg.valores.kgCaixa} kg por caixa; muda em Configurações); escreva por cima para mudar só naquela linha. Aeroporto e cidade ficam guardados no cadastro do cliente.</span></div><p class="note" id="emMsg" role="status"></p></section>`;
     if (PP.assist) h += PP.assist.embHTML(e);
@@ -417,7 +417,7 @@
     const tb = ev.target.closest('[data-emtab]'); if (tb && S.view === 'embarque') { ST.emb.tab = tb.dataset.emtab; renderEmb(); return; }
     const b = ev.target.closest('[data-em]'); if (!b || S.view !== 'embarque') return;
     const k = b.dataset.em, e = curEmb(), idx = e ? e.linhas.findIndex(l => l.id === b.dataset.id) : -1;
-    if (k === 'new') { const v = S.embarques.find(z => z.saida === F.todayISO() && !z.linhas.length); if (v) { ST.emb.sel = v.id; renderEmb(); msg('emMsg', 'Já existe um embarque vazio para hoje: abri ele. Mude a data em "Saída do aquário" se for outro dia.'); } else { newEmb(F.todayISO()); renderEmb(); } return; }
+    if (k === 'new') { const v = S.embarques.find(z => z.saida === F.todayISO() && !z.linhas.length); if (v) { ST.emb.sel = v.id; renderEmb(); msg('emMsg', 'Já existe uma programação vazia para hoje: abri ela. Mude a data em "Saída do aquário" se for outro dia.'); } else { newEmb(F.todayISO()); renderEmb(); } return; }
     if (k === 'restemb') { const L = store.get('embLixo', []), it = L.shift(); if (it) { if (!S.embarques.some(z => z.id === it.e.id)) S.embarques.push(it.e); store.set('embLixo', L); ST.emb.sel = it.e.id; saveEmb(); renderEmb(); msg('emMsg', 'Embarque de ' + dBR(it.e.saida) + ' restaurado.'); } return; }
     if (k === 'limpar') {
       const vz = S.embarques.filter(z => !z.linhas.length), grupos = {}; S.embarques.filter(z => z.linhas.length).forEach(z => { (grupos[z.saida] = grupos[z.saida] || []).push(z); });
@@ -431,7 +431,7 @@
     }
     if (!e) return;
     if (k === 'mort') { const l = e.linhas[idx]; if (l && l.pedidoId) { ST.hist.open = l.pedidoId; ST.hist.q = ''; ST.hist.st = ''; PP.go('hist'); setTimeout(() => { const d = $('hdet'); if (d) d.scrollIntoView({ behavior: 'smooth' }); }, 120); } return; }
-    if (k === 'dup') { const c = JSON.parse(JSON.stringify(e)); c.id = uid(); c.saida = F.addDays(e.saida, 7); c.chegadaPrev = F.addDays(c.saida, 1); c.linhas.forEach(l => { l.id = uid(); l.status = 'programado'; l.chegou = ''; l.awb = ''; l.obs = ''; l.pedidoId = ''; }); S.embarques.push(c); ST.emb.sel = c.id; saveEmb(); renderEmb(); msg('emMsg', 'Embarque duplicado para daí a 7 dias, sem situação e conhecimento.'); }
+    if (k === 'dup') { const c = JSON.parse(JSON.stringify(e)); c.id = uid(); c.saida = F.addDays(e.saida, 7); c.chegadaPrev = F.addDays(c.saida, 1); c.linhas.forEach(l => { l.id = uid(); l.status = 'programado'; l.chegou = ''; l.awb = ''; l.obs = ''; l.pedidoId = ''; }); S.embarques.push(c); ST.emb.sel = c.id; saveEmb(); renderEmb(); msg('emMsg', 'Programação duplicada para daí a 7 dias, sem situação e conhecimento.'); }
     else if (k === 'delemb') {
       const n = e.linhas.length;
       if (!confirm(`Excluir a programação de ${dBR(e.saida)}${n ? ', com ' + n + ' cliente(s)' : ' (está vazia)'}?\n\nOs pedidos continuam no Histórico. Dá para desfazer logo depois.`)) return;
@@ -443,7 +443,7 @@
     else if (k === 'del' && idx >= 0) { e.linhas.splice(idx, 1); saveEmb(); renderEmb(); }
     else if ((k === 'up' || k === 'down') && idx >= 0) { const j = idx + (k === 'up' ? -1 : 1); if (j >= 0 && j < e.linhas.length) { e.linhas.splice(j, 0, e.linhas.splice(idx, 1)[0]); saveEmb(); renderEmb(); } }
     else if (k === 'docx') {
-      if (!e.linhas.length) { msg('emMsg', 'Adicione clientes ao embarque primeiro.'); return; }
+      if (!e.linhas.length) { msg('emMsg', 'Adicione clientes à programação primeiro.'); return; }
       const bytes = await PP.docs.embarqueDocx({ titulo: e.titulo, saidaISO: e.saida, linhas: e.linhas.map(l => ({ cliente: l.cliente, aero: l.aero, caixas: l.caixas || 0, peso: l.peso, dim: l.dim })), kg: S.cfg.valores.kgCaixa, dimPadrao: S.cfg.embarque.dim });
       saveBlob(`PROGRAMACAO_EMBARQUES_${e.saida}.docx`, new Blob([bytes], { type: PP.MIME.docx }));
     }
@@ -485,7 +485,7 @@
   }
   /* tira o pedido da programação (usado ao apagar o pedido) */
   function embTira(pedidoId) { let mudou = false; (S.embarques || []).forEach(e => { const n = e.linhas.length; e.linhas = e.linhas.filter(l => l.pedidoId !== pedidoId); if (e.linhas.length !== n) mudou = true; }); if (mudou) saveEmb(); }
-  /* muda o embarque do pedido para a data escolhida (cria o embarque se não existir); peso, AWB e frete da linha vão junto */
+  /* muda a programação do pedido para a data escolhida (cria a programação se não existir); peso, AWB e frete da linha vão junto */
   function embMove(entry, saida) {
     if (!saida) return null;
     const old = embDoPedido(entry.id); if (old && old.saida === saida) { embColoca(entry, old.id); return old; }

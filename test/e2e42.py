@@ -50,7 +50,7 @@ with sync_playwright() as p:
     ok(pg.locator('#hMort').count()==0,'"Nenhum teve mortalidade" limpa a faixa')
     # assistente (volta pendência para testar)
     pg.evaluate("PP.S.hist.forEach(h=>{if(h.id!=='hB'){h.mortOk=0}});PP.saveHist()"); pg.click('#nav button[data-view="hoje"]'); pg.wait_for_timeout(600)
-    ok('Teve mortalidade no embarque' in pg.inner_text('#vHoje'),'tela Hoje avisa: "Teve mortalidade no embarque de ...?"')
+    ok('Teve mortalidade na programação' in pg.inner_text('#vHoje'),'tela Hoje avisa: "Teve mortalidade na programação de ...?"')
     pg.screenshot(path=OUT+'hoje.png')
     # nacional: botão
     pg.click('#nav button[data-view="pedido"]'); pg.wait_for_timeout(400)

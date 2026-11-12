@@ -5,7 +5,7 @@
   const G = [
     ['emp', 'Empresa e documentos', 'Quem emite os documentos', ['Empresa', 'Veterinária']],
     ['val', 'Valores e numeração', 'GTA, embalagem, prazo e números', ['Valores padrão', 'Numeração']],
-    ['nom', 'Nomes e etiquetas', 'Como as espécies saem nos documentos', ['Nomes nos documentos', 'Nomes na notinha', 'Etiquetas', 'Programação']],
+    ['nom', 'Nomes e etiquetas', 'Como as espécies saem nos documentos', ['Nomes nos documentos', 'Nomes na nota do pedido', 'Etiquetas', 'Programação']],
     ['stock', 'Stocklist', 'Planilha de estoque e preços', ['Stocklist']],
     ['apa', 'Aparência e assistente', 'Saudação e cardinal', ['Aparência', 'Menu lateral']],
     ['dad', 'Dados e nuvem', 'Backup, nuvem e login', ['Backup', 'Cópias', 'Nuvem']],

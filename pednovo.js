@@ -109,7 +109,7 @@
       if (r.cli) { const hit = (S.clientes || []).find(c => UP(c.nome) === UP(r.cli) || norm(c.nome) === norm(r.cli)); PN.cli = hit ? hit.nome : r.cli; }
       if (r.data) PN.data = r.data; if (r.inv) PN.inv = r.inv; if (r.gta != null) PN.gta = String(r.gta);
       PN.itens = r.itens; const t = calc();
-      PN.msg = `Li a invoice (${nome}): ${r.itens.length} linha(s), ${t.caixas} caixa(s), peixes R$ ${fmt(t.valor)}. Confira os dados abaixo. Atestado e embalagem não vêm na invoice: preencha se quiser que o total bata com a notinha.`;
+      PN.msg = `Li a invoice (${nome}): ${r.itens.length} linha(s), ${t.caixas} caixa(s), peixes R$ ${fmt(t.valor)}. Confira os dados abaixo. Atestado e embalagem não vêm na invoice: preencha se quiser que o total bata com a nota do pedido.`;
     } catch (e) { PN.msg = 'Não consegui ler esta invoice: ' + (e.message || e); }
     rerender();
   }

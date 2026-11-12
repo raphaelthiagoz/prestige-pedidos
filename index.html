@@ -42,7 +42,7 @@
       <div class="field" style="flex:0 1 92px"><label for="atNum">Atestado nº</label><input id="atNum" type="number" min="0"></div>
       <div class="field" style="flex:0 1 128px"><label for="nf">Nota Fiscal nº</label><input id="nf" placeholder="000008910"></div>
       <div class="field" style="flex:0 1 150px"><label for="data">Data do pedido</label><input id="data" type="date"></div>
-      <div class="field" style="flex:0 1 158px"><label for="embData">Embarque (saída)</label><input id="embData" type="date"><span class="note" id="embDataNt" style="font-size:.72rem;margin-top:2px">Sem embarque marcado.</span></div>
+      <div class="field" style="flex:0 1 158px"><label for="embData">Programação (saída)</label><input id="embData" type="date"><span class="note" id="embDataNt" style="font-size:.72rem;margin-top:2px">Sem programação marcada.</span></div>
     </div>
     <div class="row" id="cliEdit" hidden>
       <div class="field grow"><label for="cliNome">Nome do cliente</label><input id="cliNome"></div>
@@ -87,7 +87,7 @@
     </div>
     <div class="empty" id="confEmpty">Cole um pedido e clique em "Ler pedido".</div>
     <div class="sum" id="sum"></div>
-    <h2 class="sub">Valores da notinha final</h2>
+    <h2 class="sub">Valores da nota do pedido</h2>
     <div class="row">
       <div class="field" style="flex:0 1 160px"><label for="dia">Embarque chega</label><select id="dia"><option>SEGUNDA-FEIRA</option><option>TERÇA-FEIRA</option><option>QUARTA-FEIRA</option><option selected>QUINTA-FEIRA</option><option>SEXTA-FEIRA</option></select></div>
       <div class="field" style="flex:0 1 190px"><label for="vGta"><input id="gtaAuto" type="checkbox" checked> GTA automática (R$)</label><input id="vGta" type="number" step="0.01" readonly></div>
@@ -156,7 +156,7 @@
         <textarea id="apDoc" spellcheck="false" style="min-height:90px"></textarea>
       </div>
       <div class="block">
-        <h3>Nomes na notinha</h3>
+        <h3>Nomes na nota do pedido</h3>
         <p class="note">Mesmo formato. Corydoras sem troca saem como CORY + epíteto.</p>
         <textarea id="apNota" spellcheck="false" style="min-height:90px"></textarea>
       </div>

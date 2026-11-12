@@ -137,8 +137,8 @@
       const num = (ref, st, v) => (v === null || v === undefined || v === '' ? `<c r="${ref}" s="${st}"/>` : `<c r="${ref}" s="${st}"><v>${v}</v></c>`);
       const fml = (ref, st, f, v) => `<c r="${ref}" s="${st}"><f>${f}</f><v>${v}</v></c>`;
       const emp = (ref, st) => `<c r="${ref}" s="${st}"/>`;
-      const rowOf = n => { const m = s.match(new RegExp(`<row r="${n}"[\\s\\S]*?</row>`)); if (!m) throw new Error('Modelo da notinha inesperado (linha ' + n + ')'); return m[0]; };
-      const setCell = (xml, ref, cell) => { const re = new RegExp(`<c r="${ref}"[^>]*?(?:/>|>[\\s\\S]*?</c>)`); if (!re.test(xml)) throw new Error('Modelo da notinha inesperado (' + ref + ')'); return xml.replace(re, cell); };
+      const rowOf = n => { const m = s.match(new RegExp(`<row r="${n}"[\\s\\S]*?</row>`)); if (!m) throw new Error('Modelo da nota do pedido inesperado (linha ' + n + ')'); return m[0]; };
+      const setCell = (xml, ref, cell) => { const re = new RegExp(`<c r="${ref}"[^>]*?(?:/>|>[\\s\\S]*?</c>)`); if (!re.test(xml)) throw new Error('Modelo da nota do pedido inesperado (' + ref + ')'); return xml.replace(re, cell); };
       const attrs = n => rowOf(n).match(/^<row ([^>]*)>/)[1].replace(/\br="\d+"/, '').trim();
       const R = (n, a, cells) => `<row r="${n}" ${a}>${cells.join('')}</row>`;
       const serial = iso => { const [y, m, d] = iso.split('-').map(Number); return Math.round((Date.UTC(y, m - 1, d) - Date.UTC(1899, 11, 30)) / 86400000); };

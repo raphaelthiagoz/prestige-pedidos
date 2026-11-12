@@ -15,7 +15,7 @@ with sync_playwright() as p:
     ok(pg.locator('[data-em=mort]').count()==1,'botão Mortalidade só na linha ligada a um pedido (%d)'%pg.locator('[data-em=mort]').count())
     pg.click('[data-em=mort]'); pg.wait_for_timeout(500)
     ok(pg.evaluate("PP.S.view")=='hist','abre o Histórico')
-    t=pg.inner_text('#vHist'); ok('mortalidade' in t.lower() and 'Baixar notinha corrigida' in t,'mostra o ajuste de chegada (mortalidade) do pedido')
+    t=pg.inner_text('#vHist'); ok('mortalidade' in t.lower() and 'Baixar nota do pedido corrigida' in t,'mostra o ajuste de chegada (mortalidade) do pedido')
     ok(pg.evaluate("PP.extra.ST.hist.open")==pid,'abre exatamente o pedido da linha')
     ok(not errs,'sem erros JS %s'%errs); b.close()
 print('FALHAS:',fails or 'nenhuma')

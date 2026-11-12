@@ -438,3 +438,17 @@ PUBLICAÇÃO AUTOMÁTICA (arquivos novos no projeto)
 - .gitignore, publicar.sh e netlify.toml: com o projeto no GitHub, o Netlify monta a pasta "dist" e publica
   sozinho a cada envio. Acaba o arrastar zip. A pasta dist leva tudo da raiz, menos test/, node_modules/, out/
   e os arquivos de desenvolvimento.
+
+==================================================
+v28.8 — UMA PALAVRA SÓ PARA CADA COISA
+==================================================
+Os nomes ficaram iguais em todas as telas:
+  - PROGRAMAÇÃO = o dia de voo com os clientes (antes: "embarque", "programação de embarques", "embarque do dia").
+  - "Embarque" ficou só para o que acontece no dia ("Embarque chega hoje às 14h").
+  - NOTA DO PEDIDO = o papel que sai do pedido nacional (antes: "notinha", "notinha final").
+    Usei "nota do pedido" para não confundir com "Nota Fiscal".
+  - Orçamento e Invoice continuam como eram.
+Só mudou texto: nada de dado, número ou arquivo foi mexido.
+Documentos oficiais (atestado, "Programação de embarques.docx", mensagem
+"EMBARQUE CHEGARÁ...") ficaram como estavam.
+Para voltar como antes: no Netlify, Deploys -> abrir o deploy anterior -> Publish deploy.

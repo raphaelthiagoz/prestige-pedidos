@@ -13,7 +13,7 @@ with sync_playwright() as p:
     ok(pg.locator('#config .cnav button').count()==6,'6 abas nas configurações')
     names=[t.strip() for t in pg.locator('#config .cnav button b').all_inner_texts()]
     ok(names==['Empresa e documentos','Valores e numeração','Nomes e etiquetas','Stocklist','Aparência e assistente','Dados e nuvem'],'nomes das abas: %s'%names)
-    exp={'emp':['Empresa','Veterinária do atestado'],'val':['Valores padrão','Numeração e prazo'],'nom':['Nomes nos documentos','Nomes na notinha','Programação de embarques','Etiquetas'],'stock':['Stocklist'],'apa':['Aparência e assistente'],'dad':['Backup','Nuvem (vários computadores)']}
+    exp={'emp':['Empresa','Veterinária do atestado'],'val':['Valores padrão','Numeração e prazo'],'nom':['Nomes nos documentos','Nomes na nota do pedido','Programação de embarques','Etiquetas'],'stock':['Stocklist'],'apa':['Aparência e assistente','Menu lateral'],'dad':['Backup','Cópias automáticas (voltar como estava)','Nuvem (vários computadores)']}
     for k,v in exp.items():
         pg.click(f'#config [data-cgo="{k}"]'); pg.wait_for_timeout(120)
         vis=[t.strip() for t in pg.locator('#config .block:not(.cgone) h3').all_inner_texts()]
