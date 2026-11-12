@@ -452,3 +452,18 @@ Só mudou texto: nada de dado, número ou arquivo foi mexido.
 Documentos oficiais (atestado, "Programação de embarques.docx", mensagem
 "EMBARQUE CHEGARÁ...") ficaram como estavam.
 Para voltar como antes: no Netlify, Deploys -> abrir o deploy anterior -> Publish deploy.
+
+==================================================
+v28.9 — AVISO DE DESTINO NA PROGRAMAÇÃO DE VOOS
+==================================================
+O sistema agora confere o aeroporto de cada cliente antes de você mandar ao despachante:
+  1. Ao digitar o aeroporto, se for diferente do cadastro do cliente (ou do que ele usou nas
+     programações anteriores), aparece um aviso amarelo: "No cadastro dele o aeroporto é CNF e agora
+     está GRU", com os botões: Trocar para CNF / Está certo: é GRU hoje / Está certo e atualizar o cadastro.
+  2. Ao baixar o .docx ou imprimir a programação, se ainda houver cliente com destino para conferir,
+     o sistema pergunta antes (mostra quem e qual era o esperado). Cancelar = voltar e corrigir.
+  3. Cliente sem aeroporto no cadastro e sem histórico: o sistema pergunta uma vez "Confirma que o destino
+     de X é GRU?" e guarda a resposta. Aeroporto vazio também avisa.
+IMPORTANTE: antes, o aeroporto digitado na programação ia sozinho para o cadastro do cliente, e por isso
+um erro se repetia sem ninguém notar. Agora o cadastro só muda quando você confirma no aviso.
+O seletor da programação passou a se chamar "Programação" (antes "Embarque").

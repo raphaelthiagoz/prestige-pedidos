@@ -149,5 +149,30 @@
     o.ok = !!(o.mawb || o.lpcoIbama || o.lpcoMapa || o.due);
     return o;
   }
-  return { parseEmailOcr, matchEmailRowOcr, diaTxt, DEF_MODELO_ANTIGO, parseExpMail, parseEmail, matchEmailRow, parseCteItems, matchLinha, totalOf, msgFor, money, parseMoney, r2, up, DEF_MODELO };
+
+  /* Confere o aeroporto de cada cliente de uma programação: cadastro do cliente primeiro; sem cadastro, o que ele
+     mais usou nas outras programações. Devolve só o que precisa de atenção (diferente, novo ou vazio). */
+  function checkDestino(emb, embarques, clientes) {
+    const U = x => String(x == null ? '' : x).trim().toUpperCase(), out = [];
+    ((emb && emb.linhas) || []).forEach(l => {
+      const cli = U(l.cliente); if (!cli) return;
+      const aero = U(l.aero), c = (clientes || []).find(x => U(x.nome) === cli) || null;
+      if (!aero) { out.push({ id: l.id, cliente: l.cliente, aero: '', tipo: 'vazio', esperado: c ? U(c.aero) : '' }); return; }
+      if (aero.length < 3) return;                              // ainda digitando
+      if (U(l.aeroOk) === aero) return;                       // você já confirmou este destino nesta linha
+      const cont = {}; let ult = {};
+      (embarques || []).forEach(e => (e.linhas || []).forEach(z => {
+        if (z.id === l.id || U(z.cliente) !== cli || !U(z.aero)) return;
+        const a = U(z.aero); cont[a] = (cont[a] || 0) + 1; ult[a] = Math.max(ult[a] || 0, +String(e.saida || '').replace(/\D/g, '') || 0);
+      }));
+      const cad = c ? U(c.aero) : '';
+      let esperado = cad, fonte = 'cadastro';
+      if (!esperado) { const ks = Object.keys(cont).sort((a, b) => cont[b] - cont[a] || ult[b] - ult[a]); esperado = ks[0] || ''; fonte = 'historico'; }
+      if (!esperado) { out.push({ id: l.id, cliente: l.cliente, aero, tipo: 'novo', clienteNoCadastro: !!c }); return; }
+      if (esperado === aero) return;
+      out.push({ id: l.id, cliente: l.cliente, aero, tipo: 'diff', esperado, fonte, n: cont[esperado] || 0, clienteNoCadastro: !!c });
+    });
+    return out;
+  }
+  return { checkDestino, parseEmailOcr, matchEmailRowOcr, diaTxt, DEF_MODELO_ANTIGO, parseExpMail, parseEmail, matchEmailRow, parseCteItems, matchLinha, totalOf, msgFor, money, parseMoney, r2, up, DEF_MODELO };
 });

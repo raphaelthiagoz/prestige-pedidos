@@ -378,12 +378,12 @@
       if (sujo || LXE.length) h += `<div class="row" style="align-items:center;margin:6px 0 10px">${sujo ? '<button type="button" data-em="limpar">Limpar programações repetidas e vazias</button>' : ''}${LXE.length ? '<button type="button" data-em="restemb">Desfazer a última exclusão</button>' : ''}</div>`; }
     if (!e) { $('vEmbarque').innerHTML = h + '<p class="empty">Nenhuma programação ainda. Clique em "+ Nova programação", ou em "Puxar pedidos do histórico" depois de criar um.</p></section>'; return; }
     const T = embTotals(e), stOpts = s => Object.entries(SITU).map(([k, v]) => `<option value="${k}" ${s === k ? 'selected' : ''}>${v}</option>`).join('');
-    h += `<div class="row" style="align-items:flex-end"><div class="field grow"><label for="emSel">Embarque</label><select id="emSel">${list.map(x => `<option value="${x.id}" ${x.id === e.id ? 'selected' : ''}>${esc(embLabel(x))}</option>`).join('')}</select></div>
+    h += `<div class="row" style="align-items:flex-end"><div class="field grow"><label for="emSel">Programação</label><select id="emSel">${list.map(x => `<option value="${x.id}" ${x.id === e.id ? 'selected' : ''}>${esc(embLabel(x))}</option>`).join('')}</select></div>
       <div class="field" style="flex:0 1 190px"><label for="emTit">Título</label><input id="emTit" data-ef="titulo" value="${esc(e.titulo)}"></div>
       <div class="field" style="flex:0 1 160px"><label for="emSai">Saída do aquário</label><input id="emSai" type="date" data-ef="saida" value="${e.saida}"></div>
       <div class="field" style="flex:0 1 160px"><label for="emCheg">Chegada prevista</label><input id="emCheg" type="date" data-ef="chegadaPrev" value="${e.chegadaPrev || ''}"></div></div>
       <div class="emYel" id="emYel">${esc(e.titulo)} – ${diaDe(e.saida).toUpperCase()} (${p2(+e.saida.slice(8))}/${e.saida.slice(5, 7)})</div>
-      <div class="kpis" id="emKpi"></div>
+      <div class="kpis" id="emKpi"></div><div id="emDest"></div>
       <div class="tablewrap"><table id="emTb"><thead><tr><th>#</th><th>Cliente</th><th>Aero</th><th>Cidade / UF</th><th class="n">Caixas</th><th>Peso bruto</th><th>Dimensão das caixas</th><th>Conhecimento (AWB)</th><th>Situação</th><th>Chegou em</th><th>Observação</th><th></th></tr></thead><tbody>
       ${e.linhas.map((l, i) => `<tr data-l="${l.id}"><td>${i + 1}</td>
         <td><input data-lf="cliente" value="${esc(l.cliente)}" aria-label="Cliente ${i + 1}" style="min-width:150px" list="emClis"></td>
@@ -402,9 +402,28 @@
     if (PP.assist) h += PP.assist.embHTML(e);
     $('vEmbarque').innerHTML = h; embKpi();
   }
+  /* ---------- confere o aeroporto de cada cliente (cadastro / histórico) antes de mandar para o despachante ---------- */
+  const destProblemas = e => (window.FreteCore && e) ? window.FreteCore.checkDestino(e, S.embarques || [], S.clientes || []) : [];
+  function embDest() {
+    const el = $('emDest'), e = curEmb(); if (!el || !e) return;
+    const P = destProblemas(e);
+    if (!P.length) { el.innerHTML = ''; return; }
+    el.innerHTML = '<div class="alert w" style="margin:10px 0">' + P.map(p => {
+      const B = (k, t, pri) => `<button type="button" ${pri ? 'class="primary"' : ''} data-em="${k}" data-id="${p.id}">${t}</button>`;
+      if (p.tipo === 'diff') return `<div style="margin:6px 0"><b>Confira o destino de ${esc(p.cliente)}.</b> ${p.fonte === 'cadastro' ? 'No cadastro dele o aeroporto é' : 'Nas programações anteriores' + (p.n > 1 ? ' (' + p.n + ' vezes)' : '') + ' ele foi para'} <b>${esc(p.esperado)}</b> e agora está <b>${esc(p.aero)}</b>.<div class="row" style="margin-top:6px">${B('dfix', 'Trocar para ' + esc(p.esperado), 1)}${B('dok', 'Está certo: é ' + esc(p.aero) + ' hoje')}${p.clienteNoCadastro ? B('dcad', 'Está certo e atualizar o cadastro') : ''}</div></div>`;
+      if (p.tipo === 'novo') return `<div style="margin:6px 0"><b>Confirma que o destino de ${esc(p.cliente)} é ${esc(p.aero)}?</b> Não tenho o aeroporto dele no cadastro nem nas programações anteriores.<div class="row" style="margin-top:6px">${B('dconf', 'Sim, confirmar' + (p.clienteNoCadastro ? ' e guardar no cadastro' : ''), 1)}</div></div>`;
+      return `<div style="margin:6px 0"><b>Falta o aeroporto de ${esc(p.cliente)}.</b> ${p.esperado ? 'No cadastro dele é <b>' + esc(p.esperado) + '</b>.' : 'Preencha a coluna Aero antes de mandar.'}${p.esperado ? '<div class="row" style="margin-top:6px">' + B('dfix', 'Preencher com ' + esc(p.esperado), 1) + '</div>' : ''}</div>`;
+    }).join('') + '</div>';
+  }
+  function destOk(e) {
+    const P = destProblemas(e); if (!P.length) return true;
+    const L = P.map(p => '• ' + p.cliente + ': ' + (p.aero || 'sem aeroporto') + (p.tipo === 'diff' ? ' (esperado ' + p.esperado + ')' : p.tipo === 'novo' ? ' (destino ainda não confirmado)' : '')).join('\n');
+    return confirm('Atenção: ' + P.length + ' cliente(s) com destino para conferir antes de mandar ao despachante:\n\n' + L + '\n\nGerar mesmo assim?\n(Cancelar = voltar e corrigir)');
+  }
   function embKpi() {
     const e = curEmb(); if (!e || !$('emKpi')) return; const T = embTotals(e);
     $('emKpi').innerHTML = `<div><b>${T.n}</b><span>clientes</span></div><div><b>${T.cx}</b><span>caixas</span></div><div><b>${T.kg} kg</b><span>peso bruto</span></div><div><b>${T.chegou} de ${T.n}</b><span>chegaram</span></div>${T.prob ? `<div><b style="color:var(--bad)">${T.prob}</b><span>com problema</span></div>` : ''}`;
+    embDest();
     if ($('emYel')) $('emYel').textContent = `${e.titulo} – ${diaDe(e.saida).toUpperCase()} (${p2(+e.saida.slice(8))}/${e.saida.slice(5, 7)})`;
   }
   function pullHist(e) {
@@ -418,6 +437,14 @@
     const b = ev.target.closest('[data-em]'); if (!b || S.view !== 'embarque') return;
     const k = b.dataset.em, e = curEmb(), idx = e ? e.linhas.findIndex(l => l.id === b.dataset.id) : -1;
     if (k === 'new') { const v = S.embarques.find(z => z.saida === F.todayISO() && !z.linhas.length); if (v) { ST.emb.sel = v.id; renderEmb(); msg('emMsg', 'Já existe uma programação vazia para hoje: abri ela. Mude a data em "Saída do aquário" se for outro dia.'); } else { newEmb(F.todayISO()); renderEmb(); } return; }
+    if (['dfix', 'dok', 'dcad', 'dconf'].includes(k) && e && idx >= 0) {
+      const lin = e.linhas[idx], U = x => String(x || '').trim().toUpperCase(), c = S.clientes.find(c => PP.up(c.nome) === PP.up(lin.cliente)), p = destProblemas(e).find(x => x.id === lin.id);
+      if (k === 'dfix') { if (p && p.esperado) lin.aero = p.esperado; }
+      else if (k === 'dok') lin.aeroOk = U(lin.aero);
+      else if (k === 'dcad') { if (c) { c.aero = U(lin.aero); PP.saveClientes(); } lin.aeroOk = U(lin.aero); }
+      else if (c && !c.aero) { c.aero = U(lin.aero); PP.saveClientes(); lin.aeroOk = U(lin.aero); } else lin.aeroOk = U(lin.aero);
+      saveEmb(); renderEmb(); return;
+    }
     if (k === 'restemb') { const L = store.get('embLixo', []), it = L.shift(); if (it) { if (!S.embarques.some(z => z.id === it.e.id)) S.embarques.push(it.e); store.set('embLixo', L); ST.emb.sel = it.e.id; saveEmb(); renderEmb(); msg('emMsg', 'Embarque de ' + dBR(it.e.saida) + ' restaurado.'); } return; }
     if (k === 'limpar') {
       const vz = S.embarques.filter(z => !z.linhas.length), grupos = {}; S.embarques.filter(z => z.linhas.length).forEach(z => { (grupos[z.saida] = grupos[z.saida] || []).push(z); });
@@ -444,10 +471,12 @@
     else if ((k === 'up' || k === 'down') && idx >= 0) { const j = idx + (k === 'up' ? -1 : 1); if (j >= 0 && j < e.linhas.length) { e.linhas.splice(j, 0, e.linhas.splice(idx, 1)[0]); saveEmb(); renderEmb(); } }
     else if (k === 'docx') {
       if (!e.linhas.length) { msg('emMsg', 'Adicione clientes à programação primeiro.'); return; }
+      if (!destOk(e)) return;
       const bytes = await PP.docs.embarqueDocx({ titulo: e.titulo, saidaISO: e.saida, linhas: e.linhas.map(l => ({ cliente: l.cliente, aero: l.aero, caixas: l.caixas || 0, peso: l.peso, dim: l.dim })), kg: S.cfg.valores.kgCaixa, dimPadrao: S.cfg.embarque.dim });
       saveBlob(`PROGRAMACAO_EMBARQUES_${e.saida}.docx`, new Blob([bytes], { type: PP.MIME.docx }));
     }
     else if (k === 'print') {
+      if (!destOk(e)) return;
       const T = embTotals(e);
       PP.printHTML(`<h2>Programação de embarques – ${esc(e.titulo)} – ${diaDe(e.saida)} (${dBR(e.saida)})</h2><table><thead><tr><th>#</th><th>Cliente</th><th>Aero</th><th>Cidade</th><th>Cx</th><th>Peso</th><th>Dimensão</th><th>AWB</th><th>Situação</th><th>Chegou</th><th>Obs.</th></tr></thead><tbody>${e.linhas.map((l, i) => `<tr><td>${i + 1}</td><td>${esc(l.cliente)}</td><td>${esc(l.aero)}</td><td>${esc(l.cidade)}</td><td>${l.caixas || 0}</td><td>${esc(pesoOf(l))}</td><td>${esc(dimOf(l))}</td><td>${esc(l.awb)}</td><td>${SITU[l.status]}</td><td>${dBR(l.chegou)}</td><td>${esc(l.obs)}</td></tr>`).join('')}<tr><td colspan="4"><b>Total</b></td><td><b>${T.cx}</b></td><td><b>${T.kg} KG</b></td><td colspan="5"></td></tr></tbody></table>`);
     }
@@ -459,7 +488,7 @@
     if (f === 'caixas') { l.caixas = Math.max(0, parseInt(t.value, 10) || 0); tr.querySelector('[data-lf=peso]').placeholder = `${l.caixas * S.cfg.valores.kgCaixa} KG`; tr.querySelector('[data-lf=dim]').placeholder = dimOf(Object.assign({}, l, { dim: '' })); }
     else l[f] = (f === 'cliente' || f === 'aero') ? t.value.toUpperCase() : t.value;
     if (f === 'cliente') { const c = S.clientes.find(c => PP.up(c.nome) === PP.up(l.cliente)); if (c) { if (!l.aero && c.aero) { l.aero = c.aero; tr.querySelector('[data-lf=aero]').value = c.aero; } if (!l.cidade && c.cidade) { l.cidade = c.cidade; tr.querySelector('[data-lf=cidade]').value = c.cidade; } } }
-    if ((f === 'aero' || f === 'cidade') && l.cliente) { const c = S.clientes.find(c => PP.up(c.nome) === PP.up(l.cliente)); if (c) { c[f] = t.value; if (f === 'aero') c.aero = t.value.toUpperCase(); PP.saveClientes(); } }
+    if ((f === 'aero' || f === 'cidade') && l.cliente) { const c = S.clientes.find(c => PP.up(c.nome) === PP.up(l.cliente)); if (c && f === 'cidade') { c.cidade = t.value; PP.saveClientes(); } }   /* o aeroporto só vai para o cadastro quando você confirma no aviso (antes ia sozinho e escondia o erro) */
     saveEmb(); embKpi();
   });
   document.addEventListener('change', ev => {

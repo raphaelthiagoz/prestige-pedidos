@@ -17,7 +17,7 @@ Segue chave Pix, deposito para Dmarcos:
 """
 errs=[]
 with sync_playwright() as p:
-    b=p.chromium.launch(); pg=b.new_context(viewport={'width':1400,'height':1000},service_workers='block').new_page()
+    b=p.chromium.launch(); pg=b.new_context(viewport={'width':1400,'height':1000},service_workers='block').new_page(); pg.clock.set_fixed_time('2026-11-11T10:00:00-04:00')
     pg.on('pageerror',lambda e:errs.append(str(e)))
     pg.goto('http://localhost:8765/index.html'); pg.wait_for_timeout(500); pg.evaluate("sessionStorage.setItem('pp.asShown','1')"); pg.evaluate("document.getElementById('config').open=false")
     pg.evaluate("""()=>{

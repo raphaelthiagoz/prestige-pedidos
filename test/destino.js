@@ -1,0 +1,17 @@
+const FC = require('../fretecore.js'); let bad = 0; const ok = (c, m) => { console.log((c ? '  ok  ' : '  FAIL ') + m); if (!c) bad++; };
+const L = (id, cliente, aero) => ({ id, cliente, aero });
+const clis = [{ nome: 'MICHELE APARECIDA', aero: 'CNF' }, { nome: 'LUIZ DUTRA', aero: '' }, { nome: 'SEM CADASTRO AERO' }];
+const hist = [{ saida: '2026-10-01', linhas: [L('h1', 'LUIZ DUTRA', 'SLZ'), L('h2', 'MICHELE APARECIDA', 'CNF')] }, { saida: '2026-10-08', linhas: [L('h3', 'LUIZ DUTRA', 'SLZ'), L('h4', 'LUIZ DUTRA', 'BEL')] }];
+const emb = linhas => ({ id: 'e', saida: '2026-11-12', linhas });
+let r = FC.checkDestino(emb([L('a', 'Michele Aparecida', 'gru')]), hist, clis);
+ok(r.length === 1 && r[0].tipo === 'diff' && r[0].esperado === 'CNF' && r[0].fonte === 'cadastro', 'Michele em GRU, cadastro CNF: avisa e sugere CNF');
+r = FC.checkDestino(emb([L('a', 'MICHELE APARECIDA', 'CNF')]), hist, clis); ok(r.length === 0, 'Michele em CNF: sem aviso');
+r = FC.checkDestino(emb([L('a', 'LUIZ DUTRA', 'GRU')]), hist, clis); ok(r.length === 1 && r[0].esperado === 'SLZ' && r[0].fonte === 'historico' && r[0].n === 2, 'sem aeroporto no cadastro: usa o histórico (SLZ, 2 vezes)');
+r = FC.checkDestino(emb([L('a', 'LUIZ DUTRA', 'SLZ')]), hist, clis); ok(r.length === 0, 'destino igual ao histórico: sem aviso');
+r = FC.checkDestino(emb([L('a', 'SEM CADASTRO AERO', 'GRU')]), hist, clis); ok(r.length === 1 && r[0].tipo === 'novo', 'cliente sem cadastro de aeroporto e sem histórico: pede confirmação');
+r = FC.checkDestino(emb([Object.assign(L('a', 'MICHELE APARECIDA', 'GRU'), { aeroOk: 'GRU' })]), hist, clis); ok(r.length === 0, 'depois de confirmado ("está certo"), não avisa de novo');
+r = FC.checkDestino(emb([Object.assign(L('a', 'MICHELE APARECIDA', 'GRU'), { aeroOk: 'GRU' }), L('b', 'MICHELE APARECIDA', 'POA')]), hist, clis); ok(r.length === 1 && r[0].id === 'b', 'confirmar GRU não esconde um POA depois');
+r = FC.checkDestino(emb([L('a', 'SEM CADASTRO AERO', '')]), hist, clis); ok(r.length === 1 && r[0].tipo === 'vazio', 'aeroporto vazio e sem cadastro: avisa que falta');
+r = FC.checkDestino(emb([L('a', 'MICHELE APARECIDA', '')]), hist, clis); ok(r.length === 1 && r[0].tipo === 'vazio' && r[0].esperado === 'CNF', 'aeroporto vazio com cadastro: avisa e sugere preencher com CNF');
+r = FC.checkDestino(emb([L('a', '', 'GRU')]), hist, clis); ok(r.length === 0, 'linha sem cliente: ignora');
+console.log(bad ? 'FALHAS: ' + bad : 'TUDO OK'); process.exit(bad ? 1 : 0);
