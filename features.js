@@ -92,7 +92,6 @@
     return Math.max(0, r2(f - (e.mort && e.mort.destino === 'abater' ? e.mort.credito || 0 : 0)));
   };
   const valorAvista = (e, pct) => Math.round(baseAvista(e) * Math.max(0, Math.min(100, +pct || 0))) / 100;
-  const avistaRow = av => ({ nome: 'DESCONTO PAGAMENTO À VISTA (' + String(av.pct).replace('.', ',') + '%)', cxs: null, qtd: -1, unit: r2(av.valor), credito: true });
   const devido = e => r2(e.totais.total - (e.mort && e.mort.destino === 'abater' ? e.mort.credito : 0) - (e.avista ? e.avista.valor || 0 : 0));
   const saldo = e => r2(Math.max(0, devido(e) - ((e.pay && e.pay.pago) || 0)));
   // crédito guardado do cliente (mortalidade "guardar") menos o que já foi descontado em pedidos novos
@@ -119,10 +118,11 @@
   }
   // notinha corrigida: linhas originais + créditos; GTA e atestado ficam como foram cobrados
   function notaCorrigida(e, mort) {
-    const nd = notaDe(e), rows = nd.rows.concat(mort.rows, e.avista && e.avista.valor > 0 ? [avistaRow(e.avista)] : []);
-    const ex = nd.ex;
-    const totals = Core.notinhaTotals(rows, ex, Core.DEFAULT_CFG.valores);
-    return { rows, ex, totals, dia: e.nota.dia };
+    const nd = notaDe(e), rows = nd.rows.concat(mort.rows), av = e.avista && e.avista.valor > 0 ? e.avista : null;
+    const ex = nd.ex, t0 = Core.notinhaTotals(rows, ex, Core.DEFAULT_CFG.valores);
+    // com desconto à vista a nota segue o modelo dele: subtotal, "10% DESCONTO", subtotal com desconto, e só depois GTA/embalagem
+    const totals = av ? Object.assign({}, t0, { desconto: av.valor, pct: av.pct, total: r2(t0.total - av.valor) }) : t0;
+    return { rows, ex, totals, dia: e.nota.dia, avista: av };
   }
 
   // situação (item 18)

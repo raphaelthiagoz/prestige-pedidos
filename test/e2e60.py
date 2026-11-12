@@ -30,9 +30,14 @@ with sync_playwright() as p:
     f=dl.value; path=OUT+'avista_nota.xlsx'; f.save_as(path)
     ok(f.suggested_filename.startswith('NOTA_COM_DESCONTO_'),'baixa o arquivo '+f.suggested_filename)
     import openpyxl
-    ws=openpyxl.load_workbook(path).worksheets[0]; vals=[str(c.value) for r in ws.iter_rows() for c in r if c.value not in (None,'')]
-    ok(any('DESCONTO PAGAMENTO' in v and '10%' in v for v in vals),'a nota baixada traz a linha "DESCONTO PAGAMENTO À VISTA (10%)"')
-    ok(sum(1 for v in vals if v=='EMBALAGEM')==2,'a embalagem continua no lugar dela (sem linha extra no meio dos peixes)')
+    ws=openpyxl.load_workbook(path).worksheets[0]; cel=lambda r,c: ws[f'{c}{r}'].value
+    ok(cel(7,'A')=='NOTA PEDIDO','cabeçalho "NOTA PEDIDO", como no modelo dele')
+    ok(str(cel(12,'H')).replace(' ','')=='=SUM(H10:H11)','subtotal dos peixes logo depois da lista: %r'%cel(12,'H'))
+    ok(str(cel(13,'G')).strip()=='10% DESCONTO' and cel(13,'H')==-90,'linha "10%% DESCONTO" com -90 na coluna do total (como no modelo dele): G=%r H=%r'%(cel(13,'G'),cel(13,'H')))
+    ok(str(cel(14,'H')).replace(' ','')=='=SUM(H12:H13)','linha seguinte = subtotal com desconto: %r'%cel(14,'H'))
+    ok(cel(17,'A')=='ATESTADO' and cel(18,'A')=='GTA' and cel(15,'A') is None and cel(16,'A') is None,'duas linhas em branco e depois ATESTADO e GTA, como no modelo dele')
+    trow=[r for r in range(10,40) if str(cel(r,'A')).strip()=='VALOR TOTAL']; ok(trow and 'SUM(H14:' in str(cel(trow[0],'H')).replace(' ',''),'VALOR TOTAL soma a partir do subtotal com desconto')
+    ok(sum(1 for r in ws.iter_rows() for c in r if c.value=='EMBALAGEM')==2,'a embalagem continua no lugar dela')
     pg.click('[data-h=avDel]'); pg.wait_for_timeout(400)
     ok(pg.evaluate("PP.S.hist[0].avista")is None and abs(pg.evaluate("PP.Features.devido(PP.S.hist[0])")-tot)<0.006,'"Remover desconto" volta o pedido ao valor de antes')
     pg.fill('#avPct','0'); pg.click('[data-h=avSave]'); pg.wait_for_timeout(200)

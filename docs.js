@@ -130,7 +130,7 @@
 
     /* ============ NOTINHA FINAL (.xlsx) — preenche o modelo dele (NILVIA_JANETE.xlsx) ============ */
     async function notinhaXlsx(o, orc) {
-      const { cliente, nota } = o, rows = nota.rows, T = orc ? o.orcT : nota.totals, ex = nota.ex;
+      const { cliente, nota } = o, rows = nota.rows, T = orc ? o.orcT : nota.totals, ex = nota.ex, dsc = !!orc || !!nota.avista;   // dsc: orçamento ou nota com desconto à vista (mesmas linhas de desconto)
       const zip = await JSZip.loadAsync(tplNotinhaB64, { base64: true });
       let s = await zip.file('xl/worksheets/sheet1.xml').async('string');
       const istr = (ref, st, text) => `<c r="${ref}" s="${st}" t="inlineStr"><is><t xml:space="preserve">${xe(text)}</t></is></c>`;
@@ -146,7 +146,7 @@
       // cabeçalho (linhas 1 a 9 do modelo)
       const iData = s.indexOf('<row r="10"');
       let head = s.slice(0, iData);
-      head = setCell(head, 'A7', istr('A7', 53, orc ? 'ORÇAMENTO' : `EMBARQUE CHEGARÁ ${nota.dia}. ENVIAREMOS O CONHECIMENTO QUANDO POSSUIRMOS`));
+      head = setCell(head, 'A7', istr('A7', 53, orc ? 'ORÇAMENTO' : nota.avista ? 'NOTA PEDIDO' : `EMBARQUE CHEGARÁ ${nota.dia}. ENVIAREMOS O CONHECIMENTO QUANDO POSSUIRMOS`));
       head = setCell(head, 'B8', istr('B8', 51, cliente.nome));
       head = setCell(head, 'D8', istr('D8', 33, orc ? 'DATA:' : 'ENTREGA:'));
       if (orc) head = setCell(head, 'G8', istr('G8', 34, 'CPF/CNPJ: ' + (cliente.doc || '')));
@@ -164,21 +164,22 @@
       out += R(sub, aItem, [emp(`A${sub}`, 5), emp(`B${sub}`, 4), emp(`C${sub}`, 10), emp(`D${sub}`, 13), emp(`E${sub}`, 13), emp(`F${sub}`, 13), emp(`G${sub}`, 19), fml(`H${sub}`, 24, `SUM(H10:H${endItems})`, T.fish), emp(`I${sub}`, 25), emp(`J${sub}`, 2)]);
       let tot, e2, firstSum = sub;
       const std = rn => [emp(`B${rn}`, 4), emp(`C${rn}`, 10), emp(`D${rn}`, 13), emp(`E${rn}`, 13), emp(`F${rn}`, 13)];
-      if (orc) {
-        // ORÇAMENTO: mesmo modelo da notinha; entre o subtotal e o total entram desconto, frete, taxa do despachante, GTA e embalagem
+      if (dsc) {
+        // ORÇAMENTO (e nota com desconto à vista): mesmo modelo da notinha; entre o subtotal e o total entram desconto, frete, taxa do despachante, GTA e embalagem
         let rn = sub + 1;
         const lab = (n2, txt) => istr(`A${n2}`, 5, txt);
         const vz = (n2, v, stG, stH, f) => [v > 0 ? num(`G${n2}`, stG, v) : istr(`G${n2}`, 19, '-'), v > 0 ? (f ? fml(`H${n2}`, stH, f, v) : num(`H${n2}`, stH, v)) : istr(`H${n2}`, 31, '-')];
         if (T.desconto > 0) {
           const d = rn++, p = rn++;
-          out += R(d, aItem, [emp(`A${d}`, 5), emp(`B${d}`, 4), emp(`C${d}`, 10), emp(`D${d}`, 13), emp(`E${d}`, 13), emp(`F${d}`, 13), istr(`G${d}`, 19, `${String(T.pct).replace('.', ',')}% DESCONTO`), fml(`H${d}`, 24, `-ROUND(H${sub}*${T.pct}/100,2)`, -T.desconto), emp(`I${d}`, 25), emp(`J${d}`, 2)]);
+          out += R(d, aItem, [emp(`A${d}`, 5), emp(`B${d}`, 4), emp(`C${d}`, 10), emp(`D${d}`, 13), emp(`E${d}`, 13), emp(`F${d}`, 13), istr(`G${d}`, 19, `${String(T.pct).replace('.', ',')}% DESCONTO`), (nota.avista ? num(`H${d}`, 24, -T.desconto) : fml(`H${d}`, 24, `-ROUND(H${sub}*${T.pct}/100,2)`, -T.desconto)), emp(`I${d}`, 25), emp(`J${d}`, 2)]);
           out += R(p, aItem, [emp(`A${p}`, 5), emp(`B${p}`, 4), emp(`C${p}`, 10), emp(`D${p}`, 13), emp(`E${p}`, 13), emp(`F${p}`, 13), emp(`G${p}`, 19), fml(`H${p}`, 24, `SUM(H${sub}:H${d})`, T.fish - T.desconto), emp(`I${p}`, 25), emp(`J${p}`, 2)]);
           firstSum = p;
+          if (nota.avista) out += blank(rn++);   // o modelo da nota com desconto deixa duas linhas em branco antes do ATESTADO
         } else { out += blank(rn++); }
         out += blank(rn++);
         const lin = (n2, txt, v) => { out += R(n2, aItem, [lab(n2, txt), ...std(n2), ...vz(n2, v, 29, 17), emp(`I${n2}`, 25), emp(`J${n2}`, 2)]); };
         let k;
-        if (ex.temAt) { k = rn++; lin(k, 'ATESTADO', T.atestado); }
+        if (ex.temAt || nota.avista) { k = rn++; lin(k, 'ATESTADO', T.atestado); }
         k = rn++; lin(k, 'GTA', T.gta);
         const e1 = ex.qCaixaMaior > 0 ? rn++ : null; e2 = rn++;
         if (e1) out += R(e1, aItem, [istr(`A${e1}`, 5, 'EMBALAGEM'), emp(`B${e1}`, 3), emp(`C${e1}`, 11), num(`D${e1}`, 13, ex.qCaixaMaior > 0 ? ex.qCaixaMaior : null), emp(`E${e1}`, 13), emp(`F${e1}`, 16), num(`G${e1}`, 20, ex.caixaMaior), fml(`H${e1}`, 30, `(D${e1}*G${e1})`, T.emb2), emp(`I${e1}`, 26), emp(`J${e1}`, 2)]);

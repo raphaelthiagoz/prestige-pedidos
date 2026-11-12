@@ -480,3 +480,8 @@ Para o cliente que decide pagar a notinha à vista depois que o pedido já foi f
 O desconto é sobre o VALOR DOS PEIXES (igual ao orçamento). GTA, embalagem e atestado não entram na %.
 O "total a pagar", o saldo, a mensagem de cobrança e o Financeiro já passam a usar o valor com desconto.
 Funciona também junto com a mortalidade abatida e em pedidos feitos pelo "Pedido rápido".
+
+v29.1 — a nota com desconto à vista segue o modelo dele (NOTINHA_FINAL_HUGO_ROGERIO.xlsx):
+  cabeçalho "NOTA PEDIDO"; depois da lista dos peixes vem o subtotal, a linha "10% DESCONTO" (valor negativo),
+  o subtotal com desconto, duas linhas em branco e então ATESTADO, GTA, EMBALAGEM e VALOR TOTAL.
+  A nota normal (sem desconto) não mudou: continua com "EMBARQUE CHEGARÁ ...".
