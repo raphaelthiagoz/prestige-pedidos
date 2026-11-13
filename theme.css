@@ -797,3 +797,29 @@ details.xg[open]>summary::before{transform:rotate(90deg)}
 #nav .ngrp[data-ng]:hover{color:var(--fg)}
 #nav .ngrp[data-ng]::after{content:'▾';font-size:.7rem;opacity:.7;transition:transform .15s}
 #nav .ngrp[data-ng][aria-expanded=false]::after{transform:rotate(-90deg)}
+
+/* v29.11 manual e tour guiado */
+#btnGuia{position:relative}
+#btnGuia.novo::after{content:"novo";margin-left:auto;font-size:.66rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--accent-fg);background:var(--accent);border-radius:999px;padding:2px 7px}
+.guiaBack{position:fixed;inset:0;z-index:1200;background:rgba(4,8,10,.66);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:16px}
+.guiaBox{width:min(980px,100%);max-height:min(86vh,760px);display:flex;flex-direction:column;background:var(--surface);color:var(--fg);border:1px solid var(--line);border-radius:18px;box-shadow:0 24px 70px rgba(0,0,0,.55);overflow:hidden}
+.guiaHead{display:flex;gap:10px;align-items:center;padding:14px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.guiaHead b{font-size:1.05rem;margin-right:4px}
+.guiaHead input{flex:1 1 220px;min-width:0}
+.guiaBody{display:flex;min-height:0;flex:1}
+.guiaToc{display:flex;flex-direction:column;gap:2px;padding:12px;border-right:1px solid var(--line);width:230px;flex:0 0 auto;overflow:auto}
+.guiaToc a{color:var(--muted);text-decoration:none;padding:7px 10px;border-radius:10px;font-size:.9rem}
+.guiaToc a:hover{background:rgba(255,255,255,.05);color:var(--fg)}
+.guiaTxt{padding:6px 22px 22px;overflow:auto;flex:1;line-height:1.55}
+.guiaTxt h3{margin:20px 0 6px;font-size:1.05rem;color:var(--accent)}
+.guiaTxt ol,.guiaTxt ul{padding-left:20px;margin:6px 0}
+.guiaTxt li{margin:5px 0}
+@media (max-width:760px){.guiaToc{display:none}.guiaTxt{padding:4px 16px 18px}}
+.tourShade{position:fixed;z-index:1300;border-radius:12px;box-shadow:0 0 0 9999px rgba(4,8,10,.72),0 0 0 2px var(--accent);pointer-events:none;transition:all .22s ease}
+.tourShade.full{left:0;top:0;width:100vw;height:100vh;border-radius:0;box-shadow:none;background:rgba(4,8,10,.72)}
+.tourCard{position:fixed;z-index:1310;width:340px;max-width:calc(100vw - 24px);background:var(--surface);color:var(--fg);border:1px solid var(--accent);border-radius:16px;padding:16px 18px;box-shadow:0 18px 50px rgba(0,0,0,.55)}
+.tourCard h4{margin:2px 0 6px;font-size:1.05rem}
+.tourCard p{margin:0 0 14px;line-height:1.5;color:#cfdadf}
+.tourN{font-size:.74rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.tourBt{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+@media (prefers-reduced-motion:reduce){.tourShade{transition:none}}

@@ -599,3 +599,14 @@ v29.10 — Nacional: prazo do desconto à vista, comprovação da mortalidade e 
   desconto") e quando há mortalidade sem comprovação.
   Descontos antigos, sem prazo, continuam valendo e aparecem como "sem prazo definido". Você pode colocar uma data neles.
   Não precisa de SQL novo no Supabase.
+
+v29.11 — Manual e tour guiado
+  Arquivo novo: guia.js (já entra no index.html e no sw.js; se você montar o zip à mão, inclua o guia.js).
+  No menu lateral, acima de Configurações, há o botão "Manual e tour" (com a etiqueta "novo" até você abrir uma vez).
+  Manual: janela com os assuntos à esquerda e uma busca no topo. Digite "backup", "SEI" ou "desconto" para filtrar.
+  Cobre Pedido nacional, Histórico (mortalidade, desconto à vista, cobrança), Exportação, Notas de entrada e MAPA,
+  Programação de voos, Frete, Financeiro, Assistente e Backup. Esc fecha.
+  Tour guiado: 12 passos que destacam cada item do menu e dizem para que serve. Botões Próximo, Voltar e Sair do tour;
+  as setas do teclado também funcionam e Esc sai. Se o menu estiver recolhido ou a tela for pequena, o cartão aparece
+  no centro, sem destaque. O tour não muda nenhum dado nem troca de tela.
+  Não precisa de SQL novo no Supabase.
