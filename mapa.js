@@ -114,9 +114,9 @@ function algumaNFComSaldo(S,sp){
   return false;
 }
 function validarDraft(S,d){
-  var res={linhas:[],erros:0,avisos:0};
+  var res={linhas:[],erros:0,avisos:0,reuso:0,reusoGrave:0};
   d.linhas.forEach(function(L){
-    var sp=L.esp,r={problemas:[]},soma=0;
+    var sp=L.esp,r={problemas:[],reuso:[]},soma=0;
     if(!norm(sp))r.problemas.push({nivel:'erro',tipo:'sem_nome',msg:'Informe a espécie.'});
     if(!(L.qtd>0))r.problemas.push({nivel:'erro',tipo:'sem_qtd',msg:'Informe a quantidade que sai.'});
     L.aloc.forEach(function(a,j){
@@ -127,6 +127,7 @@ function validarDraft(S,d){
       var ent=entradaNF(nf,sp);
       if(!ent){r.problemas.push({nivel:'erro',tipo:'sem_especie',j:j,msg:'A NF '+nf.numero+' ('+nf.fornecedor+') não tem esta espécie.'});return;}
       var sd=saldoNF(S,nf.id,sp),usado=somaDraft(d,nf.id,sp);
+      if(!d.historico){var ru=reusoNF(S,nf,sp);if(ru){var jaR=false;r.reuso.forEach(function(x){if(x.nf===ru.nf&&x.fornecedor===ru.fornecedor)jaR=true;});if(!jaR)r.reuso.push(ru);}}
       if(usado>sd){r.problemas.push({nivel:d.historico?'aviso':'erro',tipo:'sem_saldo',j:j,nf:nf.numero,fornecedor:nf.fornecedor,entrada:ent,saldo:sd,precisa:usado,usos:usosNF(S,nf.id,sp)});}
     });
     if(norm(sp)&&L.qtd>0){
@@ -138,6 +139,7 @@ function validarDraft(S,d){
       else if(soma!==L.qtd)r.problemas.push({nivel:'erro',tipo:'soma',soma:soma,qtd:L.qtd});
     }
     r.problemas.forEach(function(p){if(p.nivel==='erro')res.erros++;else res.avisos++;});
+    r.reuso.forEach(function(x){res.reuso++;if(x.grave)res.reusoGrave++;});
     res.linhas.push(r);
   });
   return res;
@@ -147,6 +149,7 @@ function conflitosEstado(S){
   S.nfs.forEach(function(nf){especiesNF(nf).forEach(function(e){var sd=saldoNF(S,nf.id,e.key);if(sd<0)out.push({nf:nf.numero,esp:e.esp,saldo:sd});});});
   return out;
 }
+function precisaAcao(p){return p.status==='ativo'&&(p.protocolado===false||!!p.devolvido);}
 function aguardaProt(p){return p.status==='ativo'&&p.protocolado===false;} // processos antigos não têm o campo = já protocolados
 function protocolar(S,d){
   var pack=String(d.pack||'').trim(),sei=String(d.sei||'').trim();
@@ -221,14 +224,62 @@ function vincularMarca(S,m,d){
   return {ok:true,proc:proc,saldo:saldoNF(S,nf.id,it.esp)};
 }
 function setStatusProc(S,id,status){
+  return mudarSit(S,id,status==='ativo'?'reativado':'cancelado',{});
+}
+/* v29.7: situação do pack perante o MAPA (derivada dos campos) + histórico de mudanças */
+function sitProc(p){
+  if(p.status!=='ativo')return p.motivo==='indeferido'?'indeferido':'cancelado';
+  if(p.devolvido)return 'devolvido';
+  return p.protocolado===false?'aguardando':'protocolado';
+}
+var SIT_ROT={aguardando:'Falta protocolar',protocolado:'Protocolado',devolvido:'Devolvido pelo MAPA',indeferido:'Indeferido',cancelado:'Cancelado'};
+function logProc(p,ev,nota){p.log=p.log||[];p.log.push({em:hoje(),ev:ev,nota:String(nota||'').trim()});}
+function mudarSit(S,id,ev,d){
+  d=d||{};
   var p=null;S.processos.forEach(function(x){if(x.id===id)p=x;});
   if(!p)return {ok:false,erro:'Processo não encontrado.'};
-  var antes=p.status;p.status=status;
-  if(status==='ativo'){
+  var s=sitProc(p),nota=String(d.nota||'').trim(),sei=String(d.sei||'').trim();
+  if(ev==='protocolado'){
+    if(s!=='aguardando')return {ok:false,erro:'Este pack não está aguardando protocolo.'};
+    if(sei)p.sei=sei;p.protocolado=true;p.dataProt=hoje();logProc(p,'protocolado',p.sei?'SEI '+p.sei:'');
+  }else if(ev==='desprotocolado'){
+    if(s!=='protocolado')return {ok:false,erro:'Só dá para desfazer um pack protocolado.'};
+    p.protocolado=false;p.dataProt='';logProc(p,'voltou para falta protocolar',nota);
+  }else if(ev==='devolvido'){
+    if(s!=='protocolado')return {ok:false,erro:'Só dá para marcar como devolvido um pack já protocolado.'};
+    p.devolvido={em:hoje(),motivo:nota};logProc(p,'devolvido pelo MAPA',nota);
+  }else if(ev==='reprotocolado'){
+    if(s!=='devolvido')return {ok:false,erro:'Este pack não está devolvido.'};
+    if(sei)p.sei=sei;p.devolvido=null;p.protocolado=true;p.dataProt=hoje();logProc(p,'protocolado de novo',p.sei?'SEI '+p.sei:'');
+  }else if(ev==='indeferido'){
+    if(s!=='protocolado'&&s!=='devolvido')return {ok:false,erro:'Só dá para marcar como indeferido um pack protocolado ou devolvido.'};
+    p.indeferido={em:hoje(),motivo:nota};p.devolvido=null;p.status='cancelado';p.motivo='indeferido';logProc(p,'indeferido pelo MAPA (saldo liberado)',nota);
+  }else if(ev==='cancelado'){
+    if(p.status!=='ativo')return {ok:false,erro:'Este pack já está cancelado.'};
+    p.devolvido=null;p.status='cancelado';p.motivo='cancelado';logProc(p,'cancelado (saldo liberado)',nota);
+  }else if(ev==='reativado'){
+    if(p.status==='ativo')return {ok:false,erro:'Este pack já está ativo.'};
+    var antes={status:p.status,motivo:p.motivo};p.status='ativo';p.motivo='';
     var c=conflitosEstado(S);
-    if(c.length){p.status=antes;return {ok:false,erro:'Reativar deixaria sem saldo: NF '+c[0].nf+' / '+c[0].esp+' ('+c[0].saldo+').'};}
-  }
-  return {ok:true};
+    if(c.length){p.status=antes.status;p.motivo=antes.motivo;return {ok:false,erro:'Reativar deixaria sem saldo: NF '+c[0].nf+' / '+c[0].esp+' ('+c[0].saldo+').'};}
+    p.indeferido=null;logProc(p,'reativado',nota);
+  }else if(ev==='sei'){
+    p.sei=sei;logProc(p,'SEI informado',p.sei);
+  }else return {ok:false,erro:'Situação desconhecida.'};
+  return {ok:true,proc:p,sit:sitProc(p)};
+}
+/* v29.7: esta NF/espécie já foi usada em outros packs? (aviso, não bloqueia) */
+function reusoNF(S,nf,sp,exceto){
+  var usos=[];
+  S.processos.forEach(function(p){
+    if(p===exceto)return;
+    var sit=sitProc(p);if(sit==='cancelado')return;
+    var q=0;p.itens.forEach(function(i){if(i.nfId===nf.id&&mesmaEsp(i.esp,sp))q+=i.qtd;});
+    if(!(q>0))return;
+    usos.push({pack:p.pack,sei:p.sei,qtd:q,sit:sit,data:p.dataProt||p.data,historico:!!p.historico,motivo:(p.devolvido&&p.devolvido.motivo)||(p.indeferido&&p.indeferido.motivo)||''});
+  });
+  if(!usos.length)return null;
+  return {nf:nf.numero,fornecedor:nf.fornecedor,usos:usos,grave:usos.some(function(u){return u.sit==='devolvido'||u.sit==='indeferido';})};
 }
 function salvarNF(S,f){
   var numero=String(f.numero||'').trim(),forn=String(f.fornecedor||'').trim();
@@ -612,6 +663,10 @@ var AJ={
   marcarprot:'Clique quando você realmente protocolar o processo no SEI/MAPA. O app pergunta o nº do SEI (opcional) e guarda a data de hoje.',
   cancelproc:'Use só depois que o MAPA confirmar o cancelamento ou a devolução. Libera de volta o saldo das NFs deste pack.',
   reativar:'Volta a contar este pack no saldo das NFs.',
+  devolvproc:'Use quando o MAPA devolveu o processo para correção. O saldo das NFs continua reservado; depois de corrigir, clique em "Protocolei de novo".',
+  indefproc:'Use quando o MAPA indeferiu o processo. O saldo das NFs é liberado e o motivo fica guardado no pack.',
+  reprotproc:'Use quando você corrigiu e protocolou o pack de novo no SEI/MAPA.',
+  refazproc:'Libera o saldo das NFs deste pack para você montar o pedido de novo com outras notas.',
   delproc:'Remove este pack do histórico e recalcula o saldo. Se o pack foi cancelado de verdade, prefira Cancelar e liberar saldo.',
   resumo:'Lista deste pack: espécie, NF e quantidade. Dá para copiar ou imprimir.',
   carta:'Gera um rascunho de ofício para o MAPA com as NFs deste pack. Revise antes de enviar.',
@@ -635,7 +690,7 @@ function esconderTip(){var t=$('tip');if(t)t.className='';}
 var TABS=[['passo','Passo a passo'],['nfs','NFs de entrada'],['verificar','Verificar pedido'],['processos','Processos'],['saldonf','Saldo por nota'],['saldo','Saldo por espécie'],['pesc','Pescadores (CTF/RGP)']];
 var _pdfFeito=null;
 function renderTabs(){
-  $('tabs').innerHTML=TABS.map(function(t){var nP=t[0]==='processos'?S.processos.filter(aguardaProt).length:0;return '<button type="button" data-tab="'+t[0]+'" class="'+(tab===t[0]?'on':'')+(/^(saldonf|saldo|pesc)$/.test(t[0])?' menos':'')+'">'+t[1]+(nP?' <span class="badge b-w" style="margin-left:4px" title="Packs com consumo gravado que ainda faltam protocolar no SEI/MAPA">'+nP+'</span>':'')+'</button>';}).join('');
+  $('tabs').innerHTML=TABS.map(function(t){var nP=t[0]==='processos'?S.processos.filter(precisaAcao).length:0;return '<button type="button" data-tab="'+t[0]+'" class="'+(tab===t[0]?'on':'')+(/^(saldonf|saldo|pesc)$/.test(t[0])?' menos':'')+'">'+t[1]+(nP?' <span class="badge b-w" style="margin-left:4px" title="Packs que faltam protocolar no SEI/MAPA ou que o MAPA devolveu para correção">'+nP+'</span>':'')+'</button>';}).join('');
 }
 /* ---------- faixa "passo a passo" ---------- */
 function fluxoEstado(){
@@ -682,7 +737,7 @@ var ETAPAS=[
  ['Protocolar','Protocole no SEI e marque aqui','Anexe os documentos no SEI e protocole. Com o número do processo em mãos, volte aqui e clique em "Marcar como protocolado": o app pergunta o número.']
 ];
 function etapaInicial(){
-  var d=S.draft,nPend=S.processos.filter(aguardaProt).length;
+  var d=S.draft,nPend=S.processos.filter(precisaAcao).length;
   if(!d.linhas.length)return nPend?6:(S.nfs.length?2:1);
   var cur=fluxoEstado().cur;
   return cur===1?1:(cur===2?3:(cur===3?4:5));
@@ -699,19 +754,26 @@ function passoCorpo(n){
         :'<div class="alert e">Ainda não há NF escolhida. Volte ao passo 3.</div>')+'</div>';
   }
   if(n===5){
-    var v=d.linhas.length?validarDraft(S,d):{erros:0,avisos:0};
+    var v=d.linhas.length?validarDraft(S,d):{erros:0,avisos:0,linhas:[]};
+    var ru=[];v.linhas.forEach(function(r,k){(r.reuso||[]).forEach(function(x){ru.push(reusoHTML([x],nomeSci(d.linhas[k].esp)+': '));});});
     var nfs={};d.linhas.forEach(function(L){L.aloc.forEach(function(a){if(a.nfId)nfs[a.nfId]=1;});});
     return '<div class="card"><div style="font-size:1.05rem"><b>Pack '+esc(d.pack||'(sem número)')+'</b>'+(d.destino?' · '+esc(d.destino):'')+'</div>'
       +'<div class="muted" style="margin:6px 0 12px">'+d.linhas.length+' espécie(s) · '+Object.keys(nfs).length+' NF(s) usada(s)'+'</div>'
       +(!d.linhas.length?'<div class="alert e">O pedido está vazio. Volte ao passo 2.</div>':(v.erros?'<div class="alert e">'+v.erros+' espécie(s) ainda com problema. Volte ao passo 3.</div>':''))
+      +(ru.length?'<div class="muted" style="margin:0 0 4px">Antes de gravar, confira estas notas que já foram usadas:</div>'+ru.join('')+'<div style="height:10px"></div>':'')
       +'<button class="btn pri" data-act="protocolar">Gravar consumo</button>'+ia('protocolar')+'</div>';
   }
-  var pend=S.processos.filter(aguardaProt);
+  var pend=S.processos.filter(aguardaProt),dev=S.processos.filter(function(p){return sitProc(p)==='devolvido';});
+  var devH=dev.map(function(p){
+    return '<div class="card"><div style="font-size:1.05rem"><b>Pack '+esc(p.pack)+'</b>'+(p.destino?' · '+esc(p.destino):'')+' <span class="badge b-w">Devolvido pelo MAPA</span></div><div class="muted" style="margin:6px 0 12px">'+(p.devolvido.motivo?'Motivo: '+esc(p.devolvido.motivo)+' · ':'')+'corrija e protocole de novo; o saldo continua reservado.</div>'
+      +'<div class="row" style="align-items:center"><span><button class="btn" data-act="pdfproc" data-id="'+p.id+'">PDF das NFs (SEI)</button>'+ia('pdfnfs')+'</span><span><button class="btn pri" data-act="reprotproc" data-id="'+p.id+'">Protocolei de novo</button>'+ia('reprotproc')+'</span></div></div>';
+  }).join('');
+  if(!pend.length&&dev.length)return devH;
   if(!pend.length)return '<div class="card"><b>Nenhum pack aguardando protocolo.</b><div class="muted" style="margin:6px 0 12px">Para começar outro pack, volte ao passo 2.</div><button class="btn pri" data-act="etapa" data-n="2">Começar novo pack</button></div>';
   return pend.map(function(p){
     return '<div class="card"><div style="font-size:1.05rem"><b>Pack '+esc(p.pack)+'</b>'+(p.destino?' · '+esc(p.destino):'')+'</div><div class="muted" style="margin:6px 0 12px">'+(p.sei?'SEI '+esc(p.sei)+' · ':'')+'consumo gravado em '+dt(p.data)+(p.sei?'':' · SEI ainda não informado')+'</div>'
       +'<div class="row" style="align-items:center"><span><button class="btn" data-act="pdfproc" data-id="'+p.id+'">PDF das NFs (SEI)</button>'+ia('pdfnfs')+'</span><span><button class="btn pri" data-act="marcarprot" data-id="'+p.id+'">Marcar como protocolado</button>'+ia('marcarprot')+'</span></div></div>';
-  }).join('');
+  }).join('')+devH;
 }
 function passoHTML(){
   if(etapa===null)etapa=etapaInicial();
@@ -789,10 +851,10 @@ function linhaCardHTML(i){
      +'<div class="hb"><span><button class="btn sm" data-act="sugerir" data-i="'+i+'">Sugerir NFs</button>'+ia('sugerir')+'</span><button class="btn sm" data-act="editnome" data-i="'+i+'">Editar</button><button class="btn sm dg" data-act="rmlinha" data-i="'+i+'">Remover</button></div></div>';
   return '<div class="card" id="L'+i+'" style="padding:12px 14px">'+topo+'<div id="al-'+i+'"></div><div id="st-'+i+'"></div></div>';
 }
-function okRowHTML(i){
+function okRowHTML(i,r){
   var L=S.draft.linhas[i];
   var nfs=L.aloc.map(function(a){var nf=getNF(S,a.nfId);return nf?('NF '+esc(nf.numero)+' '+esc(nf.fornecedor)+(L.aloc.length>1?' ('+fmt(a.qtd)+')':'')):'';}).join(' + ');
-  return '<div class="okrow"><span>'+nomeHTML(L.esp)+'</span><span><b style="font-weight:600">'+fmt(L.qtd)+'</b> <span class="muted">· '+nfs+'</span> <button class="btn sm" data-act="trocar" data-i="'+i+'">Trocar NF</button>'+ia('trocar')+'</span></div>';
+  return '<div class="okrow"><span>'+nomeHTML(L.esp)+'</span><span><b style="font-weight:600">'+fmt(L.qtd)+'</b> <span class="muted">· '+nfs+'</span> <button class="btn sm" data-act="trocar" data-i="'+i+'">Trocar NF</button>'+ia('trocar')+'</span></div>'+reusoHTML(r&&r.reuso);
 }
 function allocHTML(i){
   var L=S.draft.linhas[i],sp=L.esp,out='';
@@ -812,6 +874,19 @@ function allocHTML(i){
   out+='<div class="al"><button class="btn sm" data-act="addaloc" data-i="'+i+'">+ Adicionar NF</button></div>';
   return out;
 }
+function reusoUsoTxt(u){
+  var t='Pack '+esc(u.pack)+(u.sei?' · SEI '+esc(u.sei):'')+' ('+(SIT_ROT[u.sit]||u.sit).toLowerCase()+((u.sit==='protocolado'||u.sit==='devolvido')&&u.data?' em '+dt(u.data):'')+(u.historico?', histórico':'')+')';
+  if(u.motivo)t+=' — '+esc(u.motivo);
+  return t;
+}
+function reusoHTML(reuso,pref){
+  if(!reuso||!reuso.length)return '';
+  return reuso.map(function(x){
+    var mostrar=x.usos.slice(-3),mais=x.usos.length-mostrar.length;
+    var lista=mostrar.map(function(u){return '<div class="u"><span>'+reusoUsoTxt(u)+'</span><span>'+fmt(u.qtd)+'</span></div>';}).join('')+(mais>0?'<div class="u"><span class="muted">e mais '+mais+' pack(s) anteriores</span></div>':'');
+    return '<div class="alert '+(x.grave?'w':'i')+' reuso"><b>'+(pref||'')+'NF '+esc(x.nf)+' ('+esc(x.fornecedor)+') já foi usada em outro processo</b>'+(x.grave?'<div style="margin:4px 0">O MAPA devolveu ou indeferiu um pack com esta nota. Confira no SEI antes de protocolar.</div>':'')+lista+'</div>';
+  }).join('');
+}
 function statusHTML(i,r){
   var out='',L=S.draft.linhas[i];
   r.problemas.forEach(function(p){
@@ -830,6 +905,7 @@ function statusHTML(i,r){
       out+='<div class="alert '+cls+'">'+esc(p.msg)+'</div>';
     }
   });
+  out+=reusoHTML(r.reuso);
   if(!r.problemas.length&&L.aloc.length&&L.edit)out+='<div style="margin-top:8px"><button class="btn sm" data-act="concluir" data-i="'+i+'">Pronto</button></div>';
   return out;
 }
@@ -848,7 +924,8 @@ function paintStatus(){
   else if(!S.nfs.length){cls='b-w';txt='Nenhuma NF de entrada cadastrada ainda. Cadastre as NFs antes de conferir o pedido.';}
   else if(nErr){cls='b-e';txt=nErr+' espécie(s) precisam da sua atenção e '+nOk+' estão certas. Ainda não grave o consumo.';}
   else if(res.avisos){cls='b-w';txt='Sem bloqueios, com '+res.avisos+' aviso(s) de histórico. Ao gravar, a NF ficará com saldo negativo.';}
-  else{cls='b-ok';txt='Todas as '+nOk+' espécies têm NF com saldo. Pode gravar o consumo; o protocolo no SEI/MAPA você marca depois.';}
+  else if(res.reusoGrave){cls='b-w';txt='Há saldo em todas as espécies, mas '+res.reusoGrave+' NF(s) já apareceram em pack devolvido ou indeferido pelo MAPA. Veja o aviso amarelo antes de gravar.';}
+  else{cls='b-ok';txt='Todas as '+nOk+' espécies têm NF com saldo. Pode gravar o consumo; o protocolo no SEI/MAPA você marca depois.'+(res.reuso?' '+res.reuso+' NF(s) já foram usadas em outros packs (veja abaixo).':'');}
   b.innerHTML='<div class="banner '+cls+'">'+esc(txt)+'</div>';
 }
 function paintAll(){
@@ -863,7 +940,7 @@ function paintAll(){
     att=[];
   }else{
     if(att.length){h+='<div class="sec e">Precisa da sua atenção ('+att.length+')</div>';att.forEach(function(i){h+=linhaCardHTML(i);});}
-    if(ok.length){var po=$('mpOk'),manter=!!(po&&po.open&&att.length&&po.dataset.att==='1');h+='<details class="card foco okbox" id="mpOk" data-att="'+(att.length?'1':'0')+'"'+((!att.length||manter)?' open':'')+'><summary><span class="sec ok" style="margin:0">Tudo certo ('+ok.length+')</span><span class="alt">'+(att.length?'Ver':'')+'</span></summary>'+ok.map(okRowHTML).join('')+'</details>';}
+    if(ok.length){var po=$('mpOk'),manter=!!(po&&po.open&&att.length&&po.dataset.att==='1');h+='<details class="card foco okbox" id="mpOk" data-att="'+(att.length?'1':'0')+'"'+((!att.length||manter)?' open':'')+'><summary><span class="sec ok" style="margin:0">Tudo certo ('+ok.length+')</span><span class="alt">'+(att.length?'Ver':'')+'</span></summary>'+ok.map(function(i){return okRowHTML(i,res.linhas[i]);}).join('')+'</details>';}
   }
   if(!$('linhas'))return;
   $('linhas').innerHTML=h;
@@ -1076,31 +1153,68 @@ function marcarProt(id){
   var p=S.processos.filter(function(x){return x.id===id;})[0];if(!p)return false;
   var sei=prompt('Processo protocolado no SEI/MAPA.\nNº do processo SEI (opcional):',p.sei||'');
   if(sei===null)return false;
-  if(String(sei).trim())p.sei=String(sei).trim();p.protocolado=true;p.dataProt=hoje();salvar();
+  var rm=mudarSit(S,id,'protocolado',{sei:sei});if(!rm.ok){toast(rm.erro);return false;}salvar();
   if(typeof render==='function'&&document.getElementById('mpView'))render();
   toast('Pack '+p.pack+' marcado como protocolado'+(p.sei?' (SEI '+p.sei+')':'')+'.');
   if(PP.assist&&PP.assist.refresh)PP.assist.refresh();
   return true;
 }
 /* ---------- Processos ---------- */
+var filtroProc='todos';
+function badgeSit(p){
+  var s=sitProc(p),c={aguardando:'b-w',protocolado:'b-ok',devolvido:'b-w',indeferido:'b-e',cancelado:'b-n'}[s]||'b-n';
+  var t=SIT_ROT[s];
+  if(s==='protocolado'&&p.dataProt&&!p.historico)t+=' em '+dt(p.dataProt);
+  if(s==='devolvido')t+=' em '+dt(p.devolvido.em);
+  if(s==='indeferido'&&p.indeferido)t+=' em '+dt(p.indeferido.em);
+  if(s==='indeferido'||s==='cancelado')t+=' · saldo liberado';
+  return '<span class="badge '+c+'">'+esc(t)+'</span>';
+}
+function logProcHTML(p){
+  var l=p.log||[];if(!l.length)return '';
+  return '<div class="muted" style="font-size:12px;margin-top:6px">Histórico: '+l.map(function(x){return esc(dt(x.em))+' '+esc(x.ev)+(x.nota?' ('+esc(x.nota)+')':'');}).join(' · ')+'</div>';
+}
+function btnsSit(p){
+  var s=sitProc(p),id=p.id,b=function(act,txt,cls,aj){return '<span><button class="btn sm'+(cls?' '+cls:'')+'" data-act="'+act+'" data-id="'+id+'">'+txt+'</button>'+(aj?ia(aj):'')+'</span>';};
+  var o='';
+  if(s==='aguardando')o+=b('marcarprot','Marcar como protocolado','pri','marcarprot')+b('cancelproc','Cancelar e liberar saldo','','cancelproc');
+  else if(s==='protocolado'){
+    o+=b('devolvproc','MAPA devolveu','','devolvproc')+b('indefproc','MAPA indeferiu','','indefproc');
+    if(!p.historico)o+=b('desmarcarprot','Ainda não protocolei');
+    o+=b('cancelproc','Cancelar e liberar saldo','','cancelproc');
+  }
+  else if(s==='devolvido')o+=b('reprotproc','Protocolei de novo','pri','reprotproc')+b('indefproc','MAPA indeferiu','','indefproc')+b('cancelproc','Refazer com outras notas (libera saldo)','','refazproc');
+  else o+=b('reativar','Reativar','','reativar');
+  if((s==='protocolado'||s==='devolvido')&&!String(p.sei||'').trim())o+=b('setsei','Informar nº do SEI');
+  return o;
+}
 function viewProcessos(){
   var lista=S.processos.slice().reverse();
   if(!lista.length)return '<div class="card"><p class="muted" style="margin:0">Nenhum processo gravado ainda. Quando você gravar o consumo na aba Verificar pedido, ele aparece aqui, esperando o protocolo.</p></div>'+importCardHTML();
-  return lista.map(function(p){
-    var ativo=p.status==='ativo';
+  var cont={aguardando:0,protocolado:0,devolvido:0,indeferido:0,cancelado:0};
+  lista.forEach(function(p){cont[sitProc(p)]++;});
+  var semSei=lista.filter(function(p){var s=sitProc(p);return (s==='protocolado'||s==='devolvido')&&!p.historico&&!String(p.sei||'').trim();}).length;
+  var fb=function(k,t,n){return '<button type="button" class="btn sm'+(filtroProc===k?' pri':'')+'" data-act="fproc" data-id="'+k+'">'+t+(n!==undefined?' ('+n+')':'')+'</button>';};
+  var h='<div class="card" id="procSit"><div class="row" style="align-items:center;margin-bottom:6px">'+fb('todos','Todos',lista.length)+fb('aguardando','Falta protocolar',cont.aguardando)+fb('protocolado','Protocolados',cont.protocolado)+fb('devolvido','Devolvidos',cont.devolvido)+fb('indeferido','Indeferidos',cont.indeferido)+fb('cancelado','Cancelados',cont.cancelado)+'</div>'
+    +'<div class="muted" style="font-size:12px">Marque aqui o que acontece com cada pack no SEI/MAPA. Devolvido mantém o saldo reservado; indeferido e cancelado liberam o saldo das NFs.</div>'
+    +(semSei?'<div class="alert w">'+semSei+' pack(s) protocolado(s) sem o nº do SEI. Clique em “Informar nº do SEI” no pack para conferir com a lista do SEI.</div>':'')+'</div>';
+  var vis=lista.filter(function(p){return filtroProc==='todos'||sitProc(p)===filtroProc;});
+  if(!vis.length)h+='<div class="card"><p class="muted" style="margin:0">Nenhum pack nesta situação.</p></div>';
+  return h+vis.map(function(p){
+    var s=sitProc(p),ativo=p.status==='ativo';
     var rows=p.itens.map(function(i){var nf=getNF(S,i.nfId);return '<tr><td>'+nomeHTML(i.esp)+'</td><td>'+(nf?'NF '+esc(nf.numero)+' · '+esc(nf.fornecedor):'NF removida')+'</td><td class="r">'+fmt(i.qtd)+'</td></tr>';}).join('');
-    return '<div class="card"><div class="row" style="justify-content:space-between;align-items:center"><div><b>Pack '+esc(p.pack)+'</b>'+(p.sei?' · SEI '+esc(p.sei):'')+' <span class="muted">· '+(p.destino?esc(p.destino)+' · ':'')+dt(p.data)+(p.historico?' · histórico':'')+'</span></div>'
-    +'<span><span class="badge '+(ativo?'b-ok':'b-w')+'">'+(ativo?'Consumo gravado':'Cancelado (saldo liberado)')+'</span> '+(ativo?(aguardaProt(p)?'<span class="badge b-w">Falta protocolar no SEI/MAPA</span>':'<span class="badge b-ok">Protocolado'+(p.dataProt?' em '+dt(p.dataProt):'')+'</span>'):'')+'</span></div>'
+    var mot=(s==='devolvido'&&p.devolvido&&p.devolvido.motivo)||(s==='indeferido'&&p.indeferido&&p.indeferido.motivo)||'';
+    return '<div class="card" data-sit="'+s+'"><div class="row" style="justify-content:space-between;align-items:center"><div><b>Pack '+esc(p.pack)+'</b>'+(p.sei?' · SEI '+esc(p.sei):'')+' <span class="muted">· '+(p.destino?esc(p.destino)+' · ':'')+dt(p.data)+(p.historico?' · histórico':'')+'</span></div>'
+    +'<span>'+(ativo?'<span class="badge b-ok">Consumo gravado</span> ':'')+badgeSit(p)+'</span></div>'
+    +(mot?'<div class="alert '+(s==='indeferido'?'e':'w')+'"><b>Motivo informado:</b> '+esc(mot)+'</div>':'')
     +'<table style="margin-top:8px"><thead><tr><th>Espécie</th><th>NF</th><th class="r">Qtd</th></tr></thead><tbody>'+rows+'</tbody></table>'
     +'<div class="row" style="margin-top:8px;align-items:center">'
     +'<span><button class="btn sm" data-act="grifosproc" data-id="'+p.id+'">Folha de grifos</button>'+ia('grifos')+'</span>'
     +'<span><button class="btn sm" data-act="pdfproc" data-id="'+p.id+'">PDF das NFs (SEI)</button>'+ia('pdfnfs')+'</span>'
     +'<span><button class="btn sm" data-act="resumoproc" data-id="'+p.id+'">Resumo</button>'+ia('resumo')+'</span>'
     +'<span><button class="btn sm" data-act="cartaproc" data-id="'+p.id+'">Carta ao MAPA</button>'+ia('carta')+'</span>'
-    +(ativo&&aguardaProt(p)?'<span><button class="btn sm pri" data-act="marcarprot" data-id="'+p.id+'">Marcar como protocolado</button>'+ia('marcarprot')+'</span>':'')
-    +(ativo&&p.protocolado===true&&!p.historico?'<span><button class="btn sm" data-act="desmarcarprot" data-id="'+p.id+'">Ainda não protocolei</button></span>':'')
-    +(ativo?'<span><button class="btn sm" data-act="cancelproc" data-id="'+p.id+'">Cancelar e liberar saldo</button>'+ia('cancelproc')+'</span>':'<span><button class="btn sm" data-act="reativar" data-id="'+p.id+'">Reativar</button>'+ia('reativar')+'</span>')
-    +'<span><button class="btn sm dg" data-act="delproc" data-id="'+p.id+'">Excluir</button>'+ia('delproc')+'</span></div></div>';
+    +btnsSit(p)
+    +'<span><button class="btn sm dg" data-act="delproc" data-id="'+p.id+'">Excluir</button>'+ia('delproc')+'</span></div>'+logProcHTML(p)+'</div>';
   }).join('');
 }
 
@@ -1570,9 +1684,15 @@ document.addEventListener('click',function(ev){
   else if(a==='cancelaredit'){formNF={id:null,numero:'',fornecedor:'',data:hoje(),texto:''};render();}
   else if(a==='delnf'){if(!confirm('Excluir esta NF?'))return;var r3=excluirNF(S,id);if(!r3.ok){toast(r3.erro);return;}salvar();render();}
   else if(a==='marcarprot'){marcarProt(id);}
-  else if(a==='desmarcarprot'){var pd=S.processos.filter(function(x){return x.id===id;})[0];if(pd){pd.protocolado=false;pd.dataProt='';salvar();render();toast('Voltou para “falta protocolar”.');}}
-  else if(a==='cancelproc'){if(!confirm('Cancelar este processo e liberar o saldo das NFs? Faça isso só depois que o MAPA confirmar o cancelamento.'))return;setStatusProc(S,id,'cancelado');salvar();render();toast('Saldo liberado.');}
-  else if(a==='reativar'){var r4=setStatusProc(S,id,'ativo');if(!r4.ok){toast(r4.erro);return;}salvar();render();toast('Processo reativado.');}
+  else if(a==='desmarcarprot'){var psRd=mudarSit(S,id,'desprotocolado',{});if(!psRd.ok){toast(psRd.erro);return;}salvar();render();toast('Voltou para “falta protocolar”.');}
+  else if(a==='cancelproc'){if(!confirm('Cancelar este processo e liberar o saldo das NFs? Faça isso só depois que o MAPA confirmar o cancelamento.'))return;var psRc=mudarSit(S,id,'cancelado',{});if(!psRc.ok){toast(psRc.erro);return;}salvar();render();toast('Saldo liberado.');}
+  else if(a==='reativar'){var psR4=mudarSit(S,id,'reativado',{});if(!psR4.ok){toast(psR4.erro);return;}salvar();render();toast('Processo reativado.');}
+  else if(a==='devolvproc'){var psMv=prompt('O MAPA devolveu este pack para correção.\nQual foi o motivo? (ex.: nota já usada em outro processo)','');if(psMv===null)return;var psRv=mudarSit(S,id,'devolvido',{nota:psMv});if(!psRv.ok){toast(psRv.erro);return;}salvar();render();toast('Pack marcado como devolvido. O saldo continua reservado até você corrigir.');}
+  else if(a==='reprotproc'){var psSv=prompt('Protocolou de novo no SEI/MAPA.\nNº do processo SEI (opcional):',((S.processos.filter(function(x){return x.id===id;})[0]||{}).sei)||'');if(psSv===null)return;var psRr=mudarSit(S,id,'reprotocolado',{sei:psSv});if(!psRr.ok){toast(psRr.erro);return;}salvar();render();toast('Pack protocolado de novo.');}
+  else if(a==='indefproc'){var psMi=prompt('O MAPA indeferiu este pack.\nO saldo das NFs será liberado.\nQual foi o motivo? (ex.: nota já usada em outro processo)','');if(psMi===null)return;var psRi=mudarSit(S,id,'indeferido',{nota:psMi});if(!psRi.ok){toast(psRi.erro);return;}salvar();render();toast('Pack indeferido. Saldo das NFs liberado.');}
+  else if(a==='refazproc'){if(!confirm('Refazer este pack com outras notas? O saldo das NFs dele será liberado agora. Faça isso só se o MAPA já devolveu o processo.'))return;var psRf=mudarSit(S,id,'cancelado',{nota:'refeito com outras notas'});if(!psRf.ok){toast(psRf.erro);return;}salvar();render();toast('Saldo liberado. Monte o pack de novo em Passo a passo.');}
+  else if(a==='setsei'){var psPz=S.processos.filter(function(x){return x.id===id;})[0];var psSz=prompt('Nº do processo SEI do pack '+(psPz?psPz.pack:'')+':','');if(psSz===null||!String(psSz).trim())return;mudarSit(S,id,'sei',{sei:psSz});salvar();render();toast('SEI informado.');}
+  else if(a==='fproc'){filtroProc=id;render();}
   else if(a==='delproc'){if(!confirm('Excluir este processo? O saldo das NFs será recalculado.'))return;S.processos=S.processos.filter(function(p){return p.id!==id;});salvar();render();}
 });
 document.addEventListener('mouseover',function(ev){var e=ev.target.closest&&ev.target.closest('.info');if(e&&meu(e))mostrarTip(e);});
@@ -1699,7 +1819,7 @@ function alertaLinhaTxt(sp,r){
       out+='<div class="alert w"><b>'+esc(nomeSci(sp))+':</b> nome parecido já cadastrado ('+p.nomes.map(function(n){return esc(nomeSci(n));}).join(', ')+'). É a mesma espécie? Confira em Notas de entrada.</div>';
     }else if(p.msg){out+='<div class="alert '+(p.nivel==='aviso'?'w':'e')+'">'+esc(p.msg)+'</div>';}
   });
-  return out;
+  return out+reusoHTML(r.reuso,nomeSci(sp)+': ');
 }
 function nfsDaLinha(L){return L.aloc.map(function(a){var nf=getNF(S,a.nfId);return nf?('<span class="nfchip">NF '+esc(nf.numero)+' <span class="muted">'+esc(nf.fornecedor)+'</span> · '+fmt(a.qtd)+'</span>'):'';}).join(' ');}
 function saldoDepoisTxt(L){return L.aloc.map(function(a){var nf=getNF(S,a.nfId);if(!nf)return '—';return fmt(saldoNF(S,nf.id,L.esp)-a.qtd);}).join(' · ');}
@@ -1723,18 +1843,21 @@ function panelHTML(){
   var h='<section class="step mpPanel"><div class="row between" style="align-items:center"><h2>Conferência de NFs de entrada (MAPA) · exportação '+esc(info.num)+'</h2>';
   if(est.tipo==='vazio')return h+'</div><p class="note">Adicione as espécies do pedido acima para conferir se há NF de entrada com saldo.</p></section>';
   if(est.tipo==='protocolado'){
-    var pend=aguardaProt(est.proc);
-    h+=(pend?'<span class="badge b-w">Consumo gravado · falta protocolar no SEI/MAPA</span>':'<span class="badge b-ok">Consumo gravado · protocolado no MAPA</span>')+'</div>';
+    var pend=aguardaProt(est.proc),devo=sitProc(est.proc)==='devolvido';
+    h+=(devo?'<span class="badge b-w">Devolvido pelo MAPA · corrigir e protocolar de novo</span>':(pend?'<span class="badge b-w">Consumo gravado · falta protocolar no SEI/MAPA</span>':'<span class="badge b-ok">Consumo gravado · protocolado no MAPA</span>'))+'</div>';
+    if(devo)h+='<div class="alert w"><b>O MAPA devolveu este pack em '+esc(dt(est.proc.devolvido.em))+'.</b>'+(est.proc.devolvido.motivo?'<div style="margin-top:4px">Motivo: '+esc(est.proc.devolvido.motivo)+'</div>':'')+'<div style="margin-top:4px">O saldo das NFs continua reservado. Depois de corrigir, protocole de novo e clique em “Protocolei de novo”.</div></div>';
     h+='<p class="note" style="margin-top:6px">Pack '+esc(est.proc.pack)+(est.proc.sei?' · SEI '+esc(est.proc.sei):'')+' · o consumo das NFs já foi gravado'+(pend?'; quando protocolar no SEI/MAPA, clique em “Marcar como protocolado”.':(est.proc.dataProt?' · protocolado em '+dt(est.proc.dataProt)+'.':'.'))+'</p>';
     var rows=est.proc.itens.map(function(i){var nf=getNF(S,i.nfId);return '<tr><td>'+nomeHTML(i.esp)+'</td><td>'+(nf?'NF '+esc(nf.numero)+' · '+esc(nf.fornecedor):'NF removida')+'</td><td class="r">'+fmt(i.qtd)+'</td></tr>';}).join('');
     h+='<div style="overflow-x:auto"><table class="mpt"><thead><tr><th>Espécie</th><th>NF usada</th><th class="r">Qtd</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
     if(est.difs.length)h+='<div class="alert w"><b>O pedido mudou depois de protocolar:</b><div class="u"><span>'+est.difs.map(esc).join('</span></div><div class="u"><span>')+'</span></div><div style="margin-top:4px">Se o MAPA já recebeu o processo, confira com ele antes de embarcar.</div></div>';
-    h+='<div class="row" style="margin-top:10px">'+(pend?'<button type="button" class="primary" data-mpx="marcarprot">Marcar como protocolado</button>':'')+'<button type="button" data-mpx="grifosproc">Folha de grifos</button><button type="button" data-mpx="pdfproc">PDF das NFs (SEI)</button><button type="button" data-mpx="abrirproc">Ver em Notas de entrada</button></div></section>';
+    h+='<div class="row" style="margin-top:10px">'+(pend?'<button type="button" class="primary" data-mpx="marcarprot">Marcar como protocolado</button>':'')+(devo?'<button type="button" class="primary" data-mpx="reprot">Protocolei de novo</button>':'')+'<button type="button" data-mpx="grifosproc">Folha de grifos</button><button type="button" data-mpx="pdfproc">PDF das NFs (SEI)</button><button type="button" data-mpx="abrirproc">Ver em Notas de entrada</button></div></section>';
     return h;
   }
   var d=est.d,v=est.v;
+  var antigos=S.processos.filter(function(p){return p.status!=='ativo'&&mesmoPack(p.pack,info.num);});
   var badge=!S.nfs.length?'<span class="badge b-w">Nenhuma NF cadastrada</span>':(v.erros?'<span class="badge b-e">'+v.erros+' espécie(s) com problema</span>':'<span class="badge b-ok">Todas cobertas — falta gravar o consumo</span>');
   h+=badge+'</div>';
+  antigos.forEach(function(p){var sx=sitProc(p),mx=(p.indeferido&&p.indeferido.motivo)||'';h+='<div class="alert w"><b>Já houve um pack '+esc(p.pack)+' '+(sx==='indeferido'?'indeferido pelo MAPA':'cancelado')+'.</b>'+(mx?'<div style="margin-top:4px">Motivo: '+esc(mx)+'</div>':'')+'<div style="margin-top:4px">O saldo dele foi liberado. Confira se as notas escolhidas abaixo são as corretas antes de gravar de novo.</div></div>';});
   if(!S.nfs.length)h+='<p class="note">Cadastre as NFs de entrada (ou importe o backup do app antigo) na aba <b>Notas de entrada</b> para conferir este pedido.</p>';
   h+='<div style="overflow-x:auto"><table class="mpt"><thead><tr><th>Espécie</th><th class="r">Pedido</th><th>NFs usadas</th><th class="r">Saldo depois</th><th></th></tr></thead><tbody>';
   d.linhas.forEach(function(L,i){
@@ -1779,6 +1902,7 @@ document.addEventListener('click',function(ev){
   }else if(a==='abrir'&&est.d){
     var sei2=document.getElementById('mpxSei');if(sei2)est.d.sei=sei2.value.trim();
     S.draft=est.d;S.draft.linhas.forEach(function(L){L.edit=false;L.editNome=false;});salvar();tab='verificar';PP.go('mapa');
+  }else if(a==='reprot'&&est.proc){var svx=prompt('Protocolou de novo no SEI/MAPA.\nNº do processo SEI (opcional):',est.proc.sei||'');if(svx===null)return;var rrx=mudarSit(S,est.proc.id,'reprotocolado',{sei:svx});if(!rrx.ok){toast(rrx.erro);return;}salvar();refazer();toast('Pack protocolado de novo.');
   }else if(a==='marcarprot'&&est.proc){if(marcarProt(est.proc.id))refazer();
   }else if(a==='abrirproc'){tab='processos';PP.go('mapa');}
 });
@@ -1845,9 +1969,11 @@ PP.mapa={
   searchItems:buscaItens,
   pendencias:pendencias,
   aProtocolar:function(){carregar();return S.processos.filter(aguardaProt).map(function(p){return {id:p.id,pack:p.pack,destino:p.destino,data:p.data,sei:p.sei};});},
+  aCorrigir:function(){carregar();return S.processos.filter(function(p){return sitProc(p)==='devolvido';}).map(function(p){return {id:p.id,pack:p.pack,destino:p.destino,sei:p.sei,motivo:(p.devolvido&&p.devolvido.motivo)||''};});},
+  reprotocolar:function(id){carregar();var r=mudarSit(S,id,'reprotocolado',{});if(r.ok)salvar();return r.ok;},
   marcarProtocolado:function(id){carregar();return marcarProt(id);},
   abrirProcessos:function(){tab='processos';PP.go('mapa');},
   estado:function(){carregar();return S;},
-  core:{addMarcas:addMarcas,candidatosMarca:candidatosMarca,vincularMarca:vincularMarca,marcaPendente:marcaPendente,vincValidos:vincValidos,lerPdfBuffer:lerPdfBuffer,carregarPdfJs:carregarPdfJs,norm:norm,parseQtd:parseQtd,mesmaEsp:mesmaEsp,nomeSci:nomeSci,saldoNF:saldoNF,entradaNF:entradaNF,resumoNF:resumoNF,painelEspecies:painelEspecies,validarDraft:validarDraft,protocolar:protocolar,sugerir:sugerir,sugerirAjuste:sugerirAjuste,folhaGrifos:folhaGrifos,novoEstado:novoEstado,lerImport:lerImport,conflitosEstado:conflitosEstado,chavePack:chavePack,mesmoPack:mesmoPack,rascunhoDeExportacao:rascunhoDeExportacao,estadoExportacao:estadoExportacao,parseLinhas:parseLinhas,lerPdfBuffer:lerPdfBuffer,agruparLinhas:agruparLinhas,parsePaginaNF:parsePaginaNF,espDeTexto:espDeTexto,itensDoDraft:itensDoDraft,getNF:getNF,generosDe:function(S){return nomesConhecidos(S).map(function(n){return n.split(' ')[0];});}}
+  core:{sitProc:sitProc,mudarSit:mudarSit,validarDraft:validarDraft,reusoNF:reusoNF,addMarcas:addMarcas,candidatosMarca:candidatosMarca,vincularMarca:vincularMarca,marcaPendente:marcaPendente,vincValidos:vincValidos,lerPdfBuffer:lerPdfBuffer,carregarPdfJs:carregarPdfJs,norm:norm,parseQtd:parseQtd,mesmaEsp:mesmaEsp,nomeSci:nomeSci,saldoNF:saldoNF,entradaNF:entradaNF,resumoNF:resumoNF,painelEspecies:painelEspecies,validarDraft:validarDraft,protocolar:protocolar,sugerir:sugerir,sugerirAjuste:sugerirAjuste,folhaGrifos:folhaGrifos,novoEstado:novoEstado,lerImport:lerImport,conflitosEstado:conflitosEstado,chavePack:chavePack,mesmoPack:mesmoPack,rascunhoDeExportacao:rascunhoDeExportacao,estadoExportacao:estadoExportacao,parseLinhas:parseLinhas,lerPdfBuffer:lerPdfBuffer,agruparLinhas:agruparLinhas,parsePaginaNF:parsePaginaNF,espDeTexto:espDeTexto,itensDoDraft:itensDoDraft,getNF:getNF,generosDe:function(S){return nomesConhecidos(S).map(function(n){return n.split(' ')[0];});}}
 };
 })();

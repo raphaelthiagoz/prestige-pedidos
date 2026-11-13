@@ -240,6 +240,8 @@ main.wrap>div[id^="v"]:not([hidden]){display:flex;flex-direction:column;gap:18px
 #vMapa .banner{border-radius:12px;padding:10px 14px;font-size:.88rem;margin-bottom:12px}
 #vMapa .alert,#mpModal .alert,.mpPanel .alert{border-radius:12px;padding:10px 12px;font-size:.85rem;margin-top:8px}
 .alert.e{background:var(--bad-soft);color:var(--bad)}.alert.w{background:var(--warn-soft);color:var(--warn)}
+.alert.i{background:var(--field);color:var(--muted);font-size:.82rem}.alert.i b{color:var(--fg)}
+#vMapa [data-sit=devolvido]{border-left:3px solid var(--warn)}#vMapa [data-sit=indeferido]{border-left:3px solid var(--bad)}
 .alert b{font-weight:600}
 #vMapa .u,.mpPanel .u{display:flex;justify-content:space-between;gap:10px;padding:2px 0}
 #vMapa .muted,#mpModal .muted{color:var(--muted);font-size:.82rem}
