@@ -564,7 +564,7 @@ function precisaBackup(S,agora){
 
 /* ====================== ESTADO E UTILIDADES ====================== */
 var S=novoEstado();
-var tab='verificar';
+var tab='passo',etapa=null;
 var formNF={id:null,numero:'',fornecedor:'',data:hoje(),texto:''};
 var filtroNF='';
 var filtroSaldo=false;
@@ -632,7 +632,7 @@ function mostrarTip(el){
 }
 function esconderTip(){var t=$('tip');if(t)t.className='';}
 
-var TABS=[['nfs','1 · NFs de entrada'],['verificar','2 · Verificar pedido'],['processos','Processos'],['saldonf','Saldo por nota'],['saldo','Saldo por espécie'],['pesc','Pescadores (CTF/RGP)']];
+var TABS=[['passo','Passo a passo'],['nfs','NFs de entrada'],['verificar','Verificar pedido'],['processos','Processos'],['saldonf','Saldo por nota'],['saldo','Saldo por espécie'],['pesc','Pescadores (CTF/RGP)']];
 var _pdfFeito=null;
 function renderTabs(){
   $('tabs').innerHTML=TABS.map(function(t){var nP=t[0]==='processos'?S.processos.filter(aguardaProt).length:0;return '<button type="button" data-tab="'+t[0]+'" class="'+(tab===t[0]?'on':'')+(/^(saldonf|saldo|pesc)$/.test(t[0])?' menos':'')+'">'+t[1]+(nP?' <span class="badge b-w" style="margin-left:4px" title="Packs com consumo gravado que ainda faltam protocolar no SEI/MAPA">'+nP+'</span>':'')+'</button>';}).join('');
@@ -672,40 +672,101 @@ function fluxoHTML(){
   if(e.agora)h+='<div id="mpAgora" class="agora"><div class="k">Agora, faça isto</div><div class="msg">'+e.agora+'</div>'+e.bt+'</div>';
   return h+'</div>';
 }
+/* ---------- assistente "passo a passo" ---------- */
+var ETAPAS=[
+ ['NFs','Confira as NFs de entrada','Veja se as notas deste pack estão cadastradas, cada uma com o PDF. Só cadastre se faltar alguma.'],
+ ['Pedido','Informe o pedido do pack','Anexe o packing list (PDF) ou cole o pedido. Confira o número do pack, o destino e o SEI.'],
+ ['Conferir','Escolha a NF de cada espécie','Clique em "Sugerir NFs onde falta" e resolva as espécies em vermelho. Quando todas estiverem certas, avance.'],
+ ['PDF','Gere o PDF das NFs com os grifos','Este é o arquivo que você anexa no SEI. Gere, abra e confira os grifos.'],
+ ['Gravar','Grave o consumo das NFs','Confira o resumo e grave. O saldo das NFs desce agora, mas ainda não é o protocolo.'],
+ ['Protocolar','Protocole no SEI e marque aqui','Anexe os documentos no SEI e protocole. Depois volte e clique em "Marcar como protocolado".']
+];
+function etapaInicial(){
+  var d=S.draft,nPend=S.processos.filter(aguardaProt).length;
+  if(!d.linhas.length)return nPend?6:(S.nfs.length?2:1);
+  var cur=fluxoEstado().cur;
+  return cur===1?1:(cur===2?3:(cur===3?4:5));
+}
+function passoCorpo(n){
+  var d=S.draft;
+  if(n===1)return viewNFs();
+  if(n===2)return viewVerificar(true);
+  if(n===3)return '<div class="row" style="margin-bottom:10px"><button class="btn pri" data-act="sugerirtudo">Sugerir NFs onde falta</button>'+ia('sugerirtudo')+'</div><div id="banner"></div><div id="pescAv"></div><div id="linhas"></div>';
+  if(n===4){
+    var tem=d.linhas.some(function(L){return L.aloc.some(function(a){return a.nfId&&a.qtd>0;});});
+    return '<div class="card"><div class="muted" style="margin-bottom:10px">Pack '+esc(d.pack||'(sem número)')+(d.destino?' · '+esc(d.destino):'')+' · '+d.linhas.length+' espécie(s)</div>'
+      +(tem?'<div class="row" style="align-items:center"><span><button class="btn pri" data-act="pdfdraft">PDF das NFs (SEI)</button>'+ia('pdfnfs')+'</span><span><button class="btn" data-act="grifosdraft">Folha de grifos</button>'+ia('grifos')+'</span></div>'
+        :'<div class="alert e">Ainda não há NF escolhida. Volte ao passo 3.</div>')+'</div>';
+  }
+  if(n===5){
+    var v=d.linhas.length?validarDraft(S,d):{erros:0,avisos:0};
+    var nfs={};d.linhas.forEach(function(L){L.aloc.forEach(function(a){if(a.nfId)nfs[a.nfId]=1;});});
+    return '<div class="card"><div style="font-size:1.05rem"><b>Pack '+esc(d.pack||'(sem número)')+'</b>'+(d.destino?' · '+esc(d.destino):'')+'</div>'
+      +'<div class="muted" style="margin:6px 0 12px">'+d.linhas.length+' espécie(s) · '+Object.keys(nfs).length+' NF(s) usada(s)'+(d.sei?' · SEI '+esc(d.sei):'')+'</div>'
+      +(!d.linhas.length?'<div class="alert e">O pedido está vazio. Volte ao passo 2.</div>':(v.erros?'<div class="alert e">'+v.erros+' espécie(s) ainda com problema. Volte ao passo 3.</div>':''))
+      +'<button class="btn pri" data-act="protocolar">Gravar consumo</button>'+ia('protocolar')+'</div>';
+  }
+  var pend=S.processos.filter(aguardaProt);
+  if(!pend.length)return '<div class="card"><b>Nenhum pack aguardando protocolo.</b><div class="muted" style="margin:6px 0 12px">Para começar outro pack, volte ao passo 2.</div><button class="btn pri" data-act="etapa" data-n="2">Começar novo pack</button></div>';
+  return pend.map(function(p){
+    return '<div class="card"><div style="font-size:1.05rem"><b>Pack '+esc(p.pack)+'</b>'+(p.destino?' · '+esc(p.destino):'')+'</div><div class="muted" style="margin:6px 0 12px">'+(p.sei?'SEI '+esc(p.sei)+' · ':'')+'consumo gravado em '+dt(p.data)+'</div>'
+      +'<div class="row" style="align-items:center"><span><button class="btn" data-act="pdfproc" data-id="'+p.id+'">PDF das NFs (SEI)</button>'+ia('pdfnfs')+'</span><span><button class="btn pri" data-act="marcarprot" data-id="'+p.id+'">Marcar como protocolado</button>'+ia('marcarprot')+'</span></div></div>';
+  }).join('');
+}
+function passoHTML(){
+  if(etapa===null)etapa=etapaInicial();
+  var n=etapa,E=ETAPAS[n-1],ult=ETAPAS.length;
+  var h='<div class="card focoFluxo wiz" id="mpWiz"><ol class="stp">';
+  ETAPAS.forEach(function(e,i){
+    var st=(i+1<n)?'done':((i+1===n)?'now':'');
+    h+='<li data-act="etapa" data-n="'+(i+1)+'" class="'+st+'" title="'+esc(e[1])+'"><span class="n">'+(st==='done'?'✓':(i+1))+'</span><span class="t">'+esc(e[0])+'</span></li>';
+  });
+  h+='</ol><div id="mpAgora" class="agora"><div class="k">Passo '+n+' de '+ult+'</div><div class="ttl">'+esc(E[1])+'</div><div class="msg">'+esc(E[2])+'</div>'
+    +'<div class="row" style="align-items:center">'+(n>1?'<button type="button" class="btn" data-act="etapa" data-n="'+(n-1)+'">Voltar</button>':'')
+    +(n<5?'<button type="button" class="btn pri" data-act="etapaprox">Próximo: '+esc(['Pedido','Conferir as NFs','PDF das NFs','Gravar consumo'][n-1])+'</button>':'')
+    +'</div></div></div>';
+  return h+'<div id="mpPasso">'+passoCorpo(n)+'</div>';
+}
+function etapaProx(){
+  var d=S.draft,n=etapa;
+  if(n===2){if(!d.linhas.length){toast('Anexe o packing list ou cole o pedido antes de avançar.');return;}if(!String(d.pack||'').trim()){toast('Informe o número do pack.');var dd=$('mpDados');if(dd)dd.open=true;return;}}
+  if(n===3){if(!d.linhas.length){toast('O pedido está vazio.');return;}var v=validarDraft(S,d);if(v.erros){toast(v.erros+' espécie(s) ainda com problema. Resolva antes de avançar.');return;}}
+  etapa=Math.min(n+1,ETAPAS.length);render();window.scrollTo(0,0);
+}
 function paintFluxo(){var e=$('mpFluxo');if(e)e.innerHTML=fluxoHTML();}
 function render(){
   renderTabs();
   var v=$('view'),h;
   if(tab==='verificar')h=viewVerificar();
+  else if(tab==='passo')h=passoHTML();
   else if(tab==='nfs')h=viewNFs();
   else if(tab==='saldo')h=viewSaldo();
   else if(tab==='saldonf')h=viewSaldoNF();
   else if(tab==='pesc')h=viewPesc();
   else h=viewProcessos();
   v.innerHTML=((tab==='verificar'||tab==='nfs')?'<div id="mpFluxo">'+fluxoHTML()+'</div>':'')+h;
-  if(tab==='verificar')paintAll();
+  if(tab==='verificar'||(tab==='passo'&&etapa===3))paintAll();
 }
 
 /* ---------- Verificar pedido ---------- */
-function viewVerificar(){
+function viewVerificar(wiz){
   var d=S.draft,modo=S.meta.modo||'antiga',nLin=d.linhas.length;
   var dl='<datalist id="dl-esp">'+todasEspecies().map(function(e){return '<option value="'+esc(e)+'">';}).join('')+'</datalist>';
   var temAloc=d.linhas.some(function(L){return L.aloc.some(function(a){return a.nfId&&a.qtd>0;});});
   var resumo=[d.pack?'Pack '+esc(d.pack):'Pack sem número',d.destino?esc(d.destino):'',d.sei?'SEI '+esc(d.sei):''].filter(Boolean).join(' · ');
   return dl
-  +'<details class="card foco" id="mpDados"'+(d.pack?'':' open')+'><summary><span><b>Dados do pack</b> <span class="muted">'+resumo+'</span></span><span class="alt">Editar</span></summary>'
+  +'<details class="card foco" id="mpDados"'+((wiz||!d.pack)?' open':'')+'><summary><span><b>Dados do pack</b> <span class="muted">'+resumo+'</span></span><span class="alt">Editar</span></summary>'
   +'<div class="row" style="margin-top:10px"><label>Pack nº<input type="text" data-f="pack" value="'+esc(d.pack)+'" placeholder="016/2026"></label>'
   +'<label>Processo SEI<input type="text" data-f="sei" value="'+esc(d.sei)+'" placeholder="21010.003135/2026-25"></label>'
   +'<label>Destino (cliente)<input type="text" data-f="destino" value="'+esc(d.destino||'')+'" placeholder="Ruinemans Group"></label></div></details>'
-  +'<details class="card foco" id="mpPedido"'+(nLin?'':' open')+'><summary><span><b>Pedido</b> <span class="muted" id="mpPedidoN">'+(nLin?nLin+' espécie(s)':'cole ou anexe o packing list')+'</span></span><span class="alt">Alterar</span></summary>'
+  +'<details class="card foco" id="mpPedido"'+((wiz||!nLin)?' open':'')+'><summary><span><b>Pedido</b> <span class="muted" id="mpPedidoN">'+(nLin?nLin+' espécie(s)':'cole ou anexe o packing list')+'</span></span><span class="alt">Alterar</span></summary>'
   +'<div class="row" style="margin:10px 0 8px;align-items:center"><label class="btn" style="cursor:pointer;flex:0 0 auto;min-width:0;display:inline-flex;align-items:center;flex-direction:row;gap:6px;color:var(--tx);font-size:14px">Anexar packing list (PDF)<input type="file" id="packpdf" accept="application/pdf,.pdf" style="display:none"></label>'+ia('packpdf')+'<span class="muted" style="flex:1">ou cole o texto abaixo</span></div>'
   +'<textarea id="colar" placeholder="Uma espécie por linha:&#10;Otocinclus hoppei Limpa vidro 15.000&#10;Paracheirodon axelrodi Cardinal 8.000"></textarea>'
   +'<div class="row" style="margin-top:8px;align-items:center"><span><button class="btn pri" data-act="ler">Ler pedido</button>'+ia('ler')+'</span></div>'
   +'<details class="maisop"><summary>Mais opções</summary><div class="row" style="margin-top:8px;align-items:center"><span><button class="btn" data-act="addlinha">Adicionar espécie</button>'+ia('addlinha')+'</span><span><button class="btn" data-act="sugerirtudo">Sugerir NFs onde falta</button>'+ia('sugerirtudo')+'</span>'
   +'<label style="flex:0 0 auto;min-width:0;flex-direction:row;align-items:center;gap:6px;font-size:13px;color:var(--tx)">Como sugerir<select data-f="modo" style="width:auto"><option value="antiga"'+(modo==='antiga'?' selected':'')+'>NF mais antiga primeiro</option><option value="ajuste"'+(modo==='ajuste'?' selected':'')+'>Esgotar NF (melhor encaixe)</option></select>'+ia('modo')+'</label></div>'
   +'<label style="display:flex;gap:8px;align-items:center;margin-top:10px;font-size:13px"><input type="checkbox" data-f="hist" '+(d.historico?'checked':'')+'> Registro de histórico (pack antigo, já protocolado)'+ia('hist')+'</label></details></details>'
-  +'<div id="banner"></div><div id="pescAv"></div><div id="linhas"></div>'
-  +'<div id="acoes"></div>';
+  +(wiz?'':'<div id="banner"></div><div id="pescAv"></div><div id="linhas"></div><div id="acoes"></div>');
 }
 function acoesHTML(){
   var d=S.draft;if(!d.linhas.length)return '';
@@ -804,6 +865,7 @@ function paintAll(){
     if(att.length){h+='<div class="sec e">Precisa da sua atenção ('+att.length+')</div>';att.forEach(function(i){h+=linhaCardHTML(i);});}
     if(ok.length){var po=$('mpOk'),manter=!!(po&&po.open&&att.length&&po.dataset.att==='1');h+='<details class="card foco okbox" id="mpOk" data-att="'+(att.length?'1':'0')+'"'+((!att.length||manter)?' open':'')+'><summary><span class="sec ok" style="margin:0">Tudo certo ('+ok.length+')</span><span class="alt">'+(att.length?'Ver':'')+'</span></summary>'+ok.map(okRowHTML).join('')+'</details>';}
   }
+  if(!$('linhas'))return;
   $('linhas').innerHTML=h;
   var ac=$('acoes');if(ac){var mo=ac.querySelector('details.maisop'),abre=!!(mo&&mo.open),nv=acoesHTML();if(ac.innerHTML!==nv){ac.innerHTML=nv;if(abre){var m2=ac.querySelector('details.maisop');if(m2)m2.open=true;}}}
   var pn=$('mpPedidoN');if(pn)pn.textContent=d.linhas.length?d.linhas.length+' espécie(s)':'cole ou anexe o packing list';
@@ -1134,7 +1196,7 @@ async function processarPack(files){
   d.pack=p.pack||d.pack;d.destino=p.destino||d.destino||'';d.data=p.data||'';
   d.linhas=p.itens.map(function(i){return {esp:i.esp,qtd:i.qtd,aloc:[]};});
   if(S.nfs.length)d.linhas.forEach(function(L,k){sugerirLinha(k);});
-  salvar();render();
+  salvar();if(tab==='passo')etapa=3;render();
   var ja=S.processos.some(function(x){return x.status==='ativo'&&norm(x.pack)===norm(d.pack);});
   toast('Pack '+(d.pack||'?')+' lido: '+p.itens.length+' espécies.'+(ja?' Atenção: este pack já está gravado em Processos.':(S.nfs.length?' Confira as NFs sugeridas.':' Cadastre as NFs para conferir.')));
 }
@@ -1420,12 +1482,14 @@ document.addEventListener('click',function(ev){
   if(t.dataset.tab){tab=t.dataset.tab;render();window.scrollTo(0,0);return;}
   var a=t.dataset.act,i=parseInt(t.dataset.i,10),j=parseInt(t.dataset.j,10),id=t.dataset.id;
   var d=S.draft;
+  if(a==='etapa'){etapa=parseInt(t.dataset.n,10);render();window.scrollTo(0,0);return;}
+  if(a==='etapaprox'){etapaProx();return;}
   if(a==='ler'){
     var ls=parseLinhas($('colar').value);
     if(!ls.length){toast('Não encontrei espécies com quantidade. Use uma por linha, como: Otocinclus hoppei 15.000');return;}
     ls.forEach(function(l){d.linhas.push({esp:l.esp,qtd:l.qtd,aloc:[]});});
     if(S.nfs.length)d.linhas.forEach(function(L,k){if(!L.aloc.length)sugerirLinha(k);});
-    $('colar').value='';salvar();paintAll();var pd0=$('mpPedido');if(pd0)pd0.open=false;toast(ls.length+' espécie(s) lidas.'+(S.nfs.length?' Confira as NFs sugeridas.':' Cadastre as NFs de entrada para conferir.'));
+    $('colar').value='';salvar();if(tab==='passo'){etapa=3;render();}else paintAll();var pd0=$('mpPedido');if(pd0)pd0.open=false;toast(ls.length+' espécie(s) lidas.'+(S.nfs.length?' Confira as NFs sugeridas.':' Cadastre as NFs de entrada para conferir.'));
   }else if(a==='addlinha'){d.linhas.push({esp:'',qtd:0,aloc:[]});salvar();paintAll();}
   else if(a==='sugerirtudo'){if(!S.nfs.length){toast('Cadastre as NFs de entrada primeiro.');return;}var vv=validarDraft(S,d),nSug=0,nMan=0;d.linhas.forEach(function(L,k){var r=vv.linhas[k],okLn=L.aloc.length>0&&r&&!r.problemas.some(function(p){return p.nivel==='erro';});if(okLn){nMan++;return;}if(sugerirLinha(k))nSug++;});salvar();paintAll();toast(nSug+' espécie(s) preenchida(s).'+(nMan?' '+nMan+' já tinha(m) NF escolhida e foi(ram) mantida(s).':''));}
   else if(a==='sugerir'){if(!S.nfs.length){toast('Cadastre as NFs de entrada primeiro.');return;}var L1=d.linhas[i],r1=validarDraft(S,d).linhas[i];if(L1&&L1.aloc.length&&r1&&!r1.problemas.some(function(p){return p.nivel==='erro';})&&!confirm('Esta espécie já tem NF escolhida e sem problema. Substituir pela sugestão do app?'))return;if(sugerirLinha(i)){salvar();paintAll();}}
@@ -1443,7 +1507,7 @@ document.addEventListener('click',function(ev){
     if(!confirm('Gravar o consumo das NFs para o pack '+r.proc.pack+(r.proc.sei?' (SEI '+r.proc.sei+')':'')+'?\n\nO saldo das NFs cai agora. O protocolo no SEI/MAPA você marca depois, em Processos.')){
       S.processos=S.processos.filter(function(p){return p.id!==r.proc.id;});return;
     }
-    S.draft=novoDraft();_pdfFeito=null;salvar();tab='processos';render();
+    var noWiz=(tab==='passo');S.draft=novoDraft();_pdfFeito=null;salvar();if(noWiz){etapa=6;}else tab='processos';render();window.scrollTo(0,0);
     toast('Consumo gravado. Saldo das NFs atualizado. Falta protocolar no SEI/MAPA (marque em Processos).');
   }
   else if(a==='grifosdraft'){var ev0=validarDraft(S,d);abrirModal(grifosHTML('Folha de grifos – Pack '+(d.pack||'(sem número)')+(d.sei?' · SEI '+d.sei:''),folhaGrifos(S,itensDoDraft(d),true),ev0.erros?'Atenção: ainda há '+ev0.erros+' espécie(s) com problema neste pedido. Esta folha está incompleta até você resolver.':''));}
