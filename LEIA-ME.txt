@@ -522,6 +522,9 @@ v29.5 — Histórico > "Embarques e clientes" (fluxo dos nacionais em um lugar s
     - Teve mortalidade / Não teve (aparece para quem saiu há 1 dia ou mais e ainda não respondeu).
     - 10% à vista: pede confirmação mostrando o desconto e o total a pagar. O desconto é só sobre os peixes (sem GTA, embalagem e atestado).
     - Copiar cobrança e Recebi (marca como pago o que falta, com confirmação).
+    - Outro %: abre um quadro na própria linha com 5%, 10% ou qualquer percentual, mostra o desconto e o total antes de aplicar.
+    - Teve mortalidade / Corrigir mortalidade: abre na própria linha, com um campo de mortos por espécie, a escolha "Abater deste pedido"
+      ou "Guardar para o próximo pedido" e a prévia do crédito. Se o pedido já tinha desconto à vista, o desconto é recalculado.
     - Detalhes: abre o pedido completo, como antes.
   No alto: quanto falta receber, quantas mortalidades faltam perguntar, quantos têm desconto à vista e quantos estão atrasados.
   Nada mudou nas outras telas. Não precisa de SQL novo no Supabase.

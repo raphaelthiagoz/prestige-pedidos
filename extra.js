@@ -79,12 +79,14 @@
         const av = h.avista ? `<span class="chip ok">− R$ ${fmt(h.avista.valor)}</span><div class="note">${String(h.avista.pct).replace('.', ',')}% à vista</div>` : '<span class="note">—</span>';
         const bt = [];
         if (pendMort) bt.push(`<button type="button" data-ep="mortinfo" data-id="${h.id}">Teve mortalidade</button><button type="button" data-ep="mortnao" data-id="${h.id}">Não teve</button>`);
-        if (sd > 0 && !h.avista) bt.push(`<button type="button" data-ep="av10" data-id="${h.id}">10% à vista</button>`);
+        else if (h.mort) bt.push(`<button type="button" data-ep="mortinfo" data-id="${h.id}">Corrigir mortalidade</button>`);
+        if (sd > 0 && !h.avista) bt.push(`<button type="button" data-ep="av10" data-id="${h.id}">10% à vista</button><button type="button" data-ep="avoutro" data-id="${h.id}">Outro %</button>`);
+        else if (h.avista && sd > 0) bt.push(`<button type="button" data-ep="avoutro" data-id="${h.id}">Mudar desconto</button>`);
         if (sd > 0) bt.push(`<button type="button" data-ep="cobr" data-id="${h.id}">Copiar cobrança</button><button type="button" data-ep="recebi" data-id="${h.id}">Recebi</button>`);
         bt.push(`<button type="button" data-ep="abrir" data-id="${h.id}">Detalhes</button>`);
         return `<div class="epr"><div class="eph"><b>${esc(h.cliente.nome)}</b><span class="note">${h.totais.caixas} cx · inv. ${esc(h.inv)}</span>${chip(sit.kind, sit.label)}<span class="epv">Pedido R$ ${fmt(h.totais.total)} · a pagar <b>R$ ${fmt(dev)}</b>${sd !== dev ? ` · falta R$ ${fmt(sd)}` : ''}</span></div>
           <div class="epm"><div><span class="note">Mortalidade</span>${mort}</div><div><span class="note">Desconto à vista</span>${av}</div></div>
-          <div class="epb">${bt.join(' ')}</div></div>`;
+          <div class="epb">${bt.join(' ')}</div>${epForm(h)}</div>`;
       }).join('');
       return `<section class="step"><div class="row between"><h2>Embarque ${dBR(em.saida)} <span class="muted">${esc(em.titulo || '')}</span></h2><span class="muted">${em.saida >= hoje ? 'ainda vai sair' : 'já saiu'} · a receber R$ ${fmt(F.r2(totEmb))}</span></div>
         <div class="epl">${linhas}</div></section>`;
@@ -94,12 +96,54 @@
       <p class="note">Cada linha mostra só o que falta fazer naquele cliente. Os botões já aplicam e salvam; “10% à vista” e “Recebi” pedem confirmação antes.</p></section>`;
     return kp + (blocos || '<section class="step"><p class="note">Nenhum embarque programado nos últimos 30 dias. Crie em Programação de voos.</p></section>');
   }
+  /* formulários dentro da linha do cliente (mortalidade e outro % de desconto à vista) */
+  const epPrevMort = (e, ep) => {
+    const c = F.mortalidade(e, ep.dead || {});
+    if (!c.credito) return 'Digite quantos morreram para ver o crédito.';
+    const ab = ep.dest !== 'guardar', total = F.r2(e.totais.total - (ab ? c.credito : 0) - (e.avista ? e.avista.valor || 0 : 0));
+    return `Crédito de <b>R$ ${fmt(c.credito)}</b> (${fmtInt(c.mortos)} peixe(s)). ${ab ? `Total a pagar neste pedido: <b>R$ ${fmt(total)}</b>.` : `O crédito fica guardado para o próximo pedido do cliente; este pedido continua em <b>R$ ${fmt(total)}</b>.`}`;
+  };
+  const epForm = h => {
+    const ep = ST.hist.ep; if (!ep || ep.id !== h.id) return '';
+    if (ep.kind === 'mort') return `<div class="epf" id="epForm"><div class="note">Quantos peixes morreram de cada espécie na chegada?</div>
+      ${(h.lines || []).map((l, i) => `<label class="epq"><span>${esc(l.nome || l.comum)} <span class="note">enviados ${fmtInt(l.peixes)} · R$ ${fmt(l.preco)} cada</span></span><input type="number" min="0" max="${l.peixes}" data-epd="${i}" value="${ep.dead[i] || ''}" aria-label="Mortos ${esc(l.comum)}"></label>`).join('')}
+      <div class="epq2"><label><input type="radio" name="epdest" value="abater" ${ep.dest !== 'guardar' ? 'checked' : ''}> Abater deste pedido</label><label><input type="radio" name="epdest" value="guardar" ${ep.dest === 'guardar' ? 'checked' : ''}> Guardar para o próximo pedido</label></div>
+      <p id="epPrev">${epPrevMort(h, ep)}</p><div class="epb"><button type="button" class="primary" data-ep="mortsalvar" data-id="${h.id}">Salvar mortalidade</button><button type="button" data-ep="fechar" data-id="${h.id}">Cancelar</button></div></div>`;
+    return `<div class="epf" id="epForm"><div class="note">Desconto para pagamento à vista, só sobre o valor dos peixes (R$ ${fmt(F.baseAvista(h))}).</div>
+      <div class="epb"><button type="button" data-ep="avchip" data-v="5">5%</button><button type="button" data-ep="avchip" data-v="10">10%</button><label class="epq" style="display:inline-flex;gap:6px;align-items:center">outro: <input type="number" min="0" max="100" step="0.5" data-epp="1" value="${ep.pct === '' ? '' : esc(String(ep.pct))}" style="width:84px"> %</label></div>
+      <p id="epPrev">${avPrevTxt(h, ep.pct)}</p><div class="epb"><button type="button" class="primary" data-ep="avsalvar" data-id="${h.id}">Aplicar desconto</button>${h.avista ? `<button type="button" data-ep="avtirar" data-id="${h.id}">Remover desconto</button>` : ''}<button type="button" data-ep="fechar" data-id="${h.id}">Cancelar</button></div></div>`;
+  };
+  document.addEventListener('input', ev => {
+    const t = ev.target, ep = ST.hist.ep; if (!ep || !$('vHist').contains(t)) return;
+    const e = S.hist.find(x => x.id === ep.id); if (!e) return;
+    if (t.dataset.epd != null) { ep.dead[t.dataset.epd] = parseInt(t.value, 10) || 0; }
+    else if (t.dataset.epp != null) { ep.pct = t.value; }
+    else if (t.name === 'epdest') { ep.dest = t.value; }
+    else return;
+    if ($('epPrev')) $('epPrev').innerHTML = ep.kind === 'mort' ? epPrevMort(e, ep) : avPrevTxt(e, ep.pct);
+  });
   document.addEventListener('click', async ev => {
     const b = ev.target.closest('[data-ep]'); if (!b || !$('vHist').contains(b)) return;
     const k = b.dataset.ep, e = S.hist.find(x => x.id === b.dataset.id); if (!e) return;
     const fim = txt => { e.upd = Date.now(); PP.saveHist(); PP.renderClientes(); renderHist(); if (PP.assist) PP.assist.refresh(); if (PP.hoje && S.view === 'hoje') PP.hoje.render(); if (txt) PP.toast(txt, 'ok'); };
-    if (k === 'mortnao') { e.mortOk = Date.now(); fim('Anotado: sem mortalidade.'); }
-    else if (k === 'mortinfo' || k === 'abrir') { ST.hist.tipo = 'todos'; ST.hist.open = e.id; if (k === 'mortinfo') ST.hist.flash = e.id; renderHist(); const t = k === 'mortinfo' ? $('mortBox') : $('hdet'); if (t) t.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+    if (k === 'mortnao') { e.mortOk = Date.now(); ST.hist.ep = null; fim('Anotado: sem mortalidade.'); }
+    else if (k === 'mortinfo') { ST.hist.ep = { id: e.id, kind: 'mort', dead: Object.assign({}, (e.mort && e.mort.dead) || {}), dest: (e.mort && e.mort.destino) || 'abater' }; renderHist(); const f = $('epForm'); if (f) f.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+    else if (k === 'avoutro') { ST.hist.ep = { id: e.id, kind: 'av', pct: e.avista ? e.avista.pct : '' }; renderHist(); const f = $('epForm'); if (f) f.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+    else if (k === 'fechar') { ST.hist.ep = null; renderHist(); }
+    else if (k === 'avchip') { const ep = ST.hist.ep; if (ep) { ep.pct = b.dataset.v; renderHist(); } }
+    else if (k === 'avsalvar') {
+      const pct = parseFloat(String((ST.hist.ep || {}).pct || '').replace(',', '.'));
+      if (!(pct > 0 && pct <= 100)) { PP.toast('Digite a % do desconto (entre 0 e 100) ou toque em 5% ou 10%.'); return; }
+      e.avista = { pct, valor: F.valorAvista(e, pct), em: F.todayISO() }; ST.hist.ep = null; fim('Desconto à vista aplicado.');
+    }
+    else if (k === 'avtirar') { e.avista = null; ST.hist.ep = null; fim('Desconto removido: o pedido voltou ao valor de antes.'); }
+    else if (k === 'mortsalvar') {
+      const ep = ST.hist.ep, c = F.mortalidade(e, ep.dead || {});
+      e.mortOk = c.credito > 0 ? 0 : Date.now(); e.mort = c.credito > 0 ? { dead: Object.assign({}, ep.dead), credito: c.credito, mortos: c.mortos, destino: ep.dest === 'guardar' ? 'guardar' : 'abater', em: F.todayISO() } : null;
+      let extra = ''; if (e.avista) { const novo = F.valorAvista(e, e.avista.pct); if (novo !== e.avista.valor) { e.avista = Object.assign({}, e.avista, { valor: novo }); extra = ` O desconto à vista foi recalculado para R$ ${fmt(novo)}.`; } }
+      ST.hist.ep = null; fim(c.credito > 0 ? 'Mortalidade salva.' + extra : 'Nenhum peixe morto informado: ficou como sem mortalidade.');
+    }
+    else if (k === 'abrir') { ST.hist.tipo = 'todos'; ST.hist.open = e.id; renderHist(); const t = $('hdet'); if (t) t.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
     else if (k === 'av10') {
       const v = F.valorAvista(e, 10), antes = F.r2(e.totais.total - (e.mort && e.mort.destino === 'abater' ? e.mort.credito || 0 : 0));
       if (!confirm(`Aplicar 10% de desconto à vista para ${e.cliente.nome}?\n\nDesconto: − R$ ${fmt(v)} (sobre os peixes, sem GTA, embalagem e atestado)\nTotal a pagar: R$ ${fmt(F.r2(antes - v))}`)) return;
