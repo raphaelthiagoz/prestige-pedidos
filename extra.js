@@ -30,7 +30,8 @@
     const q = h.q.trim().toLowerCase();
     const list = all.filter(e => (!q || (e.cliente.nome + ' ' + e.inv + ' ' + e.nf).toLowerCase().includes(q)) && (!h.st || F.situacao(e, hoje, prazo()).key === h.st));
     const rec = F.r2(all.reduce((s, e) => s + F.situacao(e, hoje, prazo()).saldo, 0)), atr = all.filter(e => F.situacao(e, hoje, prazo()).key === 'atrasado');
-    const tipo = h.tipo || 'todos', chipsT = `<div class="row noprint" style="align-items:center"><div class="chips">${[['todos', 'Todos'], ['nac', 'Nacionais'], ['exp', 'Exportações ']].map(([k, n]) => `<button type="button" class="xchip" data-htipo="${k}" aria-pressed="${tipo === k}">${n}</button>`).join('')}</div></div>`;
+    const tipo = h.tipo || 'todos', chipsT = `<div class="row noprint" style="align-items:center"><div class="chips">${[['emb', 'Embarques e clientes'], ['todos', 'Todos'], ['nac', 'Nacionais'], ['exp', 'Exportações ']].map(([k, n]) => `<button type="button" class="xchip" data-htipo="${k}" aria-pressed="${tipo === k}">${n}</button>`).join('')}</div></div>`;
+    if (tipo === 'emb') { $('vHist').innerHTML = chipsT + embPainelHTML(); return; }
     /* v26: conferência Programação × Histórico */
     const linhasProg = []; (S.embarques || []).forEach(em => (em.linhas || []).forEach(l => { if (l.status !== 'cancelado') linhasProg.push({ em, l }); }));
     const faltam = linhasProg.filter(({ l }) => !(l.pedidoId && S.hist.some(x => x.id === l.pedidoId))).sort((a, b) => String(b.em.saida).localeCompare(String(a.em.saida)));
@@ -57,6 +58,59 @@
     $('vHist').innerHTML = chipsT + (tipo === 'exp' ? '' : mortHTML + confHTML) + html + xh;
   }
 
+  /* ---------- v29.5: Embarques e clientes (nacional): uma linha por cliente, com as ações do pós-venda ---------- */
+  function embPainelHTML() {
+    const hoje = F.todayISO(), lim = F.addDays(hoje, -30);
+    const embs = (S.embarques || []).filter(em => (em.linhas || []).some(l => l.status !== 'cancelado') && em.saida >= lim)
+      .sort((a, b) => { const fa = a.saida >= hoje, fb = b.saida >= hoje; return fa !== fb ? (fa ? -1 : 1) : (fa ? a.saida.localeCompare(b.saida) : b.saida.localeCompare(a.saida)); });
+    let receber = 0, perguntar = 0, nAv = 0, vAv = 0, atras = 0;
+    const blocos = embs.map(em => {
+      let totEmb = 0;
+      const linhas = (em.linhas || []).filter(l => l.status !== 'cancelado').map(l => {
+        const h = S.hist.find(x => x.id === l.pedidoId && F.active(x));
+        if (!h) return `<div class="epr"><div class="eph"><b>${esc(l.cliente)}</b><span class="note">${l.caixas || 0} cx</span><span class="chip warn">Sem pedido no histórico</span></div></div>`;
+        const sit = F.situacao(h, hoje, prazo()), dev = F.devido(h), sd = sit.saldo, saiu = em.saida < hoje, dias = F.daysBetween(em.saida, hoje);
+        receber += sd; totEmb += sd; if (sit.key === 'atrasado') atras++; if (h.avista) { nAv++; vAv += h.avista.valor || 0; }
+        let mort, pendMort = false;
+        if (h.mort) mort = `<span class="chip ${h.mort.destino === 'guardar' ? 'info' : 'ok'}">− R$ ${fmt(h.mort.credito)}</span><div class="note">${h.mort.mortos} peixe(s) · ${h.mort.destino === 'guardar' ? 'guardado p/ próximo pedido' : 'abatido neste pedido'}</div>`;
+        else if (h.mortOk) mort = '<span class="chip ok">Sem mortalidade</span>';
+        else if (!saiu) mort = '<span class="note">ainda não saiu</span>';
+        else { pendMort = true; perguntar++; mort = `<span class="chip warn">Perguntar ao cliente</span><div class="note">saiu há ${dias} dia(s)</div>`; }
+        const av = h.avista ? `<span class="chip ok">− R$ ${fmt(h.avista.valor)}</span><div class="note">${String(h.avista.pct).replace('.', ',')}% à vista</div>` : '<span class="note">—</span>';
+        const bt = [];
+        if (pendMort) bt.push(`<button type="button" data-ep="mortinfo" data-id="${h.id}">Teve mortalidade</button><button type="button" data-ep="mortnao" data-id="${h.id}">Não teve</button>`);
+        if (sd > 0 && !h.avista) bt.push(`<button type="button" data-ep="av10" data-id="${h.id}">10% à vista</button>`);
+        if (sd > 0) bt.push(`<button type="button" data-ep="cobr" data-id="${h.id}">Copiar cobrança</button><button type="button" data-ep="recebi" data-id="${h.id}">Recebi</button>`);
+        bt.push(`<button type="button" data-ep="abrir" data-id="${h.id}">Detalhes</button>`);
+        return `<div class="epr"><div class="eph"><b>${esc(h.cliente.nome)}</b><span class="note">${h.totais.caixas} cx · inv. ${esc(h.inv)}</span>${chip(sit.kind, sit.label)}<span class="epv">Pedido R$ ${fmt(h.totais.total)} · a pagar <b>R$ ${fmt(dev)}</b>${sd !== dev ? ` · falta R$ ${fmt(sd)}` : ''}</span></div>
+          <div class="epm"><div><span class="note">Mortalidade</span>${mort}</div><div><span class="note">Desconto à vista</span>${av}</div></div>
+          <div class="epb">${bt.join(' ')}</div></div>`;
+      }).join('');
+      return `<section class="step"><div class="row between"><h2>Embarque ${dBR(em.saida)} <span class="muted">${esc(em.titulo || '')}</span></h2><span class="muted">${em.saida >= hoje ? 'ainda vai sair' : 'já saiu'} · a receber R$ ${fmt(F.r2(totEmb))}</span></div>
+        <div class="epl">${linhas}</div></section>`;
+    }).join('');
+    const kp = `<section class="step"><div class="row between"><h2>Embarques e clientes</h2><span class="muted">últimos 30 dias e os próximos voos</span></div>
+      <div class="kpis"><div><b>R$ ${fmt(F.r2(receber))}</b><span>a receber</span></div><div><b style="color:${perguntar ? 'var(--warn,#e8c15a)' : 'var(--ok,#4cc58a)'}">${perguntar}</b><span>mortalidade a perguntar</span></div><div><b>${nAv}</b><span>com desconto à vista (− R$ ${fmt(F.r2(vAv))})</span></div><div><b>${atras}</b><span>atrasado(s)</span></div></div>
+      <p class="note">Cada linha mostra só o que falta fazer naquele cliente. Os botões já aplicam e salvam; “10% à vista” e “Recebi” pedem confirmação antes.</p></section>`;
+    return kp + (blocos || '<section class="step"><p class="note">Nenhum embarque programado nos últimos 30 dias. Crie em Programação de voos.</p></section>');
+  }
+  document.addEventListener('click', async ev => {
+    const b = ev.target.closest('[data-ep]'); if (!b || !$('vHist').contains(b)) return;
+    const k = b.dataset.ep, e = S.hist.find(x => x.id === b.dataset.id); if (!e) return;
+    const fim = txt => { e.upd = Date.now(); PP.saveHist(); PP.renderClientes(); renderHist(); if (PP.assist) PP.assist.refresh(); if (PP.hoje && S.view === 'hoje') PP.hoje.render(); if (txt) PP.toast(txt, 'ok'); };
+    if (k === 'mortnao') { e.mortOk = Date.now(); fim('Anotado: sem mortalidade.'); }
+    else if (k === 'mortinfo' || k === 'abrir') { ST.hist.tipo = 'todos'; ST.hist.open = e.id; if (k === 'mortinfo') ST.hist.flash = e.id; renderHist(); const t = k === 'mortinfo' ? $('mortBox') : $('hdet'); if (t) t.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+    else if (k === 'av10') {
+      const v = F.valorAvista(e, 10), antes = F.r2(e.totais.total - (e.mort && e.mort.destino === 'abater' ? e.mort.credito || 0 : 0));
+      if (!confirm(`Aplicar 10% de desconto à vista para ${e.cliente.nome}?\n\nDesconto: − R$ ${fmt(v)} (sobre os peixes, sem GTA, embalagem e atestado)\nTotal a pagar: R$ ${fmt(F.r2(antes - v))}`)) return;
+      e.avista = { pct: 10, valor: v, em: F.todayISO() }; fim('Desconto à vista aplicado.');
+    }
+    else if (k === 'recebi') {
+      const v = F.saldo(e); if (!confirm(`Marcar como pago o valor de R$ ${fmt(v)} de ${e.cliente.nome}?`)) return;
+      e.pay = Object.assign({}, e.pay, { status: 'pago', pago: F.r2(((e.pay && e.pay.pago) || 0) + v), dataPago: F.todayISO() }); fim('Pagamento registrado.');
+    }
+    else if (k === 'cobr') { try { await navigator.clipboard.writeText(F.msgCobranca(e, S.cfg.empresa.nome)); PP.toast('Mensagem de cobrança copiada.', 'ok'); } catch (_) { PP.toast('Não consegui copiar. Abra Detalhes e copie por lá.'); } }
+  });
   document.addEventListener('click', ev => {
     const b = ev.target.closest('[data-hc]'); if (!b || !$('vHist').contains(b)) return;
     if (b.dataset.hc === 'prog') { PP.go('embarque'); return; }

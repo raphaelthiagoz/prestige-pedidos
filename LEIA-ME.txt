@@ -514,3 +514,14 @@ v29.4 — Notas de entrada: nova aba "Passo a passo" e modo foco (uma decisão p
   Em "1 · NFs de entrada": o PDF vem primeiro; "Cadastrar digitando" e "Já usava o app antigo?" ficam recolhidos.
   As abas pouco usadas (Saldo por nota, Saldo por espécie, Pescadores) ficam discretas.
   Nada foi apagado: tudo continua no mesmo lugar, só recolhido. Não precisa de SQL novo no Supabase.
+
+v29.5 — Histórico > "Embarques e clientes" (fluxo dos nacionais em um lugar só)
+  Novo botão no topo do Histórico: "Embarques e clientes". Mostra cada embarque (últimos 30 dias e os próximos voos),
+  com uma linha por cliente: pedido, quanto falta pagar, situação, mortalidade e desconto à vista.
+  Os botões de cada linha fazem a ação ali mesmo, sem abrir o pedido:
+    - Teve mortalidade / Não teve (aparece para quem saiu há 1 dia ou mais e ainda não respondeu).
+    - 10% à vista: pede confirmação mostrando o desconto e o total a pagar. O desconto é só sobre os peixes (sem GTA, embalagem e atestado).
+    - Copiar cobrança e Recebi (marca como pago o que falta, com confirmação).
+    - Detalhes: abre o pedido completo, como antes.
+  No alto: quanto falta receber, quantas mortalidades faltam perguntar, quantos têm desconto à vista e quantos estão atrasados.
+  Nada mudou nas outras telas. Não precisa de SQL novo no Supabase.

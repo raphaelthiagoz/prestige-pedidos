@@ -745,3 +745,16 @@ body:not([data-view="hoje"]) #kbMic,body:not([data-view="hoje"]) #kbVoice{displa
 #vMapa .agora .msg{margin:0 0 14px;color:var(--tx2,#b8c7cc)}
 #vMapa .agora .row{gap:10px}
 #vMapa .wiz .agora .btn.pri{font-size:1rem}
+
+/* ===== v29.5: Embarques e clientes ===== */
+#vHist .epl{display:flex;flex-direction:column}
+#vHist .epr{padding:12px 0;border-top:1px solid var(--line)}
+#vHist .epr:first-child{border-top:0}
+#vHist .eph{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center}
+#vHist .eph b{font-size:1.02rem}
+#vHist .epv{margin-left:auto;font-size:.88rem;color:var(--muted)}
+#vHist .epv b{color:var(--fg,#e8f1f3)}
+#vHist .epm{display:flex;flex-wrap:wrap;gap:6px 36px;margin:8px 0}
+#vHist .epm>div{display:flex;flex-direction:column;gap:3px;font-size:.88rem}
+#vHist .epb{display:flex;flex-wrap:wrap;gap:8px}
+#vHist .epb button{padding:6px 12px;font-size:.85rem}
