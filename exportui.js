@@ -45,7 +45,7 @@
   let S = fresh('MIA');
   try { const r = store.get('expdraft', null); if (r && r.items && r.dest && DEST[r.dest]) { S = Object.assign(fresh(r.dest), r); S.rot = Object.assign(newRot(), r.rot || {}); S.ex = Object.assign(newEx(), r.ex || {}); S.conv = Object.assign({ on: true, rate: '', date: todayISO(), msg: '' }, r.conv || {}); S.cons = Object.assign(consOf(S.dest), r.cons || {}); } } catch (_) { /* rascunho inválido */ }
   const persist = () => { try { store.set('expdraft', S); } catch (_) { /* cheio */ } };
-  const curN = () => (S.curId && S.n ? S.n : CFG.last + 1);
+  const curN = () => (S.curId && S.n ? S.n : (S.nOver || CFG.last + 1));
   const unitKg = () => (PPx.S.cfg && PPx.S.cfg.valores && PPx.S.cfg.valores.kgCaixa) || 8;
 
   /* nome em português: catálogo do app (com os "nomes nos documentos") → lista embutida → Coridora */
@@ -165,6 +165,11 @@ function czi(k){const t=T(),c=S.cons,e=S.ex,n=numStr(),num=bl(cert(k),'LPCO MAPA
      lógica da tela
      ============================================================ */
   const yr = () => S.ano || CFG.ano;
+  /* números entre a primeira exportação e a última usada que não estão no histórico (ex.: a 017 pulada) */
+  const semRegistro = () => {
+    const ns = HIST.filter(x => String(x.ano) === String(yr())).map(x => x.n).filter(Boolean); if (!ns.length) return [];
+    const ini = Math.min.apply(null, ns), out = []; for (let n = ini; n <= CFG.last; n++) if (!ns.includes(n)) out.push(n); return out;
+  };
   const numStr = () => p3(curN()) + '/' + yr();
   /* ordem nos documentos: do que mais sai (mais peixes) para o que menos sai */
   const rankOf = x => { const i = (CFG.ordem || []).indexOf(String(x.sci || '').trim().toUpperCase()); return i < 0 ? 1e9 : i; };
@@ -300,8 +305,9 @@ function czi(k){const t=T(),c=S.cons,e=S.ex,n=numStr(),num=bl(cert(k),'LPCO MAPA
     const body = { dest: S.dest, dateISO: S.date, cons: clone(S.cons), items: clone(S.items), ordem: S.ordem, ex: clone(S.ex), conv: clone(S.conv), rot: clone(S.rot), tot: { boxes: t.boxes, fish: t.fish, goods: t.goods, fee: t.fee, total: t.total }, ts: now };
     if (e) Object.assign(e, body);
     else {
-      const n = CFG.last + 1; e = Object.assign({ id: 'x' + now.toString(36) + Math.random().toString(36).slice(2, 6), n, ano: yr() }, body);
-      HIST.push(e); S.curId = e.id; S.n = n; S.ano = e.ano; CFG.last = n; CFG.used = (CFG.used || []).filter(u => u.n !== n); CFG.used.push({ n, d: S.dest, dt: dBR(S.date) }); saveCfg();
+      let n = S.nOver || CFG.last + 1; if (HIST.some(x => x.n === n && String(x.ano) === String(yr()))) n = Math.max(CFG.last, ...HIST.map(x => x.n || 0)) + 1; S.nOver = 0;
+      e = Object.assign({ id: 'x' + now.toString(36) + Math.random().toString(36).slice(2, 6), n, ano: yr() }, body);
+      HIST.push(e); S.curId = e.id; S.n = n; S.ano = e.ano; CFG.last = Math.max(CFG.last, n); CFG.used = (CFG.used || []).filter(u => u.n !== n); CFG.used.push({ n, d: S.dest, dt: dBR(S.date) }); saveCfg();
     }
     saveHist(); persist(); return e;
   }
@@ -394,14 +400,14 @@ function czi(k){const t=T(),c=S.cons,e=S.ex,n=numStr(),num=bl(cert(k),'LPCO MAPA
     <section class="step"><div class="row between" style="align-items:center"><h2>Destino e numeração</h2><div class="row"><button type="button" class="primary" data-xa="prev">Ver prévia dos documentos</button><button type="button" data-xa="novo">Nova exportação</button></div></div>
       <div class="row" style="align-items:flex-end">
         <div class="field grow"><label>Destino</label><div class="chips">${Object.entries(DEST).map(([k, v]) => `<button type="button" class="xchip" data-xdest="${k}" aria-pressed="${S.dest === k}">${v.label}</button>`).join('')}</div></div>
-        <div class="field" style="flex:0 0 150px"><label>Nº desta exportação</label><div class="xbig">${numStr()}</div></div>
+        <div class="field" style="flex:0 0 190px"><label>Nº desta exportação</label><div class="xbig">${numStr()}</div><label class="note" style="display:flex;gap:6px;align-items:center;margin-top:4px">Trocar nº: <input type="number" min="1" id="xNumEd" value="${curN()}" style="width:84px" aria-label="Número da exportação"></label>${semRegistro().length ? `<div class="note" style="margin-top:4px">Sem registro no histórico: ${semRegistro().map(n => `<button type="button" class="xchip" data-xa="usarnum" data-n="${n}">${p3(n)}</button>`).join(' ')}</div>` : ''}</div>
         <div class="field" style="flex:0 0 210px"><label>Data</label><input type="date" data-xp="date" value="${esc(S.date || '')}" ${S.date ? '' : 'disabled'}><label style="display:flex;gap:6px;align-items:center;color:var(--fg);margin-top:6px;font-size:.85rem"><input type="checkbox" id="xNoDate" ${S.date ? '' : 'checked'}> Sem data marcada ainda (inserir depois)</label></div>
       </div>
       <p class="note">Escolhendo o destino, o consignee, os atestados e os CZIs mudam sozinhos. O mesmo nº vale para invoice, packing list, atestados e CZI. As exportações já feitas ficam no <b>Histórico</b>.${S.curId ? ' <b>Esta exportação já está salva no histórico.</b>' : ''}</p>
       <details class="xdet" id="xNum" ${S.numOpen ? 'open' : ''}><summary>Numeração das exportações <span class="muted">· última usada ${p3(CFG.last)}/${CFG.ano} — próxima ${p3(CFG.last + 1)}/${CFG.ano}</span></summary>
         <div class="row" style="margin-top:8px"><div class="field" style="flex:0 1 190px"><label for="xLast">Última invoice usada (nº)</label><input type="number" min="0" id="xLast" value="${CFG.last}"></div><div class="field" style="flex:0 1 120px"><label for="xAno">Ano</label><input type="number" id="xAno" value="${CFG.ano}"></div>
         <div class="field grow"><label>Já usados</label><span class="note">${(CFG.used || []).slice().sort((a, b) => b.n - a.n).map(u => `${p3(u.n)} (${esc((DEST[u.d] || {}).label || u.d)} · ${esc(u.dt)})`).join(' · ') || '—'}</span></div></div>
-        <p class="note">Ajuste a "última usada" quando quiser (hoje está em 017, a próxima é 018). Ao baixar o .zip ou salvar, o app avança sozinho. Vale só para exportações.</p></details></section>
+        <p class="note">Ajuste a "última usada" quando quiser (hoje está em ${p3(CFG.last)}, a próxima é ${p3(CFG.last + 1)}). Para usar um número específico (por exemplo, um que foi pulado), troque o "Nº desta exportação" lá em cima ou clique no número em "Sem registro no histórico". Ao baixar o .zip ou salvar, o app avança sozinho. Vale só para exportações.</p></details></section>
     <div class="xgrid"><div class="xleft">
       <section class="step"><h2>Pedido do cliente</h2>
         <div class="row"><div class="field grow"><label>Stocklist de exportação respondida (.xlsx)</label><input type="file" id="xFile" accept=".xlsx"><p class="note">Lê a coluna "Order …" (caixas). Fica guardada para colar pedidos de texto depois.</p></div>
@@ -787,6 +793,15 @@ function czi(k){const t=T(),c=S.cons,e=S.ex,n=numStr(),num=bl(cert(k),'LPCO MAPA
   document.addEventListener('change', async e => {
     const t = e.target;
     if (t.id === 'xFile' && t.files[0]) { await importFile(t.files[0]); t.value = ''; renderExp(); return; }
+    if (t.id === 'xNumEd') {
+      const n = parseInt(t.value, 10);
+      if (!(n > 0)) { S.msg = 'Digite um número maior que zero.'; renderExp(); return; }
+      const dup = HIST.find(x => x.n === n && String(x.ano) === String(yr()) && x.id !== S.curId);
+      if (dup) { S.msg = 'A exportação ' + p3(n) + '/' + yr() + ' já existe no histórico (' + ((DEST[dup.dest] || {}).label || dup.dest) + '). Escolha outro número.'; renderExp(); return; }
+      if (S.curId) { const e0 = HIST.find(x => x.id === S.curId); if (e0 && e0.n !== n) { CFG.used = (CFG.used || []).filter(u => u.n !== e0.n); e0.n = n; S.n = n; CFG.used.push({ n, d: S.dest, dt: dBR(S.date) }); if (n > CFG.last) CFG.last = n; saveCfg(); saveHist(); } }
+      else S.nOver = n === CFG.last + 1 ? 0 : n;
+      persist(); S.msg = 'O número desta exportação agora é ' + p3(n) + '/' + yr() + '.'; renderExp(); return;
+    }
     if (t.id === 'xLast') { const n = Math.max(0, parseInt(t.value, 10) || 0); if (n === CFG.last) return; CFG.last = n; saveCfg(); S.numOpen = true; renderExp(); return; }
     if (t.id === 'xAno') { const n = parseInt(t.value, 10) || CFG.ano; if (n === CFG.ano) return; CFG.ano = n; saveCfg(); S.numOpen = true; renderExp(); return; }
     if (t.id === 'xNoDate') { if (t.checked) { S.dateBak = S.date || S.dateBak || ''; S.date = ''; } else { S.date = S.dateBak || todayISO(); } persist(); renderExp(); return; }
@@ -837,6 +852,11 @@ function czi(k){const t=T(),c=S.cons,e=S.ex,n=numStr(),num=bl(cert(k),'LPCO MAPA
     if (a === 'nac') { PPx.go('pedido'); return; }
     if (a === 'prev') { openPrev(); return; }
     if (a === 'closeprev') { closePrev(); return; }
+    if (a === 'usarnum') {
+      const n = parseInt(b.dataset.n, 10); if (!(n > 0)) return;
+      if (S.items.length && !S.curId && !confirm('Começar a exportação ' + p3(n) + '/' + yr() + '? O rascunho atual será descartado (ele ainda não foi salvo no histórico).')) return;
+      newExp(S.dest); S.nOver = n; S.msg = 'Exportação ' + p3(n) + '/' + yr() + ' em branco. Preencha e salve no histórico.'; persist(); renderExp(); return;
+    }
     if (a === 'novo') { if (S.items.length && !S.curId && !confirm('Começar uma nova exportação? O rascunho atual será descartado (ele ainda não foi salvo no histórico).')) return; newExp(S.dest); renderExp(); return; }
     if (a === 'addtxt') { importText($('xTxt').value); renderExp(); return; }
     if (a === 'addrow') { addItem({ boxes: 1 }); renderExp(); return; }

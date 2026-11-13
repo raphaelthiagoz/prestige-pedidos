@@ -528,3 +528,13 @@ v29.5 — Histórico > "Embarques e clientes" (fluxo dos nacionais em um lugar s
     - Detalhes: abre o pedido completo, como antes.
   No alto: quanto falta receber, quantas mortalidades faltam perguntar, quantos têm desconto à vista e quantos estão atrasados.
   Nada mudou nas outras telas. Não precisa de SQL novo no Supabase.
+
+v29.6 — Exportação: você pode digitar o número da invoice (e a 017 não some mais)
+  Em Exportação > Destino e numeração, logo abaixo do número grande há o campo "Trocar nº". Digite o número que quiser
+  (por exemplo 17). O mesmo número vale para invoice, packing list, atestados e CZI.
+  Se o número já existir no histórico, o app recusa e avisa. Trocar o número NÃO mexe na "última usada":
+  a próxima exportação continua a seguinte à maior que você já usou.
+  Números que ficaram pulados (como a 017) aparecem em "Sem registro no histórico". Clique no número e a exportação
+  abre em branco já com ele; preencha e salve no histórico.
+  Em uma exportação já salva, trocar o número renumera ela no histórico.
+  Não precisa de SQL novo no Supabase.
