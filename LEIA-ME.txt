@@ -610,3 +610,17 @@ v29.11 — Manual e tour guiado
   as setas do teclado também funcionam e Esc sai. Se o menu estiver recolhido ou a tela for pequena, o cartão aparece
   no centro, sem destaque. O tour não muda nenhum dado nem troca de tela.
   Não precisa de SQL novo no Supabase.
+
+v29.12 — Backup em arquivo com um clique
+  O que já existia: cópia automática diária dos últimos 7 dias. Ela fica só neste navegador, por isso o aviso
+  "faz N dias sem backup" olha o arquivo que você salvou, não essa cópia.
+  Novo: em Configurações > Dados e nuvem > Backup (Chrome ou Edge do computador) clique em "Escolher pasta de backup" uma vez,
+  de preferência uma pasta dentro do Google Drive ou OneDrive. Depois, "Fazer backup agora" grava o arquivo
+  prestige-pedidos-backup-AAAA-MM-DD.json nessa pasta, sem janela de download. No mesmo dia ele sobrescreve o
+  arquivo (assim a pasta não enche); em outro dia cria um novo.
+  O mesmo botão aparece no aviso do topo e no Assistente. Se a pasta não estiver escolhida, ou o navegador perder a
+  permissão, o arquivo é baixado como antes (nada falha em silêncio). "Parar de usar a pasta" volta ao comportamento antigo.
+  O aviso agora diz quando a cópia automática de hoje já existe, para ficar claro que ela não substitui o arquivo.
+  Firefox, Safari e celular não deixam escolher pasta: continuam baixando o arquivo.
+  Limite: o backup guarda os dados do app, mas não os PDFs das NFs nem as fotos de comprovação de mortalidade.
+  Não precisa de SQL novo no Supabase.

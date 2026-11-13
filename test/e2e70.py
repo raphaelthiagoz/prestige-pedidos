@@ -19,7 +19,7 @@ with sync_playwright() as p:
     ok(pg.locator('#btnGuia.novo').count()==0,'depois de aberto o "novo" some')
     pg.fill('#guiaQ','backup'); pg.wait_for_timeout(200)
     t=pg.inner_text('#guiaTxt')
-    ok('Baixar backup' in t and pg.locator('#guiaTxt .gSec').count()<pg.evaluate("PP.guia.SEC.length"),'a busca "backup" filtra as seções')
+    ok('Fazer backup agora' in t and pg.locator('#guiaTxt .gSec').count()<pg.evaluate("PP.guia.SEC.length"),'a busca "backup" filtra as seções')
     pg.fill('#guiaQ','zzzxxx'); pg.wait_for_timeout(200)
     ok('Nada encontrado' in pg.inner_text('#guiaTxt'),'busca sem resultado avisa')
     pg.fill('#guiaQ','sei'); pg.wait_for_timeout(200)

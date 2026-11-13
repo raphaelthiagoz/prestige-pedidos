@@ -833,7 +833,7 @@
     const snooze = store.get('bkSnooze', 0);
     if (has && Date.now() - last > 7 * 86400000 && Date.now() > snooze) {
       const dias = last ? Math.floor((Date.now() - last) / 86400000) : null;
-      out.push(`<div class="warnbox"><b>Backup:</b> ${dias === null ? 'você ainda não baixou nenhum backup.' : 'faz ' + dias + ' dias que você não baixa o backup.'} Os dados ficam só neste navegador. <button type="button" id="bnBk" class="primary">Baixar backup agora</button> <button type="button" id="bnLater">Lembrar depois</button></div>`);
+      out.push(`<div class="warnbox"><b>Backup:</b> ${dias === null ? 'você ainda não baixou nenhum backup.' : 'faz ' + dias + ' dias que você não salva um backup em arquivo.'} ${window.PP && window.PP.autobk && window.PP.autobk.temHoje() ? 'A cópia automática de hoje existe, mas fica só neste navegador.' : 'Os dados ficam só neste navegador.'} <button type="button" id="bnBk" class="primary">Fazer backup agora</button> <button type="button" id="bnLater">Lembrar depois</button></div>`);
     }
     if (store.cheio) out.unshift('<div class="warnbox" style="border-color:var(--bad)"><b>Sem espaço no navegador:</b> a última alteração não foi salva. Baixe um backup agora e depois apague stocklists ou pedidos antigos. <button type="button" id="bnBk2" class="primary">Baixar backup agora</button></div>');
     if (!S.catalog.length) out.unshift('<div class="warnbox"><b>Comece por aqui:</b> envie a sua stocklist (.xlsx) em Configurações. <button type="button" id="bnCfg" class="primary">Abrir Configurações</button></div>');
@@ -841,7 +841,7 @@
   }
   document.addEventListener('click', e => {
     if (e.target.id === 'bnCfg') { if (PP.cfgTab) PP.cfgTab('stock'); $('btnCfg').click(); }
-    if (e.target.id === 'bnBk' || e.target.id === 'bnBk2') $('bkExport').click();
+    if (e.target.id === 'bnBk' || e.target.id === 'bnBk2') { if (window.PP && window.PP.autobk && window.PP.autobk.backupAgora) window.PP.autobk.backupAgora(); else $('bkExport').click(); }
     if (e.target.id === 'bnLater') { store.set('bkSnooze', Date.now() + 2 * 86400000); renderBanners(); }
   });
 

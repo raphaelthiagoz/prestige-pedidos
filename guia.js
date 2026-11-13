@@ -33,7 +33,7 @@
     { id: 'assist', t: 'Assistente', k: 'assistente pendências lembrete cardinal depois',
       h: `<p>O cardinal no menu lateral junta as pendências do dia: boletos, CT-e, mortalidade, descontos que vencem, packs devolvidos pelo MAPA, backup. Cada aviso tem os botões para resolver ali mesmo, ou <b>Depois</b> para adiar.</p>` },
     { id: 'backup', t: 'Backup e segurança dos dados', k: 'backup restaurar copia segurança dados',
-      h: `<ol><li>Em <b>Configurações → Backup</b>, clique em <b>Baixar backup</b> e guarde o arquivo em um lugar seguro (Drive, e-mail).</li><li>Para voltar atrás: <b>Restaurar backup</b>.</li></ol>
+      h: `<ol><li>Em <b>Configurações → Dados e nuvem → Backup</b>, clique em <b>Escolher pasta de backup</b> uma vez (de preferência uma pasta dentro do Google Drive ou OneDrive). Só funciona no Chrome ou Edge do computador.</li><li>Depois, <b>Fazer backup agora</b> (aqui, no aviso do topo ou no Assistente) grava o arquivo na pasta com um clique, sem janela de download. Sem pasta escolhida, o arquivo é baixado.</li><li>Para voltar atrás: <b>Restaurar backup</b>.</li></ol>
         <p>O app também faz cópias automáticas diárias dos últimos 7 dias, mas elas ficam neste mesmo navegador. Só o arquivo baixado protege se o navegador for limpo ou o computador trocado.</p>` },
     { id: 'foco', t: 'Menos coisa na tela', k: 'foco recolher menu blocos',
       h: `<p>Os títulos do menu lateral (Início, Operação, Gestão) recolhem e abrem ao clicar. Na Exportação e em Hoje, blocos secundários ficam recolhidos. O sistema lembra o que você abriu. Nada foi removido.</p>` }

@@ -71,7 +71,7 @@
     } catch (e) { ST.lista = []; ST.erro = 'Não consegui ler as cópias neste navegador.'; }
     render();
   }
-  function render() {
+  let render = function () {
     const el = $('bkAuto'); if (!el) return;
     if (ST.erro) { el.innerHTML = `<p class="note">${esc(ST.erro)}</p>`; return; }
     if (!ST.lista.length) { el.innerHTML = '<p class="note">Ainda não há nenhuma cópia. A primeira é feita sozinha assim que você usar o app.</p>'; return; }
@@ -106,7 +106,7 @@
   /* ---------- a cópia do dia, logo depois que o app abre ---------- */
   async function tick() {
     try { if (!(await get(F.todayISO()))) await criar('dia'); } catch (_) { /* sem espaço ou sem IndexedDB: segue a vida */ }
-    carregar();
+    await carregar(); try { PP.renderBanners(); } catch (_) { /* ok */ }
   }
   const agenda = () => (window.requestIdleCallback ? requestIdleCallback(tick, { timeout: 8000 }) : setTimeout(tick, 4000));
   if (document.readyState === 'complete') agenda(); else window.addEventListener('load', agenda);
@@ -114,5 +114,56 @@
   setInterval(() => { if (!document.hidden) tick(); }, 36e5);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) tick(); });
 
-  PP.autobk = { criar, carregar, lista: () => ST.lista, voltar, abrir, get };
+  /* ---------- v29.12: backup em arquivo com um clique (pasta escolhida uma vez, ex.: Google Drive/OneDrive) ---------- */
+  const store = PP.store;
+  const suportaPasta = () => typeof window.showDirectoryPicker === 'function';
+  const temHoje = () => ST.lista.some(x => x.k === F.todayISO());
+  async function pastaAtual() { try { return (await get('dir')) || null; } catch (_) { return null; } }
+  async function escolherPasta() {
+    if (!suportaPasta()) { PP.toast('Este navegador não deixa escolher pasta. O backup será baixado normalmente.'); return null; }
+    try {
+      const h = await window.showDirectoryPicker({ id: 'pp-backup', mode: 'readwrite' });
+      await put('dir', h); store.set('bkPastaNome', h.name); await telaPasta(); PP.toast('Pasta escolhida: ' + h.name, 'ok'); return h;
+    } catch (e) { if (!e || e.name !== 'AbortError') PP.toast('Não consegui usar essa pasta. Escolha outra.'); return null; }
+  }
+  async function esquecerPasta() { try { await del('dir'); } catch (_) { /* ok */ } store.set('bkPastaNome', ''); await telaPasta(); }
+  async function gravarNaPasta(h) {
+    let p = await h.queryPermission({ mode: 'readwrite' });
+    if (p !== 'granted') p = await h.requestPermission({ mode: 'readwrite' });
+    if (p !== 'granted') { const e = new Error('sem permissão'); e.name = 'Permissao'; throw e; }
+    const nome = `prestige-pedidos-backup-${F.todayISO()}.json`, fh = await h.getFileHandle(nome, { create: true }), w = await fh.createWritable();
+    await w.write(JSON.stringify(PP.snapshot())); await w.close(); return nome;
+  }
+  /* um clique: grava na pasta escolhida; sem pasta (ou se falhar), baixa o arquivo como sempre */
+  async function backupAgora() {
+    const h = await pastaAtual();
+    if (h) {
+      try {
+        const nome = await gravarNaPasta(h);
+        store.set('lastBackup', Date.now()); store.set('lastBackupOnde', 'pasta'); PP.bkLabel(); PP.renderBanners(); telaPasta();
+        PP.toast(`Backup salvo na pasta "${h.name}" (${nome}).`, 'ok'); return { ok: true, onde: 'pasta', nome };
+      } catch (e) {
+        PP.toast(e && e.name === 'Permissao' ? 'Sem permissão para a pasta. O backup foi baixado; escolha a pasta de novo.' : 'Não consegui gravar na pasta. O backup foi baixado.');
+      }
+    }
+    document.getElementById('bkExport').click(); store.set('lastBackupOnde', 'download'); telaPasta();
+    return { ok: true, onde: 'download' };
+  }
+  async function telaPasta() {
+    const el = $('bkPasta'); if (!el) return;
+    const h = await pastaAtual(), l = store.get('lastBackup', 0);
+    const onde = store.get('lastBackupOnde', ''), ult = l ? `Último backup em arquivo: ${new Date(l).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}${onde === 'pasta' ? ' (na pasta)' : onde === 'download' ? ' (baixado)' : ''}.` : 'Nenhum backup em arquivo ainda.';
+    const auto = temHoje() ? 'A cópia automática de hoje já existe, mas ela fica só neste navegador.' : 'A cópia automática de hoje ainda não foi feita.';
+    if (!suportaPasta()) { el.innerHTML = `<div class="row"><button type="button" class="primary" id="bkAgora">Fazer backup agora</button></div><p class="note">${esc(ult)} ${esc(auto)} Este navegador só baixa o arquivo. No Chrome ou Edge do computador dá para salvar direto numa pasta.</p>`; return; }
+    el.innerHTML = `<div class="row"><button type="button" class="primary" id="bkAgora">Fazer backup agora</button>${h ? '<button type="button" id="bkTroca">Trocar pasta</button><button type="button" id="bkSem">Parar de usar a pasta</button>' : '<button type="button" id="bkEscolhe">Escolher pasta de backup</button>'}</div>
+      <p class="note">${h ? `Pasta de backup: <b>${esc(h.name)}</b>. O botão grava o arquivo ali, sem janela de download.` : 'Escolha uma pasta uma vez (de preferência dentro do Google Drive ou OneDrive). Depois, um clique grava o arquivo lá.'} ${esc(ult)} ${esc(auto)}</p>`;
+  }
+  document.addEventListener('click', ev => {
+    const b = ev.target.closest('#bkPasta button'); if (!b) return;
+    if (b.id === 'bkAgora') backupAgora(); else if (b.id === 'bkEscolhe' || b.id === 'bkTroca') escolherPasta(); else if (b.id === 'bkSem') esquecerPasta();
+  });
+  const _render = render; render = function () { _render(); telaPasta(); }; // eslint-disable-line no-func-assign
+  setTimeout(telaPasta, 1500);
+
+  PP.autobk = { criar, carregar, lista: () => ST.lista, voltar, abrir, get, backupAgora, escolherPasta, esquecerPasta, temHoje, suportaPasta, telaPasta };
 })();
