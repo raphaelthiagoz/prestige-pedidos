@@ -36,7 +36,7 @@ with sync_playwright() as p:
     ok(pg.locator('#saldolist tbody tr').count()==len(orig),'tabela de saldo com todas as espécies')
     pg.fill('#buscaE','cardinal'); pg.wait_for_timeout(150); ok(pg.locator('#saldolist tbody tr').count()>=1,'busca por espécie')
     pg.click('#mpTabs [data-tab="processos"]'); pg.wait_for_timeout(200)
-    ok(pg.locator('#mpView .card').count()==4,'4 processos listados')
+    ok(pg.locator('#mpView .card[data-sit]').count()==4,'4 processos listados')
     pg.locator('#mpView [data-act="grifosproc"]').first.click(); pg.wait_for_timeout(200)
     ok(pg.locator('#mpModal.on .grifo').count()>0,'folha de grifos abre'); pg.keyboard.press('Escape'); pg.wait_for_timeout(100); ok(pg.locator('#mpModal.on').count()==0,'Esc fecha o modal')
     pg.locator('#mpView [data-act="cartaproc"]').first.click(); pg.wait_for_timeout(200); ok('MAPA' in pg.inner_text('#mpModal'),'carta ao MAPA abre'); pg.keyboard.press('Escape')

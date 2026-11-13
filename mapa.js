@@ -232,7 +232,7 @@ function sitProc(p){
   if(p.devolvido)return 'devolvido';
   return p.protocolado===false?'aguardando':'protocolado';
 }
-var SIT_ROT={aguardando:'Falta protocolar',protocolado:'Protocolado',devolvido:'Devolvido pelo MAPA',indeferido:'Indeferido',cancelado:'Cancelado'};
+var SIT_ROT={aguardando:'Falta protocolar no SEI/MAPA',protocolado:'Protocolado',devolvido:'Devolvido pelo MAPA',indeferido:'Indeferido',cancelado:'Cancelado'};
 function logProc(p,ev,nota){p.log=p.log||[];p.log.push({em:hoje(),ev:ev,nota:String(nota||'').trim()});}
 function mudarSit(S,id,ev,d){
   d=d||{};
@@ -875,7 +875,7 @@ function allocHTML(i){
   return out;
 }
 function reusoUsoTxt(u){
-  var t='Pack '+esc(u.pack)+(u.sei?' · SEI '+esc(u.sei):'')+' ('+(SIT_ROT[u.sit]||u.sit).toLowerCase()+((u.sit==='protocolado'||u.sit==='devolvido')&&u.data?' em '+dt(u.data):'')+(u.historico?', histórico':'')+')';
+  var t='Pack '+esc(u.pack)+(u.sei?' · SEI '+esc(u.sei):'')+' ('+({aguardando:'falta protocolar',protocolado:'protocolado',devolvido:'devolvido pelo MAPA',indeferido:'indeferido pelo MAPA'}[u.sit]||u.sit)+((u.sit==='protocolado'||u.sit==='devolvido')&&u.data?' em '+dt(u.data):'')+(u.historico?', histórico':'')+')';
   if(u.motivo)t+=' — '+esc(u.motivo);
   return t;
 }

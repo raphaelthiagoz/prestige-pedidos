@@ -538,3 +538,20 @@ v29.6 — Exportação: você pode digitar o número da invoice (e a 017 não so
   abre em branco já com ele; preencha e salve no histórico.
   Em uma exportação já salva, trocar o número renumera ela no histórico.
   Não precisa de SQL novo no Supabase.
+
+v29.7 — Notas de entrada: situação de cada pack no MAPA e aviso de nota já usada
+  Em Notas de entrada > Processos, cada pack agora tem uma situação: Falta protocolar, Protocolado, Devolvido pelo MAPA,
+  Indeferido ou Cancelado. Os botões mudam conforme a situação:
+  - Protocolado: "MAPA devolveu" e "MAPA indeferiu". O app pergunta o motivo e guarda no pack.
+  - Devolvido: o saldo das NFs continua reservado. Corrigiu e protocolou de novo? Clique em "Protocolei de novo".
+    Se for refazer com outras notas, use "Refazer com outras notas (libera saldo)".
+  - Indeferido e Cancelado: liberam o saldo das NFs. Dá para Reativar se foi engano.
+  No topo há filtros por situação com a contagem de cada uma, e um aviso quando há pack protocolado sem o nº do SEI
+  (botão "Informar nº do SEI").
+  Cada pack guarda um histórico (gravado, protocolado, devolvido... com a data e o motivo).
+  A aba Processos mostra a quantidade de packs que pedem ação (falta protocolar + devolvidos), e o Assistente avisa dos devolvidos.
+  Aviso de nota já usada: ao conferir um pedido, se uma NF escolhida já foi usada em outro pack, o app mostra em quais
+  (com SEI e situação). Fica amarelo, com destaque, quando um desses packs foi devolvido ou indeferido pelo MAPA.
+  O aviso não bloqueia a gravação. Na Exportação, o painel de conferência mostra o mesmo aviso e lembra se o nº do pack
+  já teve um pack indeferido ou cancelado antes.
+  Não precisa de SQL novo no Supabase.
