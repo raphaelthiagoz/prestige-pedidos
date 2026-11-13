@@ -555,3 +555,19 @@ v29.7 — Notas de entrada: situação de cada pack no MAPA e aviso de nota já 
   O aviso não bloqueia a gravação. Na Exportação, o painel de conferência mostra o mesmo aviso e lembra se o nº do pack
   já teve um pack indeferido ou cancelado antes.
   Não precisa de SQL novo no Supabase.
+
+v29.8 — Notas de entrada: checklist antes de protocolar
+  No Passo a passo (passo 5, antes de gravar; passo 6, antes de protocolar) e em Processos (pack que falta protocolar)
+  aparece o "Checklist antes de protocolar". Cada linha vem como OK, Atenção ou Corrigir:
+  - número do pack e destino preenchidos;
+  - todas as espécies com NF e saldo (ou saldo das NFs batendo, no pack já gravado);
+  - data de cada NF anterior à data do pack (nota de entrada não pode ser depois da saída);
+  - PDF de cada NF anexado;
+  - NF que já apareceu em pack devolvido ou indeferido pelo MAPA;
+  - CTF e RGP dos pescadores (vencido, perto de vencer ou sem arquivo);
+  - licença ambiental e procuração dentro da validade;
+  - PDF único das NFs gerado (só antes de gravar).
+  O checklist não bloqueia: se houver item para corrigir, o app só avisa na hora de gravar e deixa você decidir.
+  Novo: em Pescadores (CTF/RGP) há o cartão "Documentos da empresa". Informe a validade da licença ambiental e da
+  procuração (dá para adicionar outros documentos). Sem essas datas o checklist mostra "sem validade cadastrada".
+  Não precisa de SQL novo no Supabase.

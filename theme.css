@@ -766,3 +766,13 @@ body:not([data-view="hoje"]) #kbMic,body:not([data-view="hoje"]) #kbVoice{displa
 #vHist .epq input{width:90px}
 #vHist .epq2{display:flex;flex-wrap:wrap;gap:6px 22px;margin:8px 0;font-size:.9rem}
 #vHist .epq2 label{display:flex;gap:6px;align-items:center}
+
+/* v29.8 checklist antes de protocolar */
+#vMapa ul.ck{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}
+#vMapa ul.ck li{display:flex;gap:10px;align-items:baseline;font-size:.86rem}
+#vMapa ul.ck .m{flex:0 0 66px;text-align:center;font-size:.72rem;font-weight:600;border-radius:999px;padding:2px 8px}
+#vMapa ul.ck li.ok .m{background:var(--ok-soft);color:var(--ok)}
+#vMapa ul.ck li.aviso .m{background:var(--warn-soft);color:var(--warn)}
+#vMapa ul.ck li.erro .m{background:var(--bad-soft);color:var(--bad)}
+#vMapa ul.ck li.ok{color:var(--muted)}
+#vMapa .checklist[data-ck=erro]{border-left:3px solid var(--bad)}#vMapa .checklist[data-ck=aviso]{border-left:3px solid var(--warn)}

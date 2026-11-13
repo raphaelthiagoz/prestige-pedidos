@@ -281,6 +281,70 @@ function reusoNF(S,nf,sp,exceto){
   if(!usos.length)return null;
   return {nf:nf.numero,fornecedor:nf.fornecedor,usos:usos,grave:usos.some(function(u){return u.sit==='devolvido'||u.sit==='indeferido';})};
 }
+/* v29.8: documentos da empresa (licença ambiental, procuração) e checklist antes de protocolar */
+function docsGet(){
+  if(!S.meta.docs)S.meta.docs=[{id:'d-lic',nome:'Licença ambiental',venc:''},{id:'d-proc',nome:'Procuração',venc:''}];
+  return S.meta.docs;
+}
+function checklistPack(S,pk,opt){
+  opt=opt||{};
+  var out=[],hj=hoje(),dataPack=pk.data||hj;
+  function add(st,t,tb){out.push({s:st,t:t,tab:tb||''});}
+  if(!String(pk.pack||'').trim())add('erro','Falta o número do pack.');
+  else if(!String(pk.destino||'').trim())add('aviso','Falta o destino (cliente) do pack.');
+  else add('ok','Pack '+pk.pack+' com destino '+pk.destino+'.');
+  var v=null;
+  if(opt.draft){
+    v=validarDraft(S,opt.draft);
+    if(!opt.draft.linhas.length)add('erro','O pedido está vazio.');
+    else if(v.erros)add('erro',v.erros+' espécie(s) sem NF com saldo.','verificar');
+    else add('ok','Todas as espécies têm NF com saldo.');
+  }else{
+    var cf=conflitosEstado(S);
+    if(cf.length)add('erro','A NF '+cf[0].nf+' ficou com saldo negativo ('+cf[0].saldo+').','saldonf');
+    else add('ok','O saldo das NFs bate.');
+  }
+  var mp={},lista=[];
+  pk.itens.forEach(function(i){var nf=getNF(S,i.nfId);if(nf&&!mp[nf.id]){mp[nf.id]=1;lista.push(nf);}});
+  var depois=lista.filter(function(nf){return nf.data&&nf.data>dataPack;}),semData=lista.filter(function(nf){return !nf.data;});
+  if(depois.length)add('erro','NF '+depois.map(function(nf){return nf.numero+' ('+dt(nf.data)+')';}).join(', ')+' é posterior à data do pack ('+dt(dataPack)+'). Nota de entrada tem que ser de antes da saída.','nfs');
+  else if(semData.length)add('aviso','NF sem data cadastrada: '+semData.map(function(nf){return nf.numero;}).join(', ')+'.','nfs');
+  else if(lista.length)add('ok','Todas as NFs são de antes da data do pack ('+dt(dataPack)+').');
+  var semPdf=lista.filter(function(nf){return !nf.arq;});
+  if(semPdf.length)add('aviso','NF '+semPdf.map(function(nf){return nf.numero;}).join(', ')+' sem PDF anexado. O PDF único das NFs precisa dele.','nfs');
+  else if(lista.length)add('ok','Todas as NFs têm o PDF anexado.');
+  var graves=0;
+  if(v)graves=v.reusoGrave;
+  else pk.itens.forEach(function(i){var nf=getNF(S,i.nfId);if(!nf)return;var r=reusoNF(S,nf,i.esp,opt.proc);if(r&&r.grave)graves++;});
+  if(graves)add('aviso',graves+' NF(s) deste pack já apareceram em pack devolvido ou indeferido pelo MAPA. Confira o motivo antes de protocolar.','processos');
+  else add('ok','Nenhuma NF deste pack apareceu em pack devolvido ou indeferido.');
+  var av=pescAvisosDe(lista.map(function(nf){return nf.fornecedor;}));
+  if(av.length)av.forEach(function(a){add(a.nivel==='e'?'erro':'aviso',a.t,'pesc');});
+  else if(lista.length)add('ok','CTF e RGP dos pescadores estão em dia.');
+  docsGet().forEach(function(d){
+    var nm=d.nome||'Documento';
+    if(!d.venc)add('aviso',nm+': sem validade cadastrada.','pesc');
+    else if(d.venc<hj||d.venc<dataPack)add('erro',nm+' vencida em '+dt(d.venc)+'.','pesc');
+    else if(diasAte(d.venc)<=30)add('aviso',nm+' vence em '+diasAte(d.venc)+' dia(s) ('+dt(d.venc)+').','pesc');
+    else add('ok',nm+' em dia (até '+dt(d.venc)+').');
+  });
+  if(opt.pdf===false)add('aviso','Gere o PDF das NFs (passo 4) antes de anexar no SEI.');
+  else if(opt.pdf===true)add('ok','PDF das NFs gerado.');
+  return out;
+}
+function checklistResumo(items){var r={erro:0,aviso:0,ok:0};items.forEach(function(i){r[i.s]++;});return r;}
+function checklistHTML(items,compacto){
+  var r=checklistResumo(items),nivel=r.erro?'erro':(r.aviso?'aviso':'ok');
+  var head=r.erro?'Corrija '+r.erro+' item(ns) antes de protocolar':(r.aviso?'Sem bloqueios, com '+r.aviso+' ponto(s) de atenção':'Tudo certo para protocolar');
+  var rot={ok:'OK',aviso:'Atenção',erro:'Corrigir'};
+  var ordem=items.slice().sort(function(a,b){return {erro:0,aviso:1,ok:2}[a.s]-{erro:0,aviso:1,ok:2}[b.s];});
+  var lis=ordem.map(function(i){return '<li class="'+i.s+'"><span class="m">'+rot[i.s]+'</span><span>'+esc(i.t)+(i.tab&&i.s!=='ok'?' <button type="button" class="btn sm" data-tab="'+i.tab+'">Abrir</button>':'')+'</span></li>';}).join('');
+  var topo='<b>Checklist antes de protocolar</b> <span class="badge '+(nivel==='erro'?'b-e':(nivel==='aviso'?'b-w':'b-ok'))+'">'+esc(head)+'</span>';
+  if(compacto)return '<details class="foco checklist" data-ck="'+nivel+'"'+(r.erro?' open':'')+'><summary><span>'+topo+'</span><span class="alt"></span></summary><ul class="ck">'+lis+'</ul></details>';
+  return '<div class="card checklist" data-ck="'+nivel+'"><div style="margin-bottom:6px">'+topo+'</div><ul class="ck">'+lis+'</ul></div>';
+}
+function checklistDraft(d){return checklistPack(S,{pack:d.pack,destino:d.destino,data:d.data,itens:itensDoDraft(d)},{draft:d,pdf:(d.pack&&_pdfFeito!==null&&_pdfFeito===String(d.pack))?true:false});}
+function checklistProc(p){return checklistPack(S,{pack:p.pack,destino:p.destino,data:p.data,itens:p.itens},{proc:p});}
 function salvarNF(S,f){
   var numero=String(f.numero||'').trim(),forn=String(f.fornecedor||'').trim();
   if(!numero)return {ok:false,erro:'Informe o número da NF.'};
@@ -649,6 +713,7 @@ var AJ={
   sugerirtudo:'Escolhe as NFs só para as espécies que ainda não têm NF ou estão com problema, seguindo a regra de "Como sugerir" ao lado. As que você já acertou ficam como estão.',
   sugerir:'Refaz a escolha de NFs só para esta espécie. Se ela já estiver certa, o app pergunta antes de trocar.',
   trocar:'Abre esta espécie para você escolher outra NF ou dividir a quantidade entre duas NFs.',
+  docsemp:'Cadastre aqui a licença ambiental, a procuração ou qualquer documento com validade. O checklist antes de protocolar confere a data de cada um.',
   hist:'Marque ao registrar um pack antigo, que já foi protocolado. O app só avisa se faltar saldo, sem bloquear. Serve para carregar o histórico.',
   limpar:'Apaga o pedido que está sendo montado. Não mexe nos packs já gravados.',
   modo:'Mais antiga primeiro: usa as NFs em ordem de data. Esgotar NF: prefere a NF que melhor se encaixa na quantidade, para zerar notas e deixar menos sobras espalhadas.',
@@ -761,6 +826,7 @@ function passoCorpo(n){
       +'<div class="muted" style="margin:6px 0 12px">'+d.linhas.length+' espécie(s) · '+Object.keys(nfs).length+' NF(s) usada(s)'+'</div>'
       +(!d.linhas.length?'<div class="alert e">O pedido está vazio. Volte ao passo 2.</div>':(v.erros?'<div class="alert e">'+v.erros+' espécie(s) ainda com problema. Volte ao passo 3.</div>':''))
       +(ru.length?'<div class="muted" style="margin:0 0 4px">Antes de gravar, confira estas notas que já foram usadas:</div>'+ru.join('')+'<div style="height:10px"></div>':'')
+      +(d.linhas.length?checklistHTML(checklistDraft(d)):'')
       +'<button class="btn pri" data-act="protocolar">Gravar consumo</button>'+ia('protocolar')+'</div>';
   }
   var pend=S.processos.filter(aguardaProt),dev=S.processos.filter(function(p){return sitProc(p)==='devolvido';});
@@ -772,7 +838,7 @@ function passoCorpo(n){
   if(!pend.length)return '<div class="card"><b>Nenhum pack aguardando protocolo.</b><div class="muted" style="margin:6px 0 12px">Para começar outro pack, volte ao passo 2.</div><button class="btn pri" data-act="etapa" data-n="2">Começar novo pack</button></div>';
   return pend.map(function(p){
     return '<div class="card"><div style="font-size:1.05rem"><b>Pack '+esc(p.pack)+'</b>'+(p.destino?' · '+esc(p.destino):'')+'</div><div class="muted" style="margin:6px 0 12px">'+(p.sei?'SEI '+esc(p.sei)+' · ':'')+'consumo gravado em '+dt(p.data)+(p.sei?'':' · SEI ainda não informado')+'</div>'
-      +'<div class="row" style="align-items:center"><span><button class="btn" data-act="pdfproc" data-id="'+p.id+'">PDF das NFs (SEI)</button>'+ia('pdfnfs')+'</span><span><button class="btn pri" data-act="marcarprot" data-id="'+p.id+'">Marcar como protocolado</button>'+ia('marcarprot')+'</span></div></div>';
+      +'<div class="row" style="align-items:center"><span><button class="btn" data-act="pdfproc" data-id="'+p.id+'">PDF das NFs (SEI)</button>'+ia('pdfnfs')+'</span><span><button class="btn pri" data-act="marcarprot" data-id="'+p.id+'">Marcar como protocolado</button>'+ia('marcarprot')+'</span></div>'+checklistHTML(checklistProc(p),true)+'</div>';
   }).join('')+devH;
 }
 function passoHTML(){
@@ -1214,7 +1280,7 @@ function viewProcessos(){
     +'<span><button class="btn sm" data-act="resumoproc" data-id="'+p.id+'">Resumo</button>'+ia('resumo')+'</span>'
     +'<span><button class="btn sm" data-act="cartaproc" data-id="'+p.id+'">Carta ao MAPA</button>'+ia('carta')+'</span>'
     +btnsSit(p)
-    +'<span><button class="btn sm dg" data-act="delproc" data-id="'+p.id+'">Excluir</button>'+ia('delproc')+'</span></div>'+logProcHTML(p)+'</div>';
+    +'<span><button class="btn sm dg" data-act="delproc" data-id="'+p.id+'">Excluir</button>'+ia('delproc')+'</span></div>'+(s==='aguardando'?checklistHTML(checklistProc(p),true):'')+logProcHTML(p)+'</div>';
   }).join('');
 }
 
@@ -1508,10 +1574,22 @@ function cArq(p,t){
   if(arq)return '<span title="'+esc(p[t+'Nome']||'')+'">'+esc((p[t+'Nome']||T+'.pdf').replace(/^(.{22}).+(\.pdf)$/i,'$1…$2'))+'</span><div class="row" style="gap:6px;margin-top:4px"><button type="button" class="btn sm" data-act="baixarpesc" data-pk="'+n+'" data-pt="'+t+'">⬇ Baixar</button><button type="button" class="btn sm" data-act="escolherpesc">Trocar</button><button type="button" class="btn sm" data-act="relerpesc" data-pk="'+n+'" data-pt="'+t+'" title="Lê de novo a data de validade escrita no PDF">Reler validade</button>'+inp+'</div>';
   return '<button type="button" class="btn pri sm" data-act="escolherpesc">Anexar '+T+'</button>'+inp+((t==='ctf'?p.ctfSalvo:p.rgpSalvo)?' <span class="muted" style="font-size:12px">marcado como salvo (sem arquivo no app)</span>':'');
 }
+function docsEmpresaHTML(){
+  var L=docsGet();
+  var h='<div class="card" id="docsEmp"><h2>Documentos da empresa'+ia('docsemp')+'</h2><p class="muted" style="margin-top:0">Informe a validade da licença ambiental e da procuração. O checklist antes de protocolar avisa quando estiverem vencidas ou perto de vencer.</p>';
+  L.forEach(function(d){
+    var c=d.venc?validade(d.venc,d.nome||'Documento'):null;
+    h+='<div class="row" style="align-items:flex-end;margin-bottom:8px"><div class="field" style="flex:1 1 220px"><label>Documento</label><input type="text" data-df="nome" data-did="'+esc(d.id)+'" value="'+esc(d.nome)+'"></div>'
+      +'<div class="field" style="flex:0 1 190px"><label>Válido até</label><input type="date" data-df="venc" data-did="'+esc(d.id)+'" value="'+esc(d.venc||'')+'"></div>'
+      +'<span>'+(c?'<span class="badge '+c.cls+'">'+esc(c.k==='ok'?'Em dia ('+c.dias+' dias)':(c.k==='venc'?'Vencido(a) há '+(-c.dias)+' dia(s)':'Vence em '+c.dias+' dia(s)'))+'</span>':'<span class="badge b-w">sem validade</span>')+'</span>'
+      +'<button type="button" class="btn sm dg" data-act="deldoc" data-id="'+esc(d.id)+'">Remover</button></div>';
+  });
+  return h+'<button type="button" class="btn sm" data-act="adddoc">+ Adicionar documento</button></div>';
+}
 function viewPesc(){
   var L=pescLista(),nOk=0,nPerto=0,nRuim=0;
   L.forEach(function(p){var c=validade(p.ctf,'CTF');if(!p.ctfArq||c.k==='venc'||c.k==='sem')nRuim++;else if(c.k==='perto')nPerto++;else nOk++;});
-  var h='<div class="card"><h2>Pescadores · CTF e RGP'+ia('pesc')+'</h2><p class="muted" style="margin-top:0">Anexe o PDF do CTF e do RGP de cada pescador uma vez só: o app guarda (neste aparelho e na nuvem), mostra a validade e deixa baixar na hora de enviar. Os fornecedores das suas NFs aparecem aqui sozinhos.</p>';
+  var h=docsEmpresaHTML()+'<div class="card"><h2>Pescadores · CTF e RGP'+ia('pesc')+'</h2><p class="muted" style="margin-top:0">Anexe o PDF do CTF e do RGP de cada pescador uma vez só: o app guarda (neste aparelho e na nuvem), mostra a validade e deixa baixar na hora de enviar. Os fornecedores das suas NFs aparecem aqui sozinhos.</p>';
   h+='<div class="row" style="gap:12px;margin:8px 0 14px"><div class="card" style="margin:0;flex:1 1 160px"><div class="muted">CTF em dia</div><div style="font-size:26px;font-weight:700;color:var(--ok,#4cc58a)">'+nOk+'</div></div><div class="card" style="margin:0;flex:1 1 160px"><div class="muted">Vencem em até 30 dias</div><div style="font-size:26px;font-weight:700;color:var(--wa,#e0b34a)">'+nPerto+'</div></div><div class="card" style="margin:0;flex:1 1 160px"><div class="muted">Vencidos ou sem arquivo</div><div style="font-size:26px;font-weight:700;color:var(--er,#ef6b6b)">'+nRuim+'</div></div></div>';
   h+='<div class="row" style="align-items:flex-end;margin-bottom:8px"><div class="field" style="flex:1 1 240px"><label for="pescNovo">Adicionar pescador (que ainda não tem NF)</label><input type="text" id="pescNovo" placeholder="Nome do pescador"></div><button class="btn" data-act="addpesc">Adicionar</button><button class="btn" data-act="relertodos" title="Lê a data de validade escrita em todos os CTF/RGP já anexados">Reler validade de todos os PDFs</button></div>';
   h+='<div class="row" style="align-items:center;margin-bottom:10px"><button type="button" class="btn pri" data-act="lotectf">Anexar vários CTFs de uma vez</button><input type="file" id="pescLote" accept="application/pdf,.pdf" multiple hidden><span class="muted" style="font-size:12.5px">Escolha todos os PDFs: o app lê o nome e a validade de cada certificado e coloca no pescador certo.</span></div>'+(_loteMsg?'<div class="alert ok" style="white-space:pre-line;margin-bottom:10px">'+esc(_loteMsg)+'</div>':'');
@@ -1619,7 +1697,8 @@ document.addEventListener('click',function(ev){
     if(tab==='passo')d.sei='';
     var r=protocolar(S,d);
     if(!r.ok){toast(r.erro);paintStatus();return;}
-    if(!confirm('Gravar o consumo das NFs para o pack '+r.proc.pack+(r.proc.sei?' (SEI '+r.proc.sei+')':'')+'?\n\nO saldo das NFs cai agora. O protocolo no SEI/MAPA você marca depois, em Processos.')){
+    var ckE=checklistResumo(checklistProc(r.proc)).erro;
+    if(!confirm('Gravar o consumo das NFs para o pack '+r.proc.pack+(r.proc.sei?' (SEI '+r.proc.sei+')':'')+'?'+(ckE?'\n\nATENÇÃO: o checklist antes de protocolar tem '+ckE+' item(ns) para corrigir (data da NF, CTF ou documento vencido). Você pode gravar e corrigir depois.':'')+'\n\nO saldo das NFs cai agora. O protocolo no SEI/MAPA você marca depois, em Processos.')){
       S.processos=S.processos.filter(function(p){return p.id!==r.proc.id;});return;
     }
     var noWiz=(tab==='passo');S.draft=novoDraft();_pdfFeito=null;salvar();if(noWiz){etapa=6;}else tab='processos';render();window.scrollTo(0,0);
@@ -1693,6 +1772,8 @@ document.addEventListener('click',function(ev){
   else if(a==='refazproc'){if(!confirm('Refazer este pack com outras notas? O saldo das NFs dele será liberado agora. Faça isso só se o MAPA já devolveu o processo.'))return;var psRf=mudarSit(S,id,'cancelado',{nota:'refeito com outras notas'});if(!psRf.ok){toast(psRf.erro);return;}salvar();render();toast('Saldo liberado. Monte o pack de novo em Passo a passo.');}
   else if(a==='setsei'){var psPz=S.processos.filter(function(x){return x.id===id;})[0];var psSz=prompt('Nº do processo SEI do pack '+(psPz?psPz.pack:'')+':','');if(psSz===null||!String(psSz).trim())return;mudarSit(S,id,'sei',{sei:psSz});salvar();render();toast('SEI informado.');}
   else if(a==='fproc'){filtroProc=id;render();}
+  else if(a==='adddoc'){docsGet().push({id:'d-'+uid(),nome:'',venc:''});salvar();render();}
+  else if(a==='deldoc'){if(!confirm('Remover este documento da lista?'))return;S.meta.docs=docsGet().filter(function(x){return x.id!==id;});salvar();render();}
   else if(a==='delproc'){if(!confirm('Excluir este processo? O saldo das NFs será recalculado.'))return;S.processos=S.processos.filter(function(p){return p.id!==id;});salvar();render();}
 });
 document.addEventListener('mouseover',function(ev){var e=ev.target.closest&&ev.target.closest('.info');if(e&&meu(e))mostrarTip(e);});
@@ -1753,6 +1834,7 @@ document.addEventListener('change',function(ev){
   if(e.id==='sosaldo'){filtroSaldo=e.checked;$('nflist').innerHTML=listaNFs();return;}
   if(e.id==='pescLote'&&e.files&&e.files.length){var fs=Array.prototype.slice.call(e.files);e.value='';anexarCtfLote(fs);return;}
   if(e.dataset.pfile&&e.files&&e.files.length){var fz=e.files[0];var nz=e.dataset.pk,tz=e.dataset.pfile;e.value='';anexarPesc(nz,tz,fz);return;}
+  if(e.dataset.df){var dd1=docsGet().filter(function(x){return x.id===e.dataset.did;})[0];if(dd1){dd1[e.dataset.df]=e.value;salvar();if(e.dataset.df==='venc')render();}return;}
   if(e.dataset.pf){var pp1=pescGet(e.dataset.pk);pp1[e.dataset.pf]=e.type==='checkbox'?e.checked:e.value;if(e.dataset.pf==='ctf'){pp1.ctfLido=false;}if(e.dataset.pf==='rgpVal')pp1.rgpLido=false;salvar();if(e.dataset.pf==='ctf'||e.dataset.pf==='rgpVal')render();return;}
   if(e.id==='pdfanexo'&&e.files&&e.files.length){var fa=Array.prototype.slice.call(e.files);e.value='';anexarPdfs(fa);return;}
   if(e.id==='nfpdf'&&e.files&&e.files.length){var fs=Array.prototype.slice.call(e.files);e.value='';processarNFs(fs);return;}
@@ -1888,7 +1970,8 @@ document.addEventListener('click',function(ev){
     if(est.tipo!=='pronto'){toast('Resolva os problemas das espécies antes de gravar o consumo.');return;}
     var d=est.d,sei=document.getElementById('mpxSei');if(sei)d.sei=sei.value.trim();
     var r=protocolar(S,d);if(!r.ok){toast(r.erro);return;}
-    if(!confirm('Gravar o consumo das NFs para o pack '+r.proc.pack+(r.proc.sei?' (SEI '+r.proc.sei+')':'')+'?\n\nO saldo das NFs cai agora. O protocolo no SEI/MAPA você marca depois, em Processos.')){S.processos=S.processos.filter(function(p){return p.id!==r.proc.id;});return;}
+    var ckE=checklistResumo(checklistProc(r.proc)).erro;
+    if(!confirm('Gravar o consumo das NFs para o pack '+r.proc.pack+(r.proc.sei?' (SEI '+r.proc.sei+')':'')+'?'+(ckE?'\n\nATENÇÃO: o checklist antes de protocolar tem '+ckE+' item(ns) para corrigir (data da NF, CTF ou documento vencido). Você pode gravar e corrigir depois.':'')+'\n\nO saldo das NFs cai agora. O protocolo no SEI/MAPA você marca depois, em Processos.')){S.processos=S.processos.filter(function(p){return p.id!==r.proc.id;});return;}
     if(S.draft&&mesmoPack(S.draft.pack,info.num))S.draft=novoDraft();
     salvar();refazer();toast('Consumo gravado para o pack '+r.proc.pack+'. Falta protocolar no SEI/MAPA.');
   }else if(a==='grifos'){
@@ -1974,6 +2057,6 @@ PP.mapa={
   marcarProtocolado:function(id){carregar();return marcarProt(id);},
   abrirProcessos:function(){tab='processos';PP.go('mapa');},
   estado:function(){carregar();return S;},
-  core:{sitProc:sitProc,mudarSit:mudarSit,validarDraft:validarDraft,reusoNF:reusoNF,addMarcas:addMarcas,candidatosMarca:candidatosMarca,vincularMarca:vincularMarca,marcaPendente:marcaPendente,vincValidos:vincValidos,lerPdfBuffer:lerPdfBuffer,carregarPdfJs:carregarPdfJs,norm:norm,parseQtd:parseQtd,mesmaEsp:mesmaEsp,nomeSci:nomeSci,saldoNF:saldoNF,entradaNF:entradaNF,resumoNF:resumoNF,painelEspecies:painelEspecies,validarDraft:validarDraft,protocolar:protocolar,sugerir:sugerir,sugerirAjuste:sugerirAjuste,folhaGrifos:folhaGrifos,novoEstado:novoEstado,lerImport:lerImport,conflitosEstado:conflitosEstado,chavePack:chavePack,mesmoPack:mesmoPack,rascunhoDeExportacao:rascunhoDeExportacao,estadoExportacao:estadoExportacao,parseLinhas:parseLinhas,lerPdfBuffer:lerPdfBuffer,agruparLinhas:agruparLinhas,parsePaginaNF:parsePaginaNF,espDeTexto:espDeTexto,itensDoDraft:itensDoDraft,getNF:getNF,generosDe:function(S){return nomesConhecidos(S).map(function(n){return n.split(' ')[0];});}}
+  core:{checklistPack:checklistPack,docsGet:docsGet,sitProc:sitProc,mudarSit:mudarSit,validarDraft:validarDraft,reusoNF:reusoNF,addMarcas:addMarcas,candidatosMarca:candidatosMarca,vincularMarca:vincularMarca,marcaPendente:marcaPendente,vincValidos:vincValidos,lerPdfBuffer:lerPdfBuffer,carregarPdfJs:carregarPdfJs,norm:norm,parseQtd:parseQtd,mesmaEsp:mesmaEsp,nomeSci:nomeSci,saldoNF:saldoNF,entradaNF:entradaNF,resumoNF:resumoNF,painelEspecies:painelEspecies,validarDraft:validarDraft,protocolar:protocolar,sugerir:sugerir,sugerirAjuste:sugerirAjuste,folhaGrifos:folhaGrifos,novoEstado:novoEstado,lerImport:lerImport,conflitosEstado:conflitosEstado,chavePack:chavePack,mesmoPack:mesmoPack,rascunhoDeExportacao:rascunhoDeExportacao,estadoExportacao:estadoExportacao,parseLinhas:parseLinhas,lerPdfBuffer:lerPdfBuffer,agruparLinhas:agruparLinhas,parsePaginaNF:parsePaginaNF,espDeTexto:espDeTexto,itensDoDraft:itensDoDraft,getNF:getNF,generosDe:function(S){return nomesConhecidos(S).map(function(n){return n.split(' ')[0];});}}
 };
 })();
