@@ -583,3 +583,19 @@ v29.9 — Modo foco nas outras telas (Exportação, Hoje e menu lateral)
   Menu lateral: clique no título de uma seção (Início, Operação, Gestão) para recolher ou abrir. O menu lembra a sua
   escolha, e a tela em que você está nunca some. Nada foi removido do menu: ele só mostra menos de uma vez.
   Não precisa de SQL novo no Supabase.
+
+v29.10 — Nacional: prazo do desconto à vista, comprovação da mortalidade e mensagens prontas
+  Desconto à vista com prazo: ao aplicar o desconto (10% ou "Outro %"), o campo "vale até" já vem com 3 dias a partir de hoje.
+  Dá para mudar a data na hora, ou depois em "Mudar desconto ou prazo" (na linha do cliente) e no detalhe do pedido.
+  Na linha aparece "vale até dd/mm" e, quando chega perto, "(vence amanhã)", "(vence hoje)" ou "(venceu)".
+  Se venceu e o cliente ainda deve, aparece o botão "Retirar desconto (venceu)": o pedido volta ao valor cheio.
+  A cobrança copiada também avisa até quando vale o desconto (só enquanto o prazo não passou).
+  Comprovação da mortalidade: a mortalidade registrada mostra "sem comprovação" até você fazer uma destas coisas:
+  - "Anexar comprovação": foto, vídeo ou PDF que o cliente mandou (o arquivo fica guardado neste aparelho);
+  - "Cliente mandou pelo WhatsApp": só anota que a comprovação foi recebida.
+  "Ver comprovação" reabre o arquivo. Corrigir a mortalidade não apaga a comprovação.
+  Mensagens prontas: "Copiar mensagem do desconto" e "Copiar mensagem da mortalidade" montam o texto para colar no WhatsApp.
+  Assistente: avisa quando o desconto vence amanhã, hoje ou já venceu (com "Copiar mensagem ao cliente" e "Retirar
+  desconto") e quando há mortalidade sem comprovação.
+  Descontos antigos, sem prazo, continuam valendo e aparecem como "sem prazo definido". Você pode colocar uma data neles.
+  Não precisa de SQL novo no Supabase.

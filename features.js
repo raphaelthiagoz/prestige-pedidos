@@ -139,10 +139,28 @@
     return { key: st, label: STATUS[st] || st, kind: st === 'aguardando' ? 'warn' : 'ok', saldo: s, dias };
   }
   const fmtBR = n => n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  /* v29.10: prazo do desconto à vista (e.avista.ate) e mensagens prontas ao cliente */
+  const dBRf = iso => (iso ? String(iso).split('-').reverse().join('/') : '');
+  const avistaSit = (e, hoje) => {
+    if (!e.avista || !e.avista.ate || saldo(e) <= 0) return { key: 'sem', dias: null };
+    const d = daysBetween(hoje, e.avista.ate);
+    return { key: d < 0 ? 'venceu' : d === 0 ? 'hoje' : d === 1 ? 'amanha' : 'ok', dias: d };
+  };
+  const pctTxt = p => String(p).replace('.', ',');
+  function msgMortalidade(e, empresa) {
+    const m = e.mort; if (!m) return '';
+    return `Olá! Tudo bem? Aqui é da ${empresa || 'Prestige Aquarium'}. Recebemos o aviso de mortalidade do seu pedido de ${dBRf(e.dataISO)} (invoice ${e.inv}): ${m.mortos} peixe(s), crédito de R$ ${fmtBR(m.credito)}. ` +
+      (m.destino === 'guardar' ? 'O crédito fica guardado e será descontado no seu próximo pedido.' : `O crédito já foi abatido: o total a pagar deste pedido ficou em R$ ${fmtBR(devido(e))}.`) + ' Qualquer dúvida, é só falar. Obrigado!';
+  }
+  function msgAvista(e, empresa) {
+    const a = e.avista; if (!a) return '';
+    return `Olá! Tudo bem? Aqui é da ${empresa || 'Prestige Aquarium'}. Sobre o pedido de ${dBRf(e.dataISO)} (invoice ${e.inv}): pagando à vista${a.ate ? ' até ' + dBRf(a.ate) : ''}, você tem ${pctTxt(a.pct)}% de desconto (− R$ ${fmtBR(a.valor)}) e o total fica em R$ ${fmtBR(devido(e))}.` +
+      (a.ate ? ` Depois dessa data vale o valor sem desconto, R$ ${fmtBR(r2(devido(e) + (a.valor || 0)))}.` : '') + ' Pode nos enviar o comprovante assim que fizer? Obrigado!';
+  }
   function msgCobranca(e, empresa) {
     const s = saldo(e), dBR = e.dataISO.split('-').reverse().join('/');
     return `Olá! Tudo bem? Aqui é da ${empresa || 'Prestige Aquarium'}. Passando para lembrar do pedido de ${dBR} (invoice ${e.inv}${e.nf ? ', NF ' + e.nf : ''}), no valor de R$ ${fmtBR(devido(e))}` +
-      ((e.pay && e.pay.pago) ? `, com R$ ${fmtBR(e.pay.pago)} já recebidos. Saldo em aberto: R$ ${fmtBR(s)}.` : '. Ainda não identificamos o pagamento.') + ' Pode nos enviar o comprovante assim que fizer? Obrigado!';
+      ((e.pay && e.pay.pago) ? `, com R$ ${fmtBR(e.pay.pago)} já recebidos. Saldo em aberto: R$ ${fmtBR(s)}.` : '. Ainda não identificamos o pagamento.') + (e.avista && e.avista.ate && s > 0 && e.avista.ate >= todayISO() ? ` O desconto à vista de ${pctTxt(e.avista.pct)}% vale para pagamento até ${dBRf(e.avista.ate)}.` : '') + ' Pode nos enviar o comprovante assim que fizer? Obrigado!';
   }
 
   /* ---------- conferência automática entre documentos (item 11) ---------- */
@@ -360,5 +378,5 @@
   }
 
   return { todayISO, addDays, daysBetween, r2, parsePrecos, priceFor, soldBoxes, effCatalog, usoOf, makeEntry, devido, baseAvista, valorAvista, saldo, creditoCliente, creditRow, mortalidade, notaCorrigida,
-    STATUS, situacao, msgCobranca, crossCheck, romaneio, painel, reposicao, ibamaRows, spokenToDigits, deriveKeys, encryptJSON, decryptJSON, cloudMod, mergeData, idIndex, mergeHist, mergeClientes, cloudPull, cloudPush, active };
+    STATUS, situacao, msgCobranca, msgMortalidade, msgAvista, avistaSit, crossCheck, romaneio, painel, reposicao, ibamaRows, spokenToDigits, deriveKeys, encryptJSON, decryptJSON, cloudMod, mergeData, idIndex, mergeHist, mergeClientes, cloudPull, cloudPush, active };
 });

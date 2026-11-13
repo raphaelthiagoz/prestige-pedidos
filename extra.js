@@ -16,6 +16,15 @@
 
   /* ====================== HISTÓRICO E PÓS-VENDA ====================== */
   /* mortalidade pendente: pedidos de embarques que saíram há 1 a 14 dias e ainda sem "teve / não teve" */
+  const prazoAv = () => S.cfg.avistaDias || 3;
+  function avistaPend() { // descontos à vista com prazo que vence hoje/amanhã ou já venceu (e o cliente ainda deve)
+    const hoje = F.todayISO(), out = [];
+    (S.hist || []).filter(F.active).forEach(h => { const s = F.avistaSit(h, hoje); if (s.key === 'venceu' || s.key === 'hoje' || s.key === 'amanha') out.push({ h, s }); });
+    return out;
+  }
+  function provaPend() { // mortalidade registrada, ainda sem comprovação (foto ou "recebi pelo WhatsApp")
+    return (S.hist || []).filter(h => F.active(h) && h.mort && !h.mort.prova);
+  }
   function mortPend() {
     const hoje = F.todayISO(), out = [];
     (S.embarques || []).filter(em => em.saida <= F.addDays(hoje, -1) && em.saida >= F.addDays(hoje, -14)).sort((a, b) => b.saida.localeCompare(a.saida)).forEach(em => {
@@ -72,16 +81,17 @@
         const sit = F.situacao(h, hoje, prazo()), dev = F.devido(h), sd = sit.saldo, saiu = em.saida < hoje, dias = F.daysBetween(em.saida, hoje);
         receber += sd; totEmb += sd; if (sit.key === 'atrasado') atras++; if (h.avista) { nAv++; vAv += h.avista.valor || 0; }
         let mort, pendMort = false;
-        if (h.mort) mort = `<span class="chip ${h.mort.destino === 'guardar' ? 'info' : 'ok'}">− R$ ${fmt(h.mort.credito)}</span><div class="note">${h.mort.mortos} peixe(s) · ${h.mort.destino === 'guardar' ? 'guardado p/ próximo pedido' : 'abatido neste pedido'}</div>`;
+        if (h.mort) mort = `<span class="chip ${h.mort.destino === 'guardar' ? 'info' : 'ok'}">− R$ ${fmt(h.mort.credito)}</span><div class="note">${h.mort.mortos} peixe(s) · ${h.mort.destino === 'guardar' ? 'guardado p/ próximo pedido' : 'abatido neste pedido'}</div>${provaTxt(h.mort)}`;
         else if (h.mortOk) mort = '<span class="chip ok">Sem mortalidade</span>';
         else if (!saiu) mort = '<span class="note">ainda não saiu</span>';
         else { pendMort = true; perguntar++; mort = `<span class="chip warn">Perguntar ao cliente</span><div class="note">saiu há ${dias} dia(s)</div>`; }
-        const av = h.avista ? `<span class="chip ok">− R$ ${fmt(h.avista.valor)}</span><div class="note">${String(h.avista.pct).replace('.', ',')}% à vista</div>` : '<span class="note">—</span>';
+        const sa = F.avistaSit(h, hoje), saTxt = { venceu: ' (venceu)', hoje: ' (vence hoje)', amanha: ' (vence amanhã)' }[sa.key] || '';
+        const av = h.avista ? `<span class="chip ${sa.key === 'venceu' ? 'bad' : (sa.key === 'hoje' || sa.key === 'amanha' ? 'warn' : 'ok')}">− R$ ${fmt(h.avista.valor)}</span><div class="note">${String(h.avista.pct).replace('.', ',')}% à vista · ${h.avista.ate ? 'vale até ' + dBR(h.avista.ate) + saTxt : 'sem prazo definido'}</div>` : '<span class="note">—</span>';
         const bt = [];
         if (pendMort) bt.push(`<button type="button" data-ep="mortinfo" data-id="${h.id}">Teve mortalidade</button><button type="button" data-ep="mortnao" data-id="${h.id}">Não teve</button>`);
-        else if (h.mort) bt.push(`<button type="button" data-ep="mortinfo" data-id="${h.id}">Corrigir mortalidade</button>`);
+        else if (h.mort) bt.push(`<button type="button" data-ep="mortinfo" data-id="${h.id}">Corrigir mortalidade</button>${provaBtns(h)}<button type="button" data-ep="msgmort" data-id="${h.id}">Copiar mensagem da mortalidade</button>`);
         if (sd > 0 && !h.avista) bt.push(`<button type="button" data-ep="av10" data-id="${h.id}">10% à vista</button><button type="button" data-ep="avoutro" data-id="${h.id}">Outro %</button>`);
-        else if (h.avista && sd > 0) bt.push(`<button type="button" data-ep="avoutro" data-id="${h.id}">Mudar desconto</button>`);
+        else if (h.avista && sd > 0) bt.push(`<button type="button" data-ep="avoutro" data-id="${h.id}">Mudar desconto ou prazo</button>${sa.key === 'venceu' ? `<button type="button" data-ep="avvenceu" data-id="${h.id}">Retirar desconto (venceu)</button>` : ''}<button type="button" data-ep="msgav" data-id="${h.id}">Copiar mensagem do desconto</button>`);
         if (sd > 0) bt.push(`<button type="button" data-ep="cobr" data-id="${h.id}">Copiar cobrança</button><button type="button" data-ep="recebi" data-id="${h.id}">Recebi</button>`);
         bt.push(`<button type="button" data-ep="abrir" data-id="${h.id}">Detalhes</button>`);
         return `<div class="epr"><div class="eph"><b>${esc(h.cliente.nome)}</b><span class="note">${h.totais.caixas} cx · inv. ${esc(h.inv)}</span>${chip(sit.kind, sit.label)}<span class="epv">Pedido R$ ${fmt(h.totais.total)} · a pagar <b>R$ ${fmt(dev)}</b>${sd !== dev ? ` · falta R$ ${fmt(sd)}` : ''}</span></div>
@@ -110,14 +120,37 @@
       <div class="epq2"><label><input type="radio" name="epdest" value="abater" ${ep.dest !== 'guardar' ? 'checked' : ''}> Abater deste pedido</label><label><input type="radio" name="epdest" value="guardar" ${ep.dest === 'guardar' ? 'checked' : ''}> Guardar para o próximo pedido</label></div>
       <p id="epPrev">${epPrevMort(h, ep)}</p><div class="epb"><button type="button" class="primary" data-ep="mortsalvar" data-id="${h.id}">Salvar mortalidade</button><button type="button" data-ep="fechar" data-id="${h.id}">Cancelar</button></div></div>`;
     return `<div class="epf" id="epForm"><div class="note">Desconto para pagamento à vista, só sobre o valor dos peixes (R$ ${fmt(F.baseAvista(h))}).</div>
-      <div class="epb"><button type="button" data-ep="avchip" data-v="5">5%</button><button type="button" data-ep="avchip" data-v="10">10%</button><label class="epq" style="display:inline-flex;gap:6px;align-items:center">outro: <input type="number" min="0" max="100" step="0.5" data-epp="1" value="${ep.pct === '' ? '' : esc(String(ep.pct))}" style="width:84px"> %</label></div>
+      <div class="epb"><label class="epq" style="display:inline-flex;gap:6px;align-items:center">vale até: <input type="date" data-epa="1" value="${esc(ep.ate || '')}" aria-label="Prazo do desconto"></label> <button type="button" data-ep="avchip" data-v="5">5%</button><button type="button" data-ep="avchip" data-v="10">10%</button><label class="epq" style="display:inline-flex;gap:6px;align-items:center">outro: <input type="number" min="0" max="100" step="0.5" data-epp="1" value="${ep.pct === '' ? '' : esc(String(ep.pct))}" style="width:84px"> %</label></div>
       <p id="epPrev">${avPrevTxt(h, ep.pct)}</p><div class="epb"><button type="button" class="primary" data-ep="avsalvar" data-id="${h.id}">Aplicar desconto</button>${h.avista ? `<button type="button" data-ep="avtirar" data-id="${h.id}">Remover desconto</button>` : ''}<button type="button" data-ep="fechar" data-id="${h.id}">Cancelar</button></div></div>`;
   };
+  /* comprovação da mortalidade: foto/vídeo/PDF guardado neste aparelho, ou só o registro de que o cliente mandou pelo WhatsApp */
+  const provaTxt = m => !m.prova ? '<div><span class="chip warn">sem comprovação</span></div>' : `<div><span class="chip ok">comprovação: ${m.prova.tipo === 'whats' ? 'recebida pelo WhatsApp' : esc(m.prova.nome || 'arquivo')}</span></div>`;
+  const provaBtns = h => h.mort.prova && h.mort.prova.tipo === 'arquivo'
+    ? `<button type="button" data-ep="provaver" data-id="${h.id}">Ver comprovação</button><button type="button" data-ep="provanova" data-id="${h.id}">Trocar comprovação</button>`
+    : (h.mort.prova ? `<button type="button" data-ep="provanova" data-id="${h.id}">Anexar arquivo</button>` : `<button type="button" data-ep="provanova" data-id="${h.id}">Anexar comprovação</button><button type="button" data-ep="provawhats" data-id="${h.id}">Cliente mandou pelo WhatsApp</button>`);
+  let provaId = null;
+  function provaInput() { let i = document.getElementById('epProvaFile'); if (!i) { i = document.createElement('input'); i.type = 'file'; i.id = 'epProvaFile'; i.accept = 'image/*,video/*,application/pdf'; i.hidden = true; document.body.appendChild(i); i.addEventListener('change', onProva); } return i; }
+  async function onProva(ev) {
+    const f = ev.target.files && ev.target.files[0]; ev.target.value = ''; const e = S.hist.find(x => x.id === provaId); if (!f || !e || !e.mort) return;
+    try {
+      const bytes = new Uint8Array(await f.arrayBuffer());
+      await PP.nfpdf._x.dbPut('mortprova-' + e.id, { bytes, name: f.name, mime: f.type || 'application/octet-stream' });
+      e.mort = Object.assign({}, e.mort, { prova: { tipo: 'arquivo', nome: f.name, mime: f.type || '', em: F.todayISO() } }); e.upd = Date.now(); PP.saveHist(); renderHist(); PP.toast('Comprovação guardada neste aparelho.', 'ok');
+    } catch (_) { PP.toast('Não consegui guardar o arquivo. Tente de novo.'); }
+  }
+  async function verProva(e) {
+    try {
+      const r = await PP.nfpdf._x.dbGet('mortprova-' + e.id);
+      if (!r || !r.bytes) { PP.toast('O arquivo está no aparelho em que você anexou. Neste, só aparece o registro.'); return; }
+      const u = URL.createObjectURL(new Blob([r.bytes], { type: (e.mort.prova && e.mort.prova.mime) || r.mime || '' })); window.open(u, '_blank'); setTimeout(() => URL.revokeObjectURL(u), 60000);
+    } catch (_) { PP.toast('Não consegui abrir o arquivo.'); }
+  }
   document.addEventListener('input', ev => {
     const t = ev.target, ep = ST.hist.ep; if (!ep || !$('vHist').contains(t)) return;
     const e = S.hist.find(x => x.id === ep.id); if (!e) return;
     if (t.dataset.epd != null) { ep.dead[t.dataset.epd] = parseInt(t.value, 10) || 0; }
     else if (t.dataset.epp != null) { ep.pct = t.value; }
+    else if (t.dataset.epa != null) { ep.ate = t.value; }
     else if (t.name === 'epdest') { ep.dest = t.value; }
     else return;
     if ($('epPrev')) $('epPrev').innerHTML = ep.kind === 'mort' ? epPrevMort(e, ep) : avPrevTxt(e, ep.pct);
@@ -128,26 +161,33 @@
     const fim = txt => { e.upd = Date.now(); PP.saveHist(); PP.renderClientes(); renderHist(); if (PP.assist) PP.assist.refresh(); if (PP.hoje && S.view === 'hoje') PP.hoje.render(); if (txt) PP.toast(txt, 'ok'); };
     if (k === 'mortnao') { e.mortOk = Date.now(); ST.hist.ep = null; fim('Anotado: sem mortalidade.'); }
     else if (k === 'mortinfo') { ST.hist.ep = { id: e.id, kind: 'mort', dead: Object.assign({}, (e.mort && e.mort.dead) || {}), dest: (e.mort && e.mort.destino) || 'abater' }; renderHist(); const f = $('epForm'); if (f) f.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
-    else if (k === 'avoutro') { ST.hist.ep = { id: e.id, kind: 'av', pct: e.avista ? e.avista.pct : '' }; renderHist(); const f = $('epForm'); if (f) f.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+    else if (k === 'avoutro') { ST.hist.ep = { id: e.id, kind: 'av', pct: e.avista ? e.avista.pct : '', ate: e.avista ? (e.avista.ate || '') : F.addDays(F.todayISO(), prazoAv()) }; renderHist(); const f = $('epForm'); if (f) f.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
     else if (k === 'fechar') { ST.hist.ep = null; renderHist(); }
     else if (k === 'avchip') { const ep = ST.hist.ep; if (ep) { ep.pct = b.dataset.v; renderHist(); } }
     else if (k === 'avsalvar') {
       const pct = parseFloat(String((ST.hist.ep || {}).pct || '').replace(',', '.'));
       if (!(pct > 0 && pct <= 100)) { PP.toast('Digite a % do desconto (entre 0 e 100) ou toque em 5% ou 10%.'); return; }
-      e.avista = { pct, valor: F.valorAvista(e, pct), em: F.todayISO() }; ST.hist.ep = null; fim('Desconto à vista aplicado.');
+      e.avista = { pct, valor: F.valorAvista(e, pct), em: F.todayISO(), ate: (ST.hist.ep || {}).ate || '' }; ST.hist.ep = null; fim('Desconto à vista aplicado.');
     }
     else if (k === 'avtirar') { e.avista = null; ST.hist.ep = null; fim('Desconto removido: o pedido voltou ao valor de antes.'); }
     else if (k === 'mortsalvar') {
       const ep = ST.hist.ep, c = F.mortalidade(e, ep.dead || {});
-      e.mortOk = c.credito > 0 ? 0 : Date.now(); e.mort = c.credito > 0 ? { dead: Object.assign({}, ep.dead), credito: c.credito, mortos: c.mortos, destino: ep.dest === 'guardar' ? 'guardar' : 'abater', em: F.todayISO() } : null;
+      e.mortOk = c.credito > 0 ? 0 : Date.now(); e.mort = c.credito > 0 ? { dead: Object.assign({}, ep.dead), credito: c.credito, mortos: c.mortos, destino: ep.dest === 'guardar' ? 'guardar' : 'abater', em: F.todayISO(), prova: e.mort && e.mort.prova ? e.mort.prova : undefined } : null;
       let extra = ''; if (e.avista) { const novo = F.valorAvista(e, e.avista.pct); if (novo !== e.avista.valor) { e.avista = Object.assign({}, e.avista, { valor: novo }); extra = ` O desconto à vista foi recalculado para R$ ${fmt(novo)}.`; } }
       ST.hist.ep = null; fim(c.credito > 0 ? 'Mortalidade salva.' + extra : 'Nenhum peixe morto informado: ficou como sem mortalidade.');
     }
+    else if (k === 'avvenceu') { if (!confirm(`O prazo do desconto à vista de ${e.cliente.nome} venceu em ${dBR(e.avista.ate)}.\n\nRetirar o desconto de R$ ${fmt(e.avista.valor)}? O pedido volta ao valor de antes (R$ ${fmt(F.r2(F.devido(e) + (e.avista.valor || 0)))}).`)) return; e.avista = null; fim('Desconto retirado: o pedido voltou ao valor sem desconto.'); }
+    else if (k === 'msgav') { try { await navigator.clipboard.writeText(F.msgAvista(e, S.cfg.empresa.nome)); PP.toast('Mensagem do desconto copiada.', 'ok'); } catch (_) { PP.toast('Não consegui copiar.'); } }
+    else if (k === 'msgmort') { try { await navigator.clipboard.writeText(F.msgMortalidade(e, S.cfg.empresa.nome)); PP.toast('Mensagem da mortalidade copiada.', 'ok'); } catch (_) { PP.toast('Não consegui copiar.'); } }
+    else if (k === 'provanova') { provaId = e.id; provaInput().click(); }
+    else if (k === 'provaver') { verProva(e); }
+    else if (k === 'provawhats') { e.mort = Object.assign({}, e.mort, { prova: { tipo: 'whats', em: F.todayISO() } }); fim('Anotado: cliente mandou a comprovação pelo WhatsApp.'); }
     else if (k === 'abrir') { ST.hist.tipo = 'todos'; ST.hist.open = e.id; renderHist(); const t = $('hdet'); if (t) t.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
     else if (k === 'av10') {
       const v = F.valorAvista(e, 10), antes = F.r2(e.totais.total - (e.mort && e.mort.destino === 'abater' ? e.mort.credito || 0 : 0));
-      if (!confirm(`Aplicar 10% de desconto à vista para ${e.cliente.nome}?\n\nDesconto: − R$ ${fmt(v)} (sobre os peixes, sem GTA, embalagem e atestado)\nTotal a pagar: R$ ${fmt(F.r2(antes - v))}`)) return;
-      e.avista = { pct: 10, valor: v, em: F.todayISO() }; fim('Desconto à vista aplicado.');
+      const ate = F.addDays(F.todayISO(), prazoAv());
+      if (!confirm(`Aplicar 10% de desconto à vista para ${e.cliente.nome}?\n\nDesconto: − R$ ${fmt(v)} (sobre os peixes, sem GTA, embalagem e atestado)\nTotal a pagar: R$ ${fmt(F.r2(antes - v))}\nVale até ${dBR(ate)} (você pode mudar o prazo em "Mudar desconto ou prazo").`)) return;
+      e.avista = { pct: 10, valor: v, em: F.todayISO(), ate }; fim('Desconto à vista aplicado.');
     }
     else if (k === 'recebi') {
       const v = F.saldo(e); if (!confirm(`Marcar como pago o valor de R$ ${fmt(v)} de ${e.cliente.nome}?`)) return;
@@ -173,7 +213,8 @@
     return `<div class="block" id="avBox" style="margin-top:14px"><h3>Desconto para pagamento à vista</h3>
       <p class="note">Para o cliente que decidiu pagar à vista depois do pedido. O desconto é sobre o valor dos peixes (R$ ${fmt(F.baseAvista(e))}), sem GTA, embalagem e atestado.</p>
       <div class="row" style="align-items:center"><button type="button" data-h="avchip" data-v="5">5%</button><button type="button" data-h="avchip" data-v="10">10%</button>
-        <label style="color:var(--fg)">outro: <input id="avPct" type="number" min="0" max="100" step="0.5" value="${pct === '' ? '' : esc(String(pct))}" style="width:84px" aria-label="Desconto à vista em %"> %</label></div>
+        <label style="color:var(--fg)">outro: <input id="avPct" type="number" min="0" max="100" step="0.5" value="${pct === '' ? '' : esc(String(pct))}" style="width:84px" aria-label="Desconto à vista em %"> %</label>
+        <label style="color:var(--fg)">vale até: <input id="avAte" type="date" value="${esc(av ? (av.ate || '') : F.addDays(F.todayISO(), prazoAv()))}" aria-label="Prazo do desconto"></label></div>
       <p id="avPrev" style="margin:8px 0">${avPrevTxt(e, pct)}</p>
       <div class="row"><button type="button" class="primary" data-h="avSave" data-id="${e.id}">Aplicar desconto</button>${av ? `<button type="button" data-h="avDel" data-id="${e.id}">Remover desconto</button>` : ''}<button type="button" data-h="avNota" data-id="${e.id}" ${av ? '' : 'disabled'}>Baixar nota do pedido com desconto (.xlsx)</button></div>
       <p class="note" id="avMsg" role="status">${av ? `Desconto aplicado: ${String(av.pct).replace('.', ',')}% = R$ ${fmt(av.valor)}. Total a pagar agora: R$ ${fmt(F.devido(e))}.` : ''}</p></div>`;
@@ -238,7 +279,7 @@
     else if (k === 'avSave' && e) {
       const pct = parseFloat(String(($('avPct') || {}).value || '').replace(',', '.'));
       if (!(pct > 0 && pct <= 100)) { msg('avMsg', 'Digite a % do desconto (entre 0 e 100) ou toque em 5% ou 10%.'); return; }
-      e.avista = { pct, valor: F.valorAvista(e, pct), em: F.todayISO() }; e.upd = Date.now(); delete ST.hist.av[e.id];
+      e.avista = { pct, valor: F.valorAvista(e, pct), em: F.todayISO(), ate: ($('avAte') || {}).value || '' }; e.upd = Date.now(); delete ST.hist.av[e.id];
       PP.saveHist(); PP.renderClientes(); renderHist(); if (PP.assist) PP.assist.refresh(); PP.toast('Desconto à vista aplicado.', 'ok');
     }
     else if (k === 'avDel' && e) { e.avista = null; e.upd = Date.now(); delete ST.hist.av[e.id]; PP.saveHist(); PP.renderClientes(); renderHist(); if (PP.assist) PP.assist.refresh(); PP.toast('Desconto removido: o pedido voltou ao valor de antes.', 'ok'); }
@@ -659,7 +700,7 @@
   PP.extra = {
     embAbertos, embDoPedido, embColoca, embAtualiza, embLabel, embMove, embTira,
     render(v) { if (v === 'embarque') renderEmb(); else if (v === 'hist') renderHist(); else if (v === 'painel') renderPainel(); else if (v === 'relat') renderRelat(); else if (v === 'estoque') renderEstoque(); },
-    refresh() { this.render(S.view); }, syncNow, stocklistAtualizada, ST, mortPend,
+    refresh() { this.render(S.view); }, syncNow, stocklistAtualizada, ST, mortPend, avistaPend, provaPend,
   };
   setTimeout(() => syncNow(false), 600); // ao abrir, puxa o que mudou em outro computador
 })();
