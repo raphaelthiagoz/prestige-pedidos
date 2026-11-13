@@ -595,8 +595,8 @@ var AJ={
   protocolar:'Grava este pack e desconta das NFs as quantidades escolhidas, para o saldo ficar certo desde já. Isso NÃO é o protocolo: quando você protocolar no SEI/MAPA, volte em Processos e clique em "Marcar como protocolado".',
   ler:'Lê o texto colado e cria uma linha por espécie. Depois sugere automaticamente as NFs que ainda têm saldo.',
   addlinha:'Adiciona uma espécie manualmente, sem precisar colar texto.',
-  sugerirtudo:'Escolhe, para cada espécie do pedido, as NFs que ainda têm saldo, seguindo a regra de "Como sugerir" ao lado.',
-  sugerir:'Refaz a escolha de NFs só para esta espécie.',
+  sugerirtudo:'Escolhe as NFs só para as espécies que ainda não têm NF ou estão com problema, seguindo a regra de "Como sugerir" ao lado. As que você já acertou ficam como estão.',
+  sugerir:'Refaz a escolha de NFs só para esta espécie. Se ela já estiver certa, o app pergunta antes de trocar.',
   trocar:'Abre esta espécie para você escolher outra NF ou dividir a quantidade entre duas NFs.',
   hist:'Marque ao registrar um pack antigo, que já foi protocolado. O app só avisa se faltar saldo, sem bloquear. Serve para carregar o histórico.',
   limpar:'Apaga o pedido que está sendo montado. Não mexe nos packs já gravados.',
@@ -654,7 +654,7 @@ function fluxoEstado(){
   if(cur===1){agora='<b>Cadastre as NFs de entrada.</b> Sem elas o app não tem de onde tirar o saldo das espécies.';bt='<button type="button" class="btn pri" data-tab="nfs">Cadastrar NFs</button>';}
   else if(cur===2){
     if(!nLin){agora='<b>Anexe o packing list (PDF) ou cole o pedido</b> na aba "2 · Verificar pedido".';bt='<button type="button" class="btn pri" data-tab="verificar">Ir para Verificar pedido</button>';}
-    else if(!temAloc||v.erros){agora='<b>Pack '+esc(d.pack||'(sem nº)')+(d.destino?' · '+esc(d.destino):'')+'</b>: '+(v.erros?'falta escolher NF para '+v.erros+' espécie(s).':'falta escolher as NFs.');bt='<button type="button" class="btn pri" data-act="sugerirtudo">Sugerir NFs para todas</button>';}
+    else if(!temAloc||v.erros){agora='<b>Pack '+esc(d.pack||'(sem nº)')+(d.destino?' · '+esc(d.destino):'')+'</b>: '+(v.erros?'falta escolher NF para '+v.erros+' espécie(s).':'falta escolher as NFs.');bt='<button type="button" class="btn pri" data-act="sugerirtudo">Sugerir NFs onde falta</button>';}
   }
   else if(cur===3){agora='<b>Pedido conferido.</b> Gere o PDF único das NFs (com as espécies grifadas) para anexar no SEI.';bt='<button type="button" class="btn pri" data-act="pdfdraft">PDF das NFs (SEI)</button>';}
   else{agora='<b>PDF pronto.</b> Grave o consumo das NFs agora (o saldo já fica certo) e anexe o PDF no SEI. Depois que protocolar no MAPA, marque o pack como protocolado em Processos.';bt='<button type="button" class="btn pri" data-act="protocolar">Gravar consumo</button>';}
@@ -700,7 +700,7 @@ function viewVerificar(){
   +'<div class="card"><h2>Pedido</h2>'
   +'<div class="row" style="margin-bottom:8px;align-items:center"><label class="btn" style="cursor:pointer;flex:0 0 auto;min-width:0;display:inline-flex;align-items:center;flex-direction:row;gap:6px;color:var(--tx);font-size:14px">Anexar packing list (PDF)<input type="file" id="packpdf" accept="application/pdf,.pdf" style="display:none"></label>'+ia('packpdf')+'<span class="muted" style="flex:1">ou cole o texto abaixo</span></div>'
   +'<textarea id="colar" placeholder="Cole o pedido, uma espécie por linha (pode colar direto da tabela do packing list):&#10;Otocinclus hoppei Limpa vidro 15.000&#10;Paracheirodon axelrodi Cardinal 8.000"></textarea>'
-  +'<div class="row" style="margin-top:8px;align-items:center"><span><button class="btn" data-act="ler">Ler pedido</button>'+ia('ler')+'</span><span><button class="btn" data-act="addlinha">Adicionar espécie</button>'+ia('addlinha')+'</span><span><button class="btn" data-act="sugerirtudo">Sugerir NFs para todas</button>'+ia('sugerirtudo')+'</span>'
+  +'<div class="row" style="margin-top:8px;align-items:center"><span><button class="btn" data-act="ler">Ler pedido</button>'+ia('ler')+'</span><span><button class="btn" data-act="addlinha">Adicionar espécie</button>'+ia('addlinha')+'</span><span><button class="btn" data-act="sugerirtudo">Sugerir NFs onde falta</button>'+ia('sugerirtudo')+'</span>'
   +'<label style="flex:0 0 auto;min-width:0;flex-direction:row;align-items:center;gap:6px;font-size:13px;color:var(--tx)">Como sugerir<select data-f="modo" style="width:auto"><option value="antiga"'+(modo==='antiga'?' selected':'')+'>NF mais antiga primeiro</option><option value="ajuste"'+(modo==='ajuste'?' selected':'')+'>Esgotar NF (melhor encaixe)</option></select>'+ia('modo')+'</label></div></div>'
   +'<div id="banner"></div><div id="pescAv"></div><div id="linhas"></div>'
   +'<div class="row" style="margin-top:12px;align-items:center"><span><button class="btn pri" data-act="protocolar">Gravar consumo</button>'+ia('protocolar')+'</span>'
@@ -789,7 +789,7 @@ function paintAll(){
     (pronta?ok:att).push(i);
   });
   if(!S.nfs.length&&d.linhas.length){
-    h+='<div class="card"><b>Nenhuma NF de entrada cadastrada ainda</b><p class="muted">Cadastre as NFs na aba NFs de entrada. Depois volte aqui e clique em Sugerir NFs para todas.</p><button class="btn pri" data-tab="nfs">Cadastrar NFs</button></div>';
+    h+='<div class="card"><b>Nenhuma NF de entrada cadastrada ainda</b><p class="muted">Cadastre as NFs na aba NFs de entrada. Depois volte aqui e clique em Sugerir NFs onde falta.</p><button class="btn pri" data-tab="nfs">Cadastrar NFs</button></div>';
     h+='<div class="sec n">Espécies do pedido ('+d.linhas.length+')</div><div class="card">'+d.linhas.map(function(L,i){return '<div class="okrow"><span>'+nomeHTML(L.esp)+'</span><span><b style="font-weight:600">'+fmt(L.qtd)+'</b> <button class="btn sm dg" data-act="rmlinha" data-i="'+i+'">Remover</button></span></div>';}).join('')+'</div>';
     att=[];
   }else{
@@ -1417,8 +1417,8 @@ document.addEventListener('click',function(ev){
     if(S.nfs.length)d.linhas.forEach(function(L,k){if(!L.aloc.length)sugerirLinha(k);});
     $('colar').value='';salvar();paintAll();toast(ls.length+' espécie(s) lidas.'+(S.nfs.length?' Confira as NFs sugeridas.':' Cadastre as NFs de entrada para conferir.'));
   }else if(a==='addlinha'){d.linhas.push({esp:'',qtd:0,aloc:[]});salvar();paintAll();}
-  else if(a==='sugerirtudo'){if(!S.nfs.length){toast('Cadastre as NFs de entrada primeiro.');return;}d.linhas.forEach(function(L,k){sugerirLinha(k);});salvar();paintAll();}
-  else if(a==='sugerir'){if(!S.nfs.length){toast('Cadastre as NFs de entrada primeiro.');return;}if(sugerirLinha(i)){salvar();paintAll();}}
+  else if(a==='sugerirtudo'){if(!S.nfs.length){toast('Cadastre as NFs de entrada primeiro.');return;}var vv=validarDraft(S,d),nSug=0,nMan=0;d.linhas.forEach(function(L,k){var r=vv.linhas[k],okLn=L.aloc.length>0&&r&&!r.problemas.some(function(p){return p.nivel==='erro';});if(okLn){nMan++;return;}if(sugerirLinha(k))nSug++;});salvar();paintAll();toast(nSug+' espécie(s) preenchida(s).'+(nMan?' '+nMan+' já tinha(m) NF escolhida e foi(ram) mantida(s).':''));}
+  else if(a==='sugerir'){if(!S.nfs.length){toast('Cadastre as NFs de entrada primeiro.');return;}var L1=d.linhas[i],r1=validarDraft(S,d).linhas[i];if(L1&&L1.aloc.length&&r1&&!r1.problemas.some(function(p){return p.nivel==='erro';})&&!confirm('Esta espécie já tem NF escolhida e sem problema. Substituir pela sugestão do app?'))return;if(sugerirLinha(i)){salvar();paintAll();}}
   else if(a==='usarnome'){var L0=d.linhas[i];L0.esp=t.dataset.nome;sugerirLinha(i);salvar();paintAll();}
   else if(a==='trocar'){d.linhas[i].edit=true;salvar();paintAll();}
   else if(a==='concluir'){d.linhas[i].edit=false;d.linhas[i].editNome=false;salvar();paintAll();}

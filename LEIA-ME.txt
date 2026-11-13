@@ -488,3 +488,11 @@ v29.1 — a nota com desconto à vista segue o modelo dele (NOTINHA_FINAL_HUGO_R
 
 v29.2 — nota com desconto à vista, pedido rápido: N. CXS × QTD P/ CX = TOTAL como no modelo, nomes em maiúscula
   e sempre as duas linhas EMBALAGEM (sem cobrança aparece "-"). Valores e total do pedido não mudaram.
+
+v29.3 — Notas de entrada: "Sugerir NFs" não troca mais o que você já escolheu certo
+  Antes, o botão "Sugerir NFs para todas" refazia a escolha de TODAS as espécies do pedido, inclusive as que você já tinha
+  acertado à mão, e podia deixar o grifo nas notas erradas.
+  Agora o botão se chama "Sugerir NFs onde falta" e só preenche as espécies que ainda não têm NF ou estão com problema.
+  As que já estão certas ficam como estão (o aviso na tela diz quantas foram mantidas).
+  O botão "Sugerir NFs" de uma espécie só (aparece em Trocar) pergunta antes de substituir uma escolha que já está certa.
+  Não precisa de SQL novo no Supabase.
