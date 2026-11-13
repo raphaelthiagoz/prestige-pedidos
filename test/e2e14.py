@@ -12,7 +12,7 @@ with sync_playwright() as p:
     errs=[]; pg.on('pageerror', lambda e: errs.append(str(e))); pg.on('dialog', lambda d: d.accept())
     pg.goto('http://localhost:8765/index.html'); pg.wait_for_timeout(400); pg.evaluate(SEED); pg.evaluate("sessionStorage.setItem('pp.asShown','1')"); pg.reload(); pg.wait_for_timeout(600)
     pg.click('#nav [data-view="mapa"]'); pg.wait_for_timeout(300)
-    ok(pg.locator('#mpTabs button').count()==6,'6 sub-abas (Verificar, NFs, Saldo por nota, Saldo, Processos, Pescadores)')
+    ok(pg.locator('#mpTabs button').count()==7,'7 sub-abas (Passo a passo, Verificar, NFs, Saldo por nota, Saldo, Processos, Pescadores)')
     ok('Backup' not in pg.inner_text('#mpTabs'),'sem aba Backup/nuvem/tema')
     ok(pg.evaluate("document.title")!='' ,'titulo')
     # --- importar o backup real do app antigo
