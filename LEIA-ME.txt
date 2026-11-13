@@ -496,3 +496,13 @@ v29.3 — Notas de entrada: "Sugerir NFs" não troca mais o que você já escolh
   As que já estão certas ficam como estão (o aviso na tela diz quantas foram mantidas).
   O botão "Sugerir NFs" de uma espécie só (aparece em Trocar) pergunta antes de substituir uma escolha que já está certa.
   Não precisa de SQL novo no Supabase.
+
+v29.4 — Notas de entrada em modo foco (uma decisão por vez)
+  O passo a passo virou uma faixa curta de 5 etapas, e o quadro "Agora, faça isto" ficou grande, no topo, com o botão do próximo passo.
+  Em "2 · Verificar pedido": "Dados do pack" e "Pedido" aparecem recolhidos em uma linha (clique em Editar / Alterar para abrir).
+  Só abrem sozinhos quando ainda estão vazios. Depois de "Ler pedido" o bloco Pedido se recolhe.
+  "Tudo certo" fica recolhido enquanto há espécie para resolver. Os botões de uso raro ficaram em "Mais opções":
+  Adicionar espécie, Como sugerir, Registro de histórico, Folha de grifos e Limpar pedido.
+  Em "1 · NFs de entrada": o PDF vem primeiro; "Cadastrar digitando" e "Já usava o app antigo?" ficam recolhidos.
+  As abas pouco usadas (Saldo por nota, Saldo por espécie, Pescadores) ficam discretas.
+  Nada foi apagado: tudo continua no mesmo lugar, só recolhido. Não precisa de SQL novo no Supabase.

@@ -704,3 +704,38 @@ body:not([data-view="hoje"]) #kbMic,body:not([data-view="hoje"]) #kbVoice{displa
 .hinti:hover,.hinti:focus{color:#fff;border-color:var(--accent);outline:none}
 .hinti:hover::after,.hinti:focus::after{content:attr(data-hint);position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%);z-index:60;width:max-content;max-width:280px;padding:9px 12px;border-radius:12px;background:rgba(14,22,26,.97);border:1px solid rgba(255,255,255,.14);box-shadow:0 12px 30px rgba(0,0,0,.5);color:#e9f0f2;font:400 .78rem/1.45 Inter,system-ui,sans-serif;font-style:normal;text-align:left;white-space:normal}
 @media print{.hinti{display:none}}
+
+/* ===== Modo foco (Notas de entrada): uma decisão por vez ===== */
+#vMapa .mpintro{display:none}
+#vMapa .mptabs button.menos{font-size:.8rem;padding:6px 12px;opacity:.72;border-style:dashed}
+#vMapa .mptabs button.menos.on,#vMapa .mptabs button.menos:hover{opacity:1}
+#vMapa .focoFluxo{padding:14px 16px;margin-bottom:14px}
+#vMapa .stp{list-style:none;margin:0;padding:0;display:flex;gap:6px;flex-wrap:wrap}
+#vMapa .stp li{display:flex;align-items:center;gap:7px;padding:5px 12px 5px 6px;border-radius:99px;border:1px solid var(--line);font-size:.8rem;color:var(--muted)}
+#vMapa .stp .n{width:20px;height:20px;border-radius:99px;display:inline-flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;background:rgba(255,255,255,.06)}
+#vMapa .stp li.done{color:var(--ok);border-color:rgba(80,200,150,.28)}
+#vMapa .stp li.done .n{background:rgba(80,200,150,.18);color:var(--ok)}
+#vMapa .stp li.now{color:var(--accent);border-color:var(--accent);background:var(--accent-soft);font-weight:600}
+#vMapa .stp li.now .n{background:var(--accent);color:#05161a}
+#vMapa .agora{margin-top:14px;padding:16px 18px;border:1px solid rgba(53,208,192,.38);border-radius:14px;background:rgba(53,208,192,.07)}
+#vMapa .agora .k{font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+#vMapa .agora .msg{font-size:1.08rem;line-height:1.4;margin:6px 0 12px}
+#vMapa .agora .btn{font-size:1rem;padding:10px 20px}
+#vMapa details.foco{padding:0}
+#vMapa details.foco>summary{display:flex;justify-content:space-between;align-items:center;gap:12px;cursor:pointer;list-style:none;padding:12px 16px;font-size:.92rem}
+#vMapa details.foco>summary::-webkit-details-marker{display:none}
+#vMapa details.foco>summary .alt{font-size:.8rem;color:var(--accent)}
+#vMapa details.foco[open]>summary .alt{display:none}
+#vMapa details.foco>:not(summary){margin-left:16px;margin-right:16px}
+#vMapa details.foco>:last-child{margin-bottom:14px}
+#vMapa details.okbox>.okrow{margin-left:16px;margin-right:16px}
+#vMapa details.maisop{margin-top:10px}
+#vMapa details.maisop>summary{cursor:pointer;font-size:.82rem;color:var(--muted);list-style:none}
+#vMapa details.maisop>summary::-webkit-details-marker{display:none}
+#vMapa details.maisop>summary::before{content:"+ ";}
+#vMapa details.maisop[open]>summary::before{content:"− ";}
+@media(max-width:700px){#vMapa .stp .t{display:none}#vMapa .stp li.now .t{display:inline}#vMapa .agora .msg{font-size:1rem}}
+#vMapa details.maisop>summary{display:inline-block}
+#vMapa details.maisop>.row{margin-left:0}
+#vMapa details.foco>:not(summary){max-width:calc(100% - 32px);box-sizing:border-box}
+#vMapa details.foco textarea{width:100%}

@@ -635,7 +635,7 @@ function esconderTip(){var t=$('tip');if(t)t.className='';}
 var TABS=[['nfs','1 · NFs de entrada'],['verificar','2 · Verificar pedido'],['processos','Processos'],['saldonf','Saldo por nota'],['saldo','Saldo por espécie'],['pesc','Pescadores (CTF/RGP)']];
 var _pdfFeito=null;
 function renderTabs(){
-  $('tabs').innerHTML=TABS.map(function(t){var nP=t[0]==='processos'?S.processos.filter(aguardaProt).length:0;return '<button type="button" data-tab="'+t[0]+'" class="'+(tab===t[0]?'on':'')+'">'+t[1]+(nP?' <span class="badge b-w" style="margin-left:4px" title="Packs com consumo gravado que ainda faltam protocolar no SEI/MAPA">'+nP+'</span>':'')+'</button>';}).join('');
+  $('tabs').innerHTML=TABS.map(function(t){var nP=t[0]==='processos'?S.processos.filter(aguardaProt).length:0;return '<button type="button" data-tab="'+t[0]+'" class="'+(tab===t[0]?'on':'')+(/^(saldonf|saldo|pesc)$/.test(t[0])?' menos':'')+'">'+t[1]+(nP?' <span class="badge b-w" style="margin-left:4px" title="Packs com consumo gravado que ainda faltam protocolar no SEI/MAPA">'+nP+'</span>':'')+'</button>';}).join('');
 }
 /* ---------- faixa "passo a passo" ---------- */
 function fluxoEstado(){
@@ -662,14 +662,14 @@ function fluxoEstado(){
 }
 function fluxoHTML(){
   var e=fluxoEstado();
-  var h='<div class="card" id="mpFluxoCard" style="margin-bottom:14px"><div class="muted" style="font-size:12px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:8px">Passo a passo</div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px">';
+  var curto=['Cadastrar NFs','Conferir pedido','PDF único','Gravar consumo','Protocolar'];
+  var h='<div class="card focoFluxo" id="mpFluxoCard"><ol class="stp">';
   e.rot.forEach(function(r,i){
     var st=e.done[i]?'done':(e.cur===i+1?'now':'');
-    var bd=st==='now'?'var(--ac,#35d0c0)':(st==='done'?'#2b6b4d':'var(--bd,#1f2c32)');
-    h+='<div data-step="'+(i+1)+'" class="'+st+'" style="border:1px solid '+bd+';'+(st==='now'?'box-shadow:0 0 0 1px '+bd+' inset;':'')+'border-radius:12px;padding:10px 12px"><div style="display:flex;gap:8px;align-items:center"><span style="width:22px;height:22px;border-radius:99px;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;background:'+(st==='done'?'#2b6b4d':(st==='now'?'var(--ac,#35d0c0)':'#1b2a30'))+';color:'+(st==='now'?'#05161a':'inherit')+'">'+(st==='done'?'✓':(i+1))+'</span><b style="font-size:14px">'+esc(r[0].replace(/^\d\.\s*/,''))+'</b></div><div class="muted" style="font-size:12.5px;margin-top:4px">'+esc(r[1])+'</div></div>';
+    h+='<li data-step="'+(i+1)+'" class="'+st+'" title="'+esc(r[0].replace(/^\d\.\s*/,'')+': '+r[1])+'"><span class="n">'+(st==='done'?'✓':(i+1))+'</span><span class="t">'+esc(curto[i])+'</span></li>';
   });
-  h+='</div>';
-  if(e.agora)h+='<div id="mpAgora" style="margin-top:12px;padding:12px 14px;border:1px solid #1d5a55;border-radius:12px;background:rgba(53,208,192,.07)"><div class="muted" style="font-size:12px;letter-spacing:.12em;text-transform:uppercase">Agora, faça isto</div><div style="margin:4px 0 8px">'+e.agora+'</div>'+e.bt+'</div>';
+  h+='</ol>';
+  if(e.agora)h+='<div id="mpAgora" class="agora"><div class="k">Agora, faça isto</div><div class="msg">'+e.agora+'</div>'+e.bt+'</div>';
   return h+'</div>';
 }
 function paintFluxo(){var e=$('mpFluxo');if(e)e.innerHTML=fluxoHTML();}
@@ -688,25 +688,33 @@ function render(){
 
 /* ---------- Verificar pedido ---------- */
 function viewVerificar(){
-  var d=S.draft,modo=S.meta.modo||'antiga';
+  var d=S.draft,modo=S.meta.modo||'antiga',nLin=d.linhas.length;
   var dl='<datalist id="dl-esp">'+todasEspecies().map(function(e){return '<option value="'+esc(e)+'">';}).join('')+'</datalist>';
   var temAloc=d.linhas.some(function(L){return L.aloc.some(function(a){return a.nfId&&a.qtd>0;});});
+  var resumo=[d.pack?'Pack '+esc(d.pack):'Pack sem número',d.destino?esc(d.destino):'',d.sei?'SEI '+esc(d.sei):''].filter(Boolean).join(' · ');
   return dl
-  +'<div class="card"><h2>Novo processo</h2>'
-  +'<div class="row"><label>Pack nº<input type="text" data-f="pack" value="'+esc(d.pack)+'" placeholder="016/2026"></label>'
+  +'<details class="card foco" id="mpDados"'+(d.pack?'':' open')+'><summary><span><b>Dados do pack</b> <span class="muted">'+resumo+'</span></span><span class="alt">Editar</span></summary>'
+  +'<div class="row" style="margin-top:10px"><label>Pack nº<input type="text" data-f="pack" value="'+esc(d.pack)+'" placeholder="016/2026"></label>'
   +'<label>Processo SEI<input type="text" data-f="sei" value="'+esc(d.sei)+'" placeholder="21010.003135/2026-25"></label>'
-  +'<label>Destino (cliente)<input type="text" data-f="destino" value="'+esc(d.destino||'')+'" placeholder="Ruinemans Group"></label></div>'
-  +'<label style="display:flex;gap:8px;align-items:center;margin-top:10px;font-size:13px"><input type="checkbox" data-f="hist" '+(d.historico?'checked':'')+'> Registro de histórico (processo antigo: avisa, mas não bloqueia por falta de saldo)'+ia('hist')+'</label></div>'
-  +'<div class="card"><h2>Pedido</h2>'
-  +'<div class="row" style="margin-bottom:8px;align-items:center"><label class="btn" style="cursor:pointer;flex:0 0 auto;min-width:0;display:inline-flex;align-items:center;flex-direction:row;gap:6px;color:var(--tx);font-size:14px">Anexar packing list (PDF)<input type="file" id="packpdf" accept="application/pdf,.pdf" style="display:none"></label>'+ia('packpdf')+'<span class="muted" style="flex:1">ou cole o texto abaixo</span></div>'
-  +'<textarea id="colar" placeholder="Cole o pedido, uma espécie por linha (pode colar direto da tabela do packing list):&#10;Otocinclus hoppei Limpa vidro 15.000&#10;Paracheirodon axelrodi Cardinal 8.000"></textarea>'
-  +'<div class="row" style="margin-top:8px;align-items:center"><span><button class="btn" data-act="ler">Ler pedido</button>'+ia('ler')+'</span><span><button class="btn" data-act="addlinha">Adicionar espécie</button>'+ia('addlinha')+'</span><span><button class="btn" data-act="sugerirtudo">Sugerir NFs onde falta</button>'+ia('sugerirtudo')+'</span>'
-  +'<label style="flex:0 0 auto;min-width:0;flex-direction:row;align-items:center;gap:6px;font-size:13px;color:var(--tx)">Como sugerir<select data-f="modo" style="width:auto"><option value="antiga"'+(modo==='antiga'?' selected':'')+'>NF mais antiga primeiro</option><option value="ajuste"'+(modo==='ajuste'?' selected':'')+'>Esgotar NF (melhor encaixe)</option></select>'+ia('modo')+'</label></div></div>'
+  +'<label>Destino (cliente)<input type="text" data-f="destino" value="'+esc(d.destino||'')+'" placeholder="Ruinemans Group"></label></div></details>'
+  +'<details class="card foco" id="mpPedido"'+(nLin?'':' open')+'><summary><span><b>Pedido</b> <span class="muted" id="mpPedidoN">'+(nLin?nLin+' espécie(s)':'cole ou anexe o packing list')+'</span></span><span class="alt">Alterar</span></summary>'
+  +'<div class="row" style="margin:10px 0 8px;align-items:center"><label class="btn" style="cursor:pointer;flex:0 0 auto;min-width:0;display:inline-flex;align-items:center;flex-direction:row;gap:6px;color:var(--tx);font-size:14px">Anexar packing list (PDF)<input type="file" id="packpdf" accept="application/pdf,.pdf" style="display:none"></label>'+ia('packpdf')+'<span class="muted" style="flex:1">ou cole o texto abaixo</span></div>'
+  +'<textarea id="colar" placeholder="Uma espécie por linha:&#10;Otocinclus hoppei Limpa vidro 15.000&#10;Paracheirodon axelrodi Cardinal 8.000"></textarea>'
+  +'<div class="row" style="margin-top:8px;align-items:center"><span><button class="btn pri" data-act="ler">Ler pedido</button>'+ia('ler')+'</span></div>'
+  +'<details class="maisop"><summary>Mais opções</summary><div class="row" style="margin-top:8px;align-items:center"><span><button class="btn" data-act="addlinha">Adicionar espécie</button>'+ia('addlinha')+'</span><span><button class="btn" data-act="sugerirtudo">Sugerir NFs onde falta</button>'+ia('sugerirtudo')+'</span>'
+  +'<label style="flex:0 0 auto;min-width:0;flex-direction:row;align-items:center;gap:6px;font-size:13px;color:var(--tx)">Como sugerir<select data-f="modo" style="width:auto"><option value="antiga"'+(modo==='antiga'?' selected':'')+'>NF mais antiga primeiro</option><option value="ajuste"'+(modo==='ajuste'?' selected':'')+'>Esgotar NF (melhor encaixe)</option></select>'+ia('modo')+'</label></div>'
+  +'<label style="display:flex;gap:8px;align-items:center;margin-top:10px;font-size:13px"><input type="checkbox" data-f="hist" '+(d.historico?'checked':'')+'> Registro de histórico (pack antigo, já protocolado)'+ia('hist')+'</label></details></details>'
   +'<div id="banner"></div><div id="pescAv"></div><div id="linhas"></div>'
-  +'<div class="row" style="margin-top:12px;align-items:center"><span><button class="btn pri" data-act="protocolar">Gravar consumo</button>'+ia('protocolar')+'</span>'
-  +(temAloc?'<span><button class="btn" data-act="grifosdraft">Folha de grifos</button>'+ia('grifos')+'</span><span><button class="btn" data-act="pdfdraft">PDF das NFs (SEI)</button>'+ia('pdfnfs')+'</span>':'')
-  +'<span><button class="btn" data-act="limpar">Limpar pedido</button>'+ia('limpar')+'</span></div>'
-  +'<p class="muted">Gravar o consumo desconta das NFs, mas ainda <b>não</b> é o protocolo: quando protocolar no SEI/MAPA, abra a aba Processos e clique em “Marcar como protocolado”.</p>';
+  +'<div id="acoes"></div>';
+}
+function acoesHTML(){
+  var d=S.draft;if(!d.linhas.length)return '';
+  var temAloc=d.linhas.some(function(L){return L.aloc.some(function(a){return a.nfId&&a.qtd>0;});});
+  return '<div class="row" style="margin-top:12px;align-items:center"><span><button class="btn pri" data-act="protocolar">Gravar consumo</button>'+ia('protocolar')+'</span>'
+  +(temAloc?'<span><button class="btn" data-act="pdfdraft">PDF das NFs (SEI)</button>'+ia('pdfnfs')+'</span>':'')
+  +'<details class="maisop" style="flex:1 1 100%"><summary>Mais opções</summary><div class="row" style="margin-top:8px;align-items:center">'
+  +(temAloc?'<span><button class="btn" data-act="grifosdraft">Folha de grifos</button>'+ia('grifos')+'</span>':'')
+  +'<span><button class="btn" data-act="limpar">Limpar pedido</button>'+ia('limpar')+'</span></div></details></div>';
 }
 function linhaCardHTML(i){
   var L=S.draft.linhas[i];
@@ -794,9 +802,11 @@ function paintAll(){
     att=[];
   }else{
     if(att.length){h+='<div class="sec e">Precisa da sua atenção ('+att.length+')</div>';att.forEach(function(i){h+=linhaCardHTML(i);});}
-    if(ok.length){h+='<div class="sec ok">Tudo certo ('+ok.length+')</div><div class="card" style="padding:4px 14px">'+ok.map(okRowHTML).join('')+'</div>';}
+    if(ok.length){var po=$('mpOk'),manter=!!(po&&po.open&&att.length&&po.dataset.att==='1');h+='<details class="card foco okbox" id="mpOk" data-att="'+(att.length?'1':'0')+'"'+((!att.length||manter)?' open':'')+'><summary><span class="sec ok" style="margin:0">Tudo certo ('+ok.length+')</span><span class="alt">'+(att.length?'Ver':'')+'</span></summary>'+ok.map(okRowHTML).join('')+'</details>';}
   }
   $('linhas').innerHTML=h;
+  var ac=$('acoes');if(ac){var mo=ac.querySelector('details.maisop'),abre=!!(mo&&mo.open),nv=acoesHTML();if(ac.innerHTML!==nv){ac.innerHTML=nv;if(abre){var m2=ac.querySelector('details.maisop');if(m2)m2.open=true;}}}
+  var pn=$('mpPedidoN');if(pn)pn.textContent=d.linhas.length?d.linhas.length+' espécie(s)':'cole ou anexe o packing list';
   att.forEach(function(i){paintAlloc(i);});
   paintStatus();paintPesc();
 }
@@ -846,13 +856,13 @@ function viewRevisao(){
 }
 function viewNFs(){
   var f=formNF,edit=!!f.id;
-  var pdf='<div class="card"><h2>Anexar NFs em PDF'+ia('nfpdf')+'</h2><label class="drop" id="dropnf" style="display:block"><b>Clique aqui para escolher os PDFs</b> ou arraste para cá<div class="muted">Pode ser vários de uma vez. O app lê fornecedor, número, data, espécies e quantidades. Você confere antes de salvar.</div><input type="file" id="nfpdf" accept="application/pdf,.pdf" multiple style="display:none"></label></div>';
-  var form='<div class="card"><h2>'+(edit?'Editar NF':'Cadastrar NF de entrada (digitando)')+'</h2>'
-  +'<div class="row"><label>Número da NF<input type="text" data-n="numero" value="'+esc(f.numero)+'"></label>'
+  var pdf='<div class="card"><h2>Anexar NFs em PDF'+ia('nfpdf')+'</h2><label class="drop" id="dropnf" style="display:block"><b>Clique aqui para escolher os PDFs</b> ou arraste para cá<div class="muted">Pode ser vários de uma vez. Você confere antes de salvar.</div><input type="file" id="nfpdf" accept="application/pdf,.pdf" multiple style="display:none"></label></div>';
+  var form='<details class="card foco" id="mpDigitar"'+((edit||f.numero||f.fornecedor||f.texto)?' open':'')+'><summary><span><b>'+(edit?'Editar NF':'Cadastrar digitando')+'</b> <span class="muted">'+(edit?'':'sem PDF')+'</span></span><span class="alt"></span></summary>'
+  +'<div class="row" style="margin-top:10px"><label>Número da NF<input type="text" data-n="numero" value="'+esc(f.numero)+'"></label>'
   +'<label>Fornecedor<input type="text" data-n="fornecedor" value="'+esc(f.fornecedor)+'"></label>'
   +'<label style="max-width:170px">Data<input type="date" data-n="data" value="'+esc(f.data)+'"></label></div>'
   +'<label style="display:flex;flex-direction:column;font-size:12px;color:var(--tx2);gap:3px;margin-top:10px">Espécies e quantidades que entraram (uma por linha: nome científico, nome comum se quiser, quantidade)<textarea data-n="texto" placeholder="Otocinclus hoppei Limpa vidro 20.000&#10;Paracheirodon axelrodi Cardinal 80.000">'+esc(f.texto)+'</textarea></label>'
-  +'<div class="row" style="margin-top:8px;align-items:center"><span><button class="btn pri" data-act="salvarnf">'+(edit?'Salvar alterações':'Cadastrar NF')+'</button>'+ia('cadastrarnf')+'</span>'+(edit?'<button class="btn" data-act="cancelaredit">Cancelar edição</button>':'')+'</div></div>';
+  +'<div class="row" style="margin-top:8px;align-items:center"><span><button class="btn pri" data-act="salvarnf">'+(edit?'Salvar alterações':'Cadastrar NF')+'</button>'+ia('cadastrarnf')+'</span>'+(edit?'<button class="btn" data-act="cancelaredit">Cancelar edição</button>':'')+'</div></details>';
   var comS=0,esg=0;
   S.nfs.forEach(function(nf){if(resumoNF(S,nf).livres.length)comS++;else esg++;});
   var met='<div class="mt"><div class="met"><span class="muted">NFs cadastradas</span><b>'+S.nfs.length+'</b></div><div class="met"><span class="muted">Ainda com saldo</span><b>'+comS+'</b></div><div class="met"><span class="muted">Sem saldo</span><b>'+esg+'</b></div></div>';
@@ -909,8 +919,8 @@ function viewMarcas(){
   return h;
 }
 function importCardHTML(){
-  return '<div class="card"><h2>Já usava o app antigo (Conferência MAPA)?</h2><p class="muted" style="margin-top:0">Escolha aqui o arquivo de backup (.json) que você baixou dele. As NFs e os packs já protocolados passam a aparecer neste app.</p>'
-  +'<label class="btn" style="display:inline-block;cursor:pointer">Importar backup do app antigo (.json)<input type="file" accept=".json,application/json" id="imp" style="display:none"></label></div>';
+  return '<details class="card foco"><summary><span><b>Já usava o app antigo?</b> <span class="muted">importar backup (.json)</span></span><span class="alt"></span></summary>'
+  +'<label class="btn" style="display:inline-block;cursor:pointer;margin-top:10px">Importar backup do app antigo (.json)<input type="file" accept=".json,application/json" id="imp" style="display:none"></label></details>';
 }
 function especieNFHTML(o,livre){
   var pct=o.ent>0?Math.min(100,Math.round(o.usado/o.ent*100)):0;
@@ -1415,7 +1425,7 @@ document.addEventListener('click',function(ev){
     if(!ls.length){toast('Não encontrei espécies com quantidade. Use uma por linha, como: Otocinclus hoppei 15.000');return;}
     ls.forEach(function(l){d.linhas.push({esp:l.esp,qtd:l.qtd,aloc:[]});});
     if(S.nfs.length)d.linhas.forEach(function(L,k){if(!L.aloc.length)sugerirLinha(k);});
-    $('colar').value='';salvar();paintAll();toast(ls.length+' espécie(s) lidas.'+(S.nfs.length?' Confira as NFs sugeridas.':' Cadastre as NFs de entrada para conferir.'));
+    $('colar').value='';salvar();paintAll();var pd0=$('mpPedido');if(pd0)pd0.open=false;toast(ls.length+' espécie(s) lidas.'+(S.nfs.length?' Confira as NFs sugeridas.':' Cadastre as NFs de entrada para conferir.'));
   }else if(a==='addlinha'){d.linhas.push({esp:'',qtd:0,aloc:[]});salvar();paintAll();}
   else if(a==='sugerirtudo'){if(!S.nfs.length){toast('Cadastre as NFs de entrada primeiro.');return;}var vv=validarDraft(S,d),nSug=0,nMan=0;d.linhas.forEach(function(L,k){var r=vv.linhas[k],okLn=L.aloc.length>0&&r&&!r.problemas.some(function(p){return p.nivel==='erro';});if(okLn){nMan++;return;}if(sugerirLinha(k))nSug++;});salvar();paintAll();toast(nSug+' espécie(s) preenchida(s).'+(nMan?' '+nMan+' já tinha(m) NF escolhida e foi(ram) mantida(s).':''));}
   else if(a==='sugerir'){if(!S.nfs.length){toast('Cadastre as NFs de entrada primeiro.');return;}var L1=d.linhas[i],r1=validarDraft(S,d).linhas[i];if(L1&&L1.aloc.length&&r1&&!r1.problemas.some(function(p){return p.nivel==='erro';})&&!confirm('Esta espécie já tem NF escolhida e sem problema. Substituir pela sugestão do app?'))return;if(sugerirLinha(i)){salvar();paintAll();}}
