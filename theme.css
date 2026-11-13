@@ -776,3 +776,24 @@ body:not([data-view="hoje"]) #kbMic,body:not([data-view="hoje"]) #kbVoice{displa
 #vMapa ul.ck li.erro .m{background:var(--bad-soft);color:var(--bad)}
 #vMapa ul.ck li.ok{color:var(--muted)}
 #vMapa .checklist[data-ck=erro]{border-left:3px solid var(--bad)}#vMapa .checklist[data-ck=aviso]{border-left:3px solid var(--warn)}
+
+/* v29.9 modo foco: Hoje e menu lateral */
+#vHoje details.foco{padding:0}
+#vHoje details.foco>summary{display:flex;justify-content:space-between;align-items:center;gap:12px;cursor:pointer;list-style:none;padding:14px 18px}
+#vHoje details.foco>summary::-webkit-details-marker{display:none}
+#vHoje details.foco>summary .alt{font-size:.8rem;color:var(--accent)}
+#vHoje details.foco[open]>summary .alt{display:none}
+#vHoje details.foco>:not(summary){margin-left:18px;margin-right:18px}
+#vHoje details.foco>:last-child{margin-bottom:16px}
+#vHoje details.hmais{margin-top:10px;border-top:1px solid var(--line)}
+#vHoje details.hmais>summary{cursor:pointer;color:var(--accent);font-size:.86rem;padding:10px 0;list-style:none}
+#vHoje details.hmais>summary::-webkit-details-marker{display:none}
+#vHoje details.hmais[open]>summary{color:var(--muted)}
+details.xg>summary{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;list-style:none}
+details.xg>summary::-webkit-details-marker{display:none}
+details.xg>summary::before{content:'▸';color:var(--accent);font-size:.8rem;transition:transform .15s}
+details.xg[open]>summary::before{transform:rotate(90deg)}
+#nav .ngrp[data-ng]{cursor:pointer;display:flex;justify-content:space-between;align-items:center;user-select:none}
+#nav .ngrp[data-ng]:hover{color:var(--fg)}
+#nav .ngrp[data-ng]::after{content:'▾';font-size:.7rem;opacity:.7;transition:transform .15s}
+#nav .ngrp[data-ng][aria-expanded=false]::after{transform:rotate(-90deg)}

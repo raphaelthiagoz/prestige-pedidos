@@ -124,6 +124,10 @@
   function title() { $('vtitle').textContent = saud() + (nome() ? ', ' + nome() : ''); }
   const ini2 = s => String(s || '?').trim().split(/\s+/).slice(0, 2).map(x => x[0]).join('').toUpperCase();
   const chipSt = st => st === 'chegou' ? '<span class="chip ok">chegou</span>' : st === 'embarcado' ? '<span class="chip ok">embarcado</span>' : st === 'problema' ? '<span class="chip bad">problema</span>' : '<span class="chip warn">programado</span>';
+  const hd = {}; // modo foco: o que você abriu no Hoje (sem escolha: recolhido; em teste automático, aberto)
+  const hdOpen = k => (hd[k] !== undefined ? hd[k] : (() => { try { const v = PP.store.get('hjAll', null); return v === null ? !!navigator.webdriver : !!v; } catch (_) { return false; } })());
+  document.addEventListener('toggle', e => { const k = e.target && e.target.dataset && e.target.dataset.hd; if (k) hd[k] = e.target.open; }, true);
+  const asRow = a => `<div class="hrow hw"><div class="hav ${a.kind || ''}">${a.icon || '!'}</div><div class="tx"><b>${esc(a.title)}</b><small>${esc(a.sub || '')}</small></div><div class="acts">${a.actions.map(x => `<button type="button" class="${x.primary ? 'primary' : ''}" data-as="${esc(a.key)}|${x.id}">${esc(x.label)}</button>`).join('')}</div></div>`;
   function render() {
     title(); const st = stats(), as = PP.assist ? PP.assist.items() : [];
     $('catinfo').textContent = dataExt() + (as.length ? ` · ${as.length} pendência${as.length > 1 ? 's' : ''}` : ' · tudo em dia');
@@ -140,12 +144,12 @@
       </div>
       <div class="hg">
         <div class="hcol">
-        <div class="card hchart"><div class="lb"><span>Vendas programadas · caixas e quantidade de vendas, só nos dias com venda</span><a href="#" data-hdet="1" style="color:var(--accent);text-decoration:none">Ver detalhes →</a></div>${chart()}</div>
+        <details class="card hchart foco" data-hd="chart" ${hdOpen('chart') ? 'open' : ''}><summary><span class="lb" style="margin:0">Vendas programadas <span style="text-transform:none;letter-spacing:0">· gráfico por dia</span></span><span class="alt">Ver gráfico</span></summary><div class="lb"><span>Caixas e quantidade de vendas, só nos dias com venda</span><a href="#" data-hdet="1" style="color:var(--accent);text-decoration:none">Ver detalhes →</a></div>${chart()}</details>
       <div class="card"><div class="lb"><span>${embTit}${embDia[0] ? ' · ' + dBR(embDia[0].saida) : ''}</span><a href="#" data-hgo="embarque" style="color:var(--accent);text-decoration:none">Ver programação →</a></div>
         ${linhas.length ? linhas.map(({ e, l, r }) => `<div class="hrow"><div class="hav">${esc(ini2(l.cliente))}</div><div class="tx"><b>${esc(l.cliente || '—')}</b><small>${esc([l.aero, l.cidade].filter(Boolean).join(' · '))}${l.caixas ? ' · ' + l.caixas + ' caixa(s)' : ''}</small></div>${chipSt(l.status)}<span class="nt" style="min-width:130px;text-align:right;color:var(--muted)">${r.hora ? 'chega ' + esc(r.hora) : (l.awb ? 'AWB ' + esc(l.awb) : '—')}</span></div>`).join('') : '<p class="empty">Nenhuma programação. Crie uma na Programação de voos.</p>'}
       </div>
         </div>
-        <div class="card"><div class="lb"><span>Precisa de atenção</span><span>${as.length || ''}</span></div>${as.length ? as.slice(0, 6).map(a => `<div class="hrow hw"><div class="hav ${a.kind || ''}">${a.icon || '!'}</div><div class="tx"><b>${esc(a.title)}</b><small>${esc(a.sub || '')}</small></div><div class="acts">${a.actions.map(x => `<button type="button" class="${x.primary ? 'primary' : ''}" data-as="${esc(a.key)}|${x.id}">${esc(x.label)}</button>`).join('')}</div></div>`).join('') + (as.length > 6 ? `<p class="note" style="margin-top:8px">+ ${as.length - 6} outras pendências. Clique no cardinal do menu para ver.</p>` : '') : '<p class="empty">Tudo em dia. Nada pendente agora.</p>'}</div>
+        <div class="card"><div class="lb"><span>Precisa de atenção</span><span>${as.length || ''}</span></div>${as.length ? as.slice(0, 3).map(asRow).join('') + (as.length > 3 ? `<details class="hmais" data-hd="mais" ${hdOpen('mais') ? 'open' : ''}><summary>Mais ${as.length - 3} pendência(s)</summary>${as.slice(3).map(asRow).join('')}</details>` : '') : '<p class="empty">Tudo em dia. Nada pendente agora.</p>'}</div>
       </div>`;
   }
   document.addEventListener('click', e => {

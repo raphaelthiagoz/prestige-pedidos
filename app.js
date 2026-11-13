@@ -791,7 +791,14 @@
     const itens = navOrder().filter(k => !hide.includes(k));
     // título de seção sem nenhuma tela depois dele (até o próximo título) não aparece
     const vis = itens.filter((k, i) => !NAV_HEADS[k] || (itens[i + 1] && !NAV_HEADS[itens[i + 1]]));
-    $('nav').innerHTML = vis.map(k => NAV_HEADS[k] !== undefined ? `<div class="ngrp">${NAV_HEADS[k]}</div>` : `<button type="button" role="tab" aria-selected="${k === v}" data-view="${k}">${icon((VIEWS.find(x => x[0] === k) || [])[3])}<span>${navName(k)}</span>${k === 'frete' && open ? `<b class="bdg">${open}</b>` : ''}</button>`).join('');
+    // v29.9 modo foco: clique no título da seção para recolher/abrir (lembrado neste aparelho); a tela atual nunca some
+    let col = {}; try { col = store.get('navCol', {}) || {}; } catch (_) { col = {}; }
+    let grp = null;
+    $('nav').innerHTML = vis.map(k => {
+      if (NAV_HEADS[k] !== undefined) { grp = k; return `<div class="ngrp" data-ng="${k}" role="button" tabindex="0" aria-expanded="${!col[k]}">${NAV_HEADS[k]}</div>`; }
+      if (col[grp] && k !== v) return '';
+      return `<button type="button" role="tab" aria-selected="${k === v}" data-view="${k}">${icon((VIEWS.find(x => x[0] === k) || [])[3])}<span>${navName(k)}</span>${k === 'frete' && open ? `<b class="bdg">${open}</b>` : ''}</button>`;
+    }).join('');
     $('bar').innerHTML = BAR.map(([k, n]) => `<button type="button" data-view="${k}" class="${k === v ? 'on' : ''}">${icon(k)}${n}</button>`).join('') + `<button type="button" id="barMore">${icon('mais')}Mais</button>`;
   }
   function go(v) {
@@ -806,6 +813,9 @@
     if (PP.assist) PP.assist.refresh();
     window.scrollTo(0, 0);
   }
+  const navToggle = g => { let col = {}; try { col = store.get('navCol', {}) || {}; } catch (_) { col = {}; } col[g.dataset.ng] = !col[g.dataset.ng]; store.set('navCol', col); renderNav(S.view); };
+  document.addEventListener('click', e => { const g = e.target.closest('#nav .ngrp[data-ng]'); if (g) navToggle(g); });
+  document.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('#nav .ngrp[data-ng]')) { e.preventDefault(); navToggle(e.target); } });
   document.addEventListener('click', e => { const b = e.target.closest('[data-view]'); if (b && (b.closest('#nav') || b.closest('#bar'))) { const vv = b.dataset.view; if (window.PP && PP.motion && vv !== S.view) PP.motion.vt(() => go(vv)); else go(vv); } if (e.target.closest('#barMore')) { document.body.classList.add('menu'); $('menuBack').hidden = false; } if (e.target.id === 'menuBack') { document.body.classList.remove('menu'); $('menuBack').hidden = true; } });
 
   /* ---------- configurações em gaveta ---------- */

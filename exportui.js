@@ -393,6 +393,11 @@ function czi(k){const t=T(),c=S.cons,e=S.ex,n=numStr(),num=bl(cert(k),'LPCO MAPA
   function renderPrev() { const p = $('xPrev'); if (p) p.innerHTML = previewHTML(); }
   function refreshStage() { const st = $('xStage'); if (!st) return; const sc = st.scrollTop; st.innerHTML = stageBody(); st.scrollTop = sc; }
 
+  /* v29.9 modo foco: blocos secundários recolhidos, com resumo na linha e estado lembrado */
+  const xgAll = () => { try { const v = store.get('xgAll', null); return v === null ? !!navigator.webdriver : !!v; } catch (_) { return false; } }; // sem escolha sua: recolhido (em teste automático, aberto)
+  const xgOpen = (k, def) => (S.xg && S.xg[k] !== undefined) ? !!S.xg[k] : (xgAll() ? true : def);
+  const xgFill = ps => { const n = ps.filter(q => String(gv(q) == null ? '' : gv(q)).trim() !== '').length; return n === ps.length ? 'tudo preenchido' : n ? `${n} de ${ps.length} preenchidos` : 'nada preenchido'; };
+  const xg = (k, title, sum, body, def) => `<details class="step xdet xg" data-xg="${k}" ${xgOpen(k, def) ? 'open' : ''}><summary><b>${title}</b> <span class="muted">· ${sum}</span></summary>${body}</details>`;
   function renderExp() {
     const D = DEST[S.dest], el = $('vExp');
     const act = document.activeElement, keep = act && act.dataset && (act.dataset.xp || (act.dataset.xi != null ? act.dataset.xi + ':' + act.dataset.xk : null));
@@ -427,7 +432,7 @@ function czi(k){const t=T(),c=S.cons,e=S.ex,n=numStr(),num=bl(cert(k),'LPCO MAPA
         <div class="row">${fld('Etiqueta – endereço', 'cons.lab1', 'text', '', 'grow')}${fld('Etiqueta – cidade / país', 'cons.lab2', 'text', '', 'grow')}</div>
         <p class="note">Mudou o endereço do cliente? Edite aqui: fica salvo para as próximas exportações deste destino.</p></details>
     </div><div class="xleft">
-      <section class="step"><h2>Dados da exportação</h2>
+      <section class="step"><div class="row between" style="align-items:center"><h2>Dados da exportação <span class="muted" style="font-size:.78rem;font-weight:400">· voo e documentos do despachante</span></h2><button type="button" class="xchip" data-xa="xgall" title="Mostra ou recolhe os blocos secundários desta tela (frete/DOA, embalagem, LPCO, conversão para real)">${xgAll() ? 'Recolher blocos secundários' : 'Abrir todos os blocos'}</button></div>
         <details class="frmail" id="xMailBox" ${XM.open ? 'open' : ''}><summary>Colar o e-mail do despachante (preenche MAWB, HAWB, LPCOs, DU-E e voo)</summary>
           <p class="note">Copie o texto do e-mail em que o despachante manda os documentos (INV, MAWB, LPCO IBAMA, LPCO MAPA, DU-E, voos) e cole aqui. Também funciona com Ctrl+V direto nesta tela, fora de qualquer campo.</p>
           <textarea id="xMailIn" rows="6" placeholder="INV.: 016/2026&#10;MAWB: 074-70222390&#10;HAWB: DM-00058834&#10;LPCO IBAMA: E2600604683&#10;LPCO MAPA: E2600665213&#10;DU-E: 26BR001971465-1">${esc(XM.txt)}</textarea>
@@ -436,17 +441,19 @@ function czi(k){const t=T(),c=S.cons,e=S.ex,n=numStr(),num=bl(cert(k),'LPCO MAPA
         <div class="row">${fld('MAWB', 'ex.mawb', 'text', 'placeholder="074-70222390"')}${fld('HAWB', 'ex.hawb')}${fld('AWB', 'ex.awb')}</div>
         <div class="row">${fld('Voo internacional (nº)', 'ex.voo', 'text', 'placeholder="KL0792"')}${fld('Partida (data/hora)', 'ex.dep', 'datetime-local')}</div>
         <div class="row">${fld('Entrega da carga ao despachante', 'ex.entrega', 'text', 'placeholder="07/11/2026 às 11:00"')}${fld('Voos domésticos (até o aeroporto de saída)', 'ex.dom', 'text', 'placeholder="G31545 01:35-06:30"', 'grow')}</div>
-        <div class="row">${fld('GTA nº', 'ex.gta')}${fld('Série da GTA', 'ex.serie')}${fld('Package fee (US$/caixa)', 'ex.fee', 'number', 'step="0.5" min="0"')}</div>
-        <h2>Discount, DOA e frete (só se houver nesta exportação)</h2>
-        <div class="row">${fld('Discount (US$)', 'ex.disc', 'number', 'step="0.01" min="0" placeholder="0"')}${fld('DOA – mortalidade da exportação anterior (US$)', 'ex.doa', 'number', 'step="0.01" min="0" placeholder="0"')}${fld('Frete pré-pago (US$) – valor da cotação do despachante', 'ex.frete', 'number', 'step="0.01" min="0" placeholder="0"')}${fld('…ou tarifa por kg (US$, só se não tiver o valor)', 'ex.tarifa', 'number', 'step="0.01" min="0" placeholder="0"')}</div>
-        <p class="note" id="xAduNote">${aduNote()}</p>
-        <div class="row">${fld('Data de embalagem', 'ex.pkDate', 'date')}${fld('Hora de embalagem', 'ex.pkTime')}${fld('Oxigênio', 'ex.oxy')}${fld('Temperatura', 'ex.temp')}</div>
-        <h2>LPCO (recebidos por você)</h2>
-        <div class="row">${fld('LPCO MAPA → vai no CZI', 'ex.lpcoMapa', 'text', 'placeholder="E2600665213"')}${fld('LPCO IBAMA → vai nas etiquetas', 'ex.lpcoIbama', 'text', 'placeholder="E2600604683"')}</div>
-        <p class="note" id="xCert">${certNote()}</p></section>
-      <section class="step"><h2>Conversão para real (para a Nota Fiscal)</h2>
-        <label style="display:flex;gap:8px;align-items:center;color:var(--fg);font-size:.9rem"><input type="checkbox" data-xp="conv.on" ${S.conv.on ? 'checked' : ''}> Gerar também a invoice convertida em R$ (uso interno, não vai ao cliente)</label>
-        ${S.conv.on ? `<div class="row">${fld('Data da cotação', 'conv.date', 'date')}${fld('Dólar PTAX compra (R$)', 'conv.rate', 'number', 'step="0.0001" min="0"')}<div class="field" style="flex:0 0 auto;justify-content:flex-end"><button type="button" data-xa="ptax">⟳ Buscar PTAX do dia (Banco Central)</button></div></div><p class="note" id="xPtmsg" role="status">${esc(S.conv.msg || 'Sem internet ou em fim de semana/feriado, o app usa o último dia útil; você também pode digitar a cotação.')}</p>` : ''}</section>
+        <div class="row">${fld('GTA nº', 'ex.gta')}${fld('Série da GTA', 'ex.serie')}</div></section>
+      ${xg('frete', 'Package fee, discount, DOA e frete', (['ex.disc', 'ex.doa', 'ex.frete', 'ex.tarifa'].some(q => +gv(q) > 0) ? 'com discount/DOA/frete: gera 2 invoices' : 'sem discount, DOA ou frete') + ` · package fee US$ ${esc(gv('ex.fee') || 0)}`,
+        `<div class="row">${fld('Package fee (US$/caixa)', 'ex.fee', 'number', 'step="0.5" min="0"')}${fld('Discount (US$)', 'ex.disc', 'number', 'step="0.01" min="0" placeholder="0"')}${fld('DOA – mortalidade da exportação anterior (US$)', 'ex.doa', 'number', 'step="0.01" min="0" placeholder="0"')}</div>
+        <div class="row">${fld('Frete pré-pago (US$) – valor da cotação do despachante', 'ex.frete', 'number', 'step="0.01" min="0" placeholder="0"')}${fld('…ou tarifa por kg (US$, só se não tiver o valor)', 'ex.tarifa', 'number', 'step="0.01" min="0" placeholder="0"')}</div>
+        <p class="note" id="xAduNote">${aduNote()}</p>`, false)}
+      ${xg('emb', 'Embalagem, oxigênio e temperatura', [gv('ex.pkDate'), gv('ex.pkTime'), gv('ex.oxy'), gv('ex.temp')].filter(Boolean).map(esc).join(' · ') || 'nada preenchido',
+        `<div class="row">${fld('Data de embalagem', 'ex.pkDate', 'date')}${fld('Hora de embalagem', 'ex.pkTime')}${fld('Oxigênio', 'ex.oxy')}${fld('Temperatura', 'ex.temp')}</div>`, false)}
+      ${xg('lpco', 'LPCO (recebidos por você)', xgFill(['ex.lpcoMapa', 'ex.lpcoIbama']),
+        `<div class="row">${fld('LPCO MAPA → vai no CZI', 'ex.lpcoMapa', 'text', 'placeholder="E2600665213"')}${fld('LPCO IBAMA → vai nas etiquetas', 'ex.lpcoIbama', 'text', 'placeholder="E2600604683"')}</div>
+        <p class="note" id="xCert">${certNote()}</p>`, true)}
+      ${xg('conv', 'Conversão para real (para a Nota Fiscal)', S.conv.on ? `invoice em R$ ligada${S.conv.rate ? ' · PTAX ' + esc(S.conv.rate) : ' · informe a cotação'}` : 'desligada',
+        `<label style="display:flex;gap:8px;align-items:center;color:var(--fg);font-size:.9rem"><input type="checkbox" data-xp="conv.on" ${S.conv.on ? 'checked' : ''}> Gerar também a invoice convertida em R$ (uso interno, não vai ao cliente)</label>
+        ${S.conv.on ? `<div class="row">${fld('Data da cotação', 'conv.date', 'date')}${fld('Dólar PTAX compra (R$)', 'conv.rate', 'number', 'step="0.0001" min="0"')}<div class="field" style="flex:0 0 auto;justify-content:flex-end"><button type="button" data-xa="ptax">⟳ Buscar PTAX do dia (Banco Central)</button></div></div><p class="note" id="xPtmsg" role="status">${esc(S.conv.msg || 'Sem internet ou em fim de semana/feriado, o app usa o último dia útil; você também pode digitar a cotação.')}</p>` : ''}`, false)}
       <section class="step"><h2>Documentos desta exportação</h2>
         <div class="warnbox" id="xWarn">${warnHTML()}</div><div id="xDocs">${docsCard()}</div>
         <div class="row"><button type="button" class="primary" data-xa="zip">⬇ Baixar todos (.zip) e salvar</button><button type="button" data-xa="prev">Ver prévia</button><button type="button" data-xa="save">Salvar no histórico</button><button type="button" data-xa="rot">✓ Abrir roteiro</button></div></section>
@@ -835,7 +842,7 @@ function czi(k){const t=T(),c=S.cons,e=S.ex,n=numStr(),num=bl(cert(k),'LPCO MAPA
     if (r && r.closest && r.closest('#xStage')) setTimeout(refreshStage, 200); else refreshStage();
   });
   document.addEventListener('paste', e => { const t = e.target; if (t.dataset && t.dataset.xe) { e.preventDefault(); document.execCommand('insertText', false, cleanTxt((e.clipboardData || window.clipboardData).getData('text'))); } });
-  document.addEventListener('toggle', e => { if (e.target && e.target.id === 'xCons') { S.consOpen = e.target.open; persist(); } if (e.target && e.target.id === 'xNum') { S.numOpen = e.target.open; persist(); } }, true);
+  document.addEventListener('toggle', e => { if (e.target && e.target.id === 'xCons') { S.consOpen = e.target.open; persist(); } if (e.target && e.target.id === 'xNum') { S.numOpen = e.target.open; persist(); } if (e.target && e.target.dataset && e.target.dataset.xg) { S.xg = S.xg || {}; S.xg[e.target.dataset.xg] = e.target.open; persist(); } }, true);
 
   /* arrastar as espécies */
   let dragX = -1;
@@ -852,6 +859,7 @@ function czi(k){const t=T(),c=S.cons,e=S.ex,n=numStr(),num=bl(cert(k),'LPCO MAPA
     if (a === 'nac') { PPx.go('pedido'); return; }
     if (a === 'prev') { openPrev(); return; }
     if (a === 'closeprev') { closePrev(); return; }
+    if (a === 'xgall') { store.set('xgAll', xgAll() ? 0 : 1); S.xg = {}; persist(); renderExp(); return; }
     if (a === 'usarnum') {
       const n = parseInt(b.dataset.n, 10); if (!(n > 0)) return;
       if (S.items.length && !S.curId && !confirm('Começar a exportação ' + p3(n) + '/' + yr() + '? O rascunho atual será descartado (ele ainda não foi salvo no histórico).')) return;

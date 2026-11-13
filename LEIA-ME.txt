@@ -571,3 +571,15 @@ v29.8 — Notas de entrada: checklist antes de protocolar
   Novo: em Pescadores (CTF/RGP) há o cartão "Documentos da empresa". Informe a validade da licença ambiental e da
   procuração (dá para adicionar outros documentos). Sem essas datas o checklist mostra "sem validade cadastrada".
   Não precisa de SQL novo no Supabase.
+
+v29.9 — Modo foco nas outras telas (Exportação, Hoje e menu lateral)
+  Exportação: os blocos que você mexe menos agora ficam recolhidos, cada um com um resumo na própria linha:
+  "Package fee, discount, DOA e frete", "Embalagem, oxigênio e temperatura" e "Conversão para real".
+  O LPCO continua aberto. Voo e documentos do despachante (MAWB, HAWB, DU-E...) ficam sempre à vista.
+  O que você abrir fica aberto, mesmo trocando o destino ou mexendo no pedido. O botão "Abrir todos os blocos" (e
+  "Recolher blocos secundários") fica no topo de "Dados da exportação" e vale para este aparelho.
+  Hoje: o gráfico "Vendas programadas" fica recolhido ("Ver gráfico"). Em "Precisa de atenção" aparecem as 3 primeiras
+  pendências com os botões; as outras ficam em "Mais N pendência(s)".
+  Menu lateral: clique no título de uma seção (Início, Operação, Gestão) para recolher ou abrir. O menu lembra a sua
+  escolha, e a tela em que você está nunca some. Nada foi removido do menu: ele só mostra menos de uma vez.
+  Não precisa de SQL novo no Supabase.
