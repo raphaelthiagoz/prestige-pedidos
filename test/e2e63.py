@@ -25,6 +25,8 @@ with sync_playwright() as p:
     ok('Passo 2 de 6' in passo(pg),'com NFs cadastradas e pedido vazio, começa no passo 2 (Pedido)')
     ok(vis(pg,'#colar') and vis(pg,'[data-f=pack]'),'passo 2 mostra o pedido e os dados do pack abertos')
     ok(not vis(pg,'#dropnf'),'passo 2 não mostra as NFs (só o que é dele)')
+    ok(pg.locator('[data-f=sei]').count()==0,'passo 2 NÃO pede o número do SEI (só se sabe depois de protocolar)')
+    pg.evaluate("()=>{var e=PP.mapa.estado();e.draft.sei='21010.003135/2026-25';PP.store.set('mapa',{nfs:e.nfs,processos:e.processos,meta:e.meta,draft:e.draft,marcas:e.marcas||[]});}")
     # avançar sem pedido não deixa
     pg.click('#mpAgora [data-act=etapaprox]'); pg.wait_for_timeout(200)
     ok('Passo 2' in passo(pg),'sem pedido, o Próximo não avança no passo 2')
@@ -54,9 +56,11 @@ with sync_playwright() as p:
     ok('Passo 6' in passo(pg),'depois de gravar, vai para o passo 6 (Protocolar)')
     st=pg.evaluate("PP.mapa.estado().processos")
     ok(len(st)==1 and st[0]['pack']=='030/2026' and st[0]['protocolado']==False,'consumo gravado, aguardando protocolo')
+    ok(st[0]['sei']=='','SEI antigo esquecido no rascunho não vai para o pack novo')
     ok('Pack 030/2026' in pg.inner_text('#mpPasso') and vis(pg,'#mpPasso [data-act=marcarprot]'),'passo 6 mostra o pack e o botão Marcar como protocolado')
     pg.click('#mpPasso [data-act=marcarprot]'); pg.wait_for_timeout(400)
     ok(pg.evaluate("PP.mapa.estado().processos[0].protocolado")==True,'Marcar como protocolado grava')
+    ok(pg.evaluate("PP.mapa.estado().processos[0].sei")=='21010.009999/2026-09','o número do SEI é pedido e gravado só nesse momento')
     ok('Nenhum pack aguardando' in pg.inner_text('#mpPasso'),'passo 6 depois de protocolar: nada pendente')
     # abas antigas continuam
     pg.click('#mpTabs [data-tab=verificar]'); pg.wait_for_timeout(300)

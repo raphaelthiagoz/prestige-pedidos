@@ -16,7 +16,7 @@ with sync_playwright() as p:
     b=p.chromium.launch()
     pg=novo(b)
     tabs=pg.locator('#mpTabs button').all_inner_texts(); print('  abas',tabs)
-    ok(tabs[0].startswith('1') and 'NFs de entrada' in tabs[0] and tabs[1].startswith('2') and 'Verificar' in tabs[1],'abas na ordem de uso (1 NFs, 2 Verificar)')
+    ok('Passo a passo' in tabs[0] and 'NFs de entrada' in tabs[1] and 'Verificar' in tabs[2],'abas na ordem de uso (Passo a passo, NFs, Verificar)')
     pg.click('#mpTabs button[data-tab="verificar"]'); pg.wait_for_timeout(300)
     ok(pg.locator('#mpFluxo [data-step]').count()==5,'faixa com 5 passos')
     ok('now' in (pg.get_attribute('#mpFluxo [data-step="1"]','class') or ''),'sem NFs: passo 1 é o atual')

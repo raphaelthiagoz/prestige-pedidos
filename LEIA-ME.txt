@@ -500,11 +500,11 @@ v29.3 — Notas de entrada: "Sugerir NFs" não troca mais o que você já escolh
 v29.4 — Notas de entrada: nova aba "Passo a passo" e modo foco (uma decisão por vez)
   NOVA ABA "Passo a passo" (agora é a primeira): protocolar um pack em 6 passos, um por tela, com Voltar e Próximo.
     1. NFs: conferir se as notas do pack estão cadastradas com o PDF (só cadastre se faltar).
-    2. Pedido: anexar o packing list (ou colar o pedido) e conferir pack, destino e SEI. Depois de "Ler pedido" vai sozinho ao passo 3.
+    2. Pedido: anexar o packing list (ou colar o pedido) e conferir pack e destino. O número do SEI NÃO é pedido aqui. Depois de "Ler pedido" vai sozinho ao passo 3.
     3. Conferir: escolher a NF de cada espécie. O Próximo só avança quando não sobra espécie com problema.
     4. PDF: gerar o PDF único das NFs com os grifos (e a folha de grifos) para anexar no SEI.
     5. Gravar: resumo do pack e botão Gravar consumo. Depois de gravar vai ao passo 6.
-    6. Protocolar: anexar no SEI, protocolar e clicar em "Marcar como protocolado".
+    6. Protocolar: anexar no SEI, protocolar e clicar em "Marcar como protocolado": só aí o app pergunta o número do SEI.
   O app abre já no passo certo para o ponto em que você parou. As abas antigas continuam todas no lugar.
   O passo a passo virou uma faixa curta de 5 etapas, e o quadro "Agora, faça isto" ficou grande, no topo, com o botão do próximo passo.
   Em "2 · Verificar pedido": "Dados do pack" e "Pedido" aparecem recolhidos em uma linha (clique em Editar / Alterar para abrir).

@@ -675,11 +675,11 @@ function fluxoHTML(){
 /* ---------- assistente "passo a passo" ---------- */
 var ETAPAS=[
  ['NFs','Confira as NFs de entrada','Veja se as notas deste pack estão cadastradas, cada uma com o PDF. Só cadastre se faltar alguma.'],
- ['Pedido','Informe o pedido do pack','Anexe o packing list (PDF) ou cole o pedido. Confira o número do pack, o destino e o SEI.'],
+ ['Pedido','Informe o pedido do pack','Anexe o packing list (PDF) ou cole o pedido. Confira o número do pack e o destino. O número do SEI você só informa no último passo.'],
  ['Conferir','Escolha a NF de cada espécie','Clique em "Sugerir NFs onde falta" e resolva as espécies em vermelho. Quando todas estiverem certas, avance.'],
  ['PDF','Gere o PDF das NFs com os grifos','Este é o arquivo que você anexa no SEI. Gere, abra e confira os grifos.'],
  ['Gravar','Grave o consumo das NFs','Confira o resumo e grave. O saldo das NFs desce agora, mas ainda não é o protocolo.'],
- ['Protocolar','Protocole no SEI e marque aqui','Anexe os documentos no SEI e protocole. Depois volte e clique em "Marcar como protocolado".']
+ ['Protocolar','Protocole no SEI e marque aqui','Anexe os documentos no SEI e protocole. Com o número do processo em mãos, volte aqui e clique em "Marcar como protocolado": o app pergunta o número.']
 ];
 function etapaInicial(){
   var d=S.draft,nPend=S.processos.filter(aguardaProt).length;
@@ -702,14 +702,14 @@ function passoCorpo(n){
     var v=d.linhas.length?validarDraft(S,d):{erros:0,avisos:0};
     var nfs={};d.linhas.forEach(function(L){L.aloc.forEach(function(a){if(a.nfId)nfs[a.nfId]=1;});});
     return '<div class="card"><div style="font-size:1.05rem"><b>Pack '+esc(d.pack||'(sem número)')+'</b>'+(d.destino?' · '+esc(d.destino):'')+'</div>'
-      +'<div class="muted" style="margin:6px 0 12px">'+d.linhas.length+' espécie(s) · '+Object.keys(nfs).length+' NF(s) usada(s)'+(d.sei?' · SEI '+esc(d.sei):'')+'</div>'
+      +'<div class="muted" style="margin:6px 0 12px">'+d.linhas.length+' espécie(s) · '+Object.keys(nfs).length+' NF(s) usada(s)'+'</div>'
       +(!d.linhas.length?'<div class="alert e">O pedido está vazio. Volte ao passo 2.</div>':(v.erros?'<div class="alert e">'+v.erros+' espécie(s) ainda com problema. Volte ao passo 3.</div>':''))
       +'<button class="btn pri" data-act="protocolar">Gravar consumo</button>'+ia('protocolar')+'</div>';
   }
   var pend=S.processos.filter(aguardaProt);
   if(!pend.length)return '<div class="card"><b>Nenhum pack aguardando protocolo.</b><div class="muted" style="margin:6px 0 12px">Para começar outro pack, volte ao passo 2.</div><button class="btn pri" data-act="etapa" data-n="2">Começar novo pack</button></div>';
   return pend.map(function(p){
-    return '<div class="card"><div style="font-size:1.05rem"><b>Pack '+esc(p.pack)+'</b>'+(p.destino?' · '+esc(p.destino):'')+'</div><div class="muted" style="margin:6px 0 12px">'+(p.sei?'SEI '+esc(p.sei)+' · ':'')+'consumo gravado em '+dt(p.data)+'</div>'
+    return '<div class="card"><div style="font-size:1.05rem"><b>Pack '+esc(p.pack)+'</b>'+(p.destino?' · '+esc(p.destino):'')+'</div><div class="muted" style="margin:6px 0 12px">'+(p.sei?'SEI '+esc(p.sei)+' · ':'')+'consumo gravado em '+dt(p.data)+(p.sei?'':' · SEI ainda não informado')+'</div>'
       +'<div class="row" style="align-items:center"><span><button class="btn" data-act="pdfproc" data-id="'+p.id+'">PDF das NFs (SEI)</button>'+ia('pdfnfs')+'</span><span><button class="btn pri" data-act="marcarprot" data-id="'+p.id+'">Marcar como protocolado</button>'+ia('marcarprot')+'</span></div></div>';
   }).join('');
 }
@@ -753,11 +753,11 @@ function viewVerificar(wiz){
   var d=S.draft,modo=S.meta.modo||'antiga',nLin=d.linhas.length;
   var dl='<datalist id="dl-esp">'+todasEspecies().map(function(e){return '<option value="'+esc(e)+'">';}).join('')+'</datalist>';
   var temAloc=d.linhas.some(function(L){return L.aloc.some(function(a){return a.nfId&&a.qtd>0;});});
-  var resumo=[d.pack?'Pack '+esc(d.pack):'Pack sem número',d.destino?esc(d.destino):'',d.sei?'SEI '+esc(d.sei):''].filter(Boolean).join(' · ');
+  var resumo=[d.pack?'Pack '+esc(d.pack):'Pack sem número',d.destino?esc(d.destino):'',(!wiz&&d.sei)?'SEI '+esc(d.sei):''].filter(Boolean).join(' · ');
   return dl
   +'<details class="card foco" id="mpDados"'+((wiz||!d.pack)?' open':'')+'><summary><span><b>Dados do pack</b> <span class="muted">'+resumo+'</span></span><span class="alt">Editar</span></summary>'
   +'<div class="row" style="margin-top:10px"><label>Pack nº<input type="text" data-f="pack" value="'+esc(d.pack)+'" placeholder="016/2026"></label>'
-  +'<label>Processo SEI<input type="text" data-f="sei" value="'+esc(d.sei)+'" placeholder="21010.003135/2026-25"></label>'
+  +(wiz?'':'<label>Processo SEI (só depois de protocolar)<input type="text" data-f="sei" value="'+esc(d.sei)+'" placeholder="opcional"></label>')
   +'<label>Destino (cliente)<input type="text" data-f="destino" value="'+esc(d.destino||'')+'" placeholder="Ruinemans Group"></label></div></details>'
   +'<details class="card foco" id="mpPedido"'+((wiz||!nLin)?' open':'')+'><summary><span><b>Pedido</b> <span class="muted" id="mpPedidoN">'+(nLin?nLin+' espécie(s)':'cole ou anexe o packing list')+'</span></span><span class="alt">Alterar</span></summary>'
   +'<div class="row" style="margin:10px 0 8px;align-items:center"><label class="btn" style="cursor:pointer;flex:0 0 auto;min-width:0;display:inline-flex;align-items:center;flex-direction:row;gap:6px;color:var(--tx);font-size:14px">Anexar packing list (PDF)<input type="file" id="packpdf" accept="application/pdf,.pdf" style="display:none"></label>'+ia('packpdf')+'<span class="muted" style="flex:1">ou cole o texto abaixo</span></div>'
@@ -1502,6 +1502,7 @@ document.addEventListener('click',function(ev){
   else if(a==='rmaloc'){d.linhas[i].aloc.splice(j,1);salvar();paintAlloc(i);paintStatus();}
   else if(a==='limpar'){if(confirm('Limpar o pedido em andamento?')){S.draft=novoDraft();salvar();render();}}
   else if(a==='protocolar'){
+    if(tab==='passo')d.sei='';
     var r=protocolar(S,d);
     if(!r.ok){toast(r.erro);paintStatus();return;}
     if(!confirm('Gravar o consumo das NFs para o pack '+r.proc.pack+(r.proc.sei?' (SEI '+r.proc.sei+')':'')+'?\n\nO saldo das NFs cai agora. O protocolo no SEI/MAPA você marca depois, em Processos.')){
