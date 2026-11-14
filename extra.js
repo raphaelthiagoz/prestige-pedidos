@@ -33,13 +33,31 @@
     });
     return out;
   }
+  /* v29.16: uma ação principal por linha (a que faz sentido para a situação) e o resto no botão "Mais" */
+  function acaoLinha(e, s) {
+    const sd = s.saldo, p = s.key === 'atrasado' && sd > 0 ? ['cobrar', 'Cobrar', 'Copia a mensagem de cobrança para colar no WhatsApp do cliente'] : sd > 0 && s.key !== 'cancelado' ? ['baixa', 'Dar baixa', 'Registra que o cliente pagou o que falta deste pedido'] : ['open', 'Ver', 'Abre os detalhes do pedido'];
+    return `<button type="button" class="${p[0] === 'open' ? '' : 'primary'}" data-h="${p[0]}" data-id="${e.id}" title="${p[2]}">${p[1]}</button> <button type="button" data-h="more" data-id="${e.id}" aria-haspopup="menu" aria-expanded="false" title="Mais ações deste pedido">Mais</button>`;
+  }
+  function fechaMenu() { const m = document.getElementById('hMenu'); if (m) m.remove(); document.querySelectorAll('[data-h=more][aria-expanded=true]').forEach(b => b.setAttribute('aria-expanded', 'false')); }
+  function abreMenu(btn, e) {
+    fechaMenu(); const s = F.situacao(e, F.todayISO(), prazo()), id = e.id, it = (k, t, cls) => `<button type="button" role="menuitem" data-h="${k}" data-id="${id}" ${cls ? 'class="' + cls + '"' : ''}>${t}</button>`;
+    const m = document.createElement('div'); m.id = 'hMenu'; m.className = 'tpop hmenu'; m.setAttribute('role', 'menu');
+    m.innerHTML = it('open', 'Ver detalhes') + it('edit', 'Editar pedido') + it('repeat', 'Duplicar pedido') + it('mortgo', 'Registrar mortalidade') + (s.saldo > 0 ? it('cobrar', 'Copiar cobrança (WhatsApp)') : '') + it('notinha', 'Baixar notinha (Excel)') + '<hr>' + it('del', 'Excluir este pedido', 'danger');
+    document.body.appendChild(m); btn.setAttribute('aria-expanded', 'true');
+    const r = btn.getBoundingClientRect(), w = m.offsetWidth, h = m.offsetHeight;
+    m.style.left = Math.max(8, Math.min(innerWidth - w - 8, r.right - w)) + 'px'; m.style.top = (r.bottom + 6 + h > innerHeight ? Math.max(8, r.top - h - 6) : r.bottom + 6) + 'px';
+    m.dataset.ab = r.bottom;     const f = m.querySelector('button'); if (f) f.focus();
+  }
+  document.addEventListener('click', ev => { if (!ev.target.closest('#hMenu') && !ev.target.closest('[data-h=more]')) fechaMenu(); });
+  document.addEventListener('keydown', ev => { if (ev.key === 'Escape') fechaMenu(); });
+  window.addEventListener('scroll', () => { const m = document.getElementById('hMenu'); if (!m) return; const an = document.querySelector('[data-h=more][aria-expanded=true]'); if (!an || Math.abs(an.getBoundingClientRect().bottom - (+m.dataset.ab || 0)) > 4) fechaMenu(); }, { passive: true }); window.addEventListener('resize', fechaMenu); /* o menu só fecha se o botão saiu do lugar (um redesenho da tela não fecha) */
   function renderHist() {
     const h = ST.hist, hoje = F.todayISO();
     const all = S.hist.slice().sort((a, b) => b.ts - a.ts);
     const q = h.q.trim().toLowerCase();
     const list = all.filter(e => (!q || (e.cliente.nome + ' ' + e.inv + ' ' + e.nf).toLowerCase().includes(q)) && (!h.st || F.situacao(e, hoje, prazo()).key === h.st));
     const rec = F.r2(all.reduce((s, e) => s + F.situacao(e, hoje, prazo()).saldo, 0)), atr = all.filter(e => F.situacao(e, hoje, prazo()).key === 'atrasado');
-    const tipo = h.tipo || 'todos', chipsT = `<div class="row noprint" style="align-items:center"><div class="chips">${[['emb', 'Embarques e clientes'], ['todos', 'Todos'], ['nac', 'Nacionais'], ['exp', 'Exportações ']].map(([k, n]) => `<button type="button" class="xchip" data-htipo="${k}" aria-pressed="${tipo === k}">${n}</button>`).join('')}</div></div>`;
+    const tipo = h.tipo || 'todos', chipsT = `<div class="row noprint" style="align-items:center"><div class="chips seg">${[['emb', 'Embarques e clientes'], ['todos', 'Todos'], ['nac', 'Nacionais'], ['exp', 'Exportações ']].map(([k, n]) => `<button type="button" class="xchip" data-htipo="${k}" aria-pressed="${tipo === k}">${n}</button>`).join('')}</div></div>`;
     if (tipo === 'emb') { $('vHist').innerHTML = chipsT + embPainelHTML(); return; }
     /* v26: conferência Programação × Histórico */
     const linhasProg = []; (S.embarques || []).forEach(em => (em.linhas || []).forEach(l => { if (l.status !== 'cancelado') linhasProg.push({ em, l }); }));
@@ -56,7 +74,7 @@
       <div class="field" style="flex:0 1 220px"><label for="hst">Situação</label><select id="hst"><option value="">Todas</option>${['aguardando', 'atrasado', 'pago', 'embarcado', 'entregue', 'cancelado'].map(k => `<option value="${k}" ${h.st === k ? 'selected' : ''}>${k === 'atrasado' ? 'Atrasado' : F.STATUS[k]}</option>`).join('')}</select></div></div>
       ${list.length ? `<div class="tablewrap"><table id="histTb"><thead><tr><th>Data</th><th>Cliente</th><th>Invoice</th><th>NF</th><th class="n">Caixas</th><th class="n">Peixes</th><th class="n">Total R$</th><th>Situação</th><th></th></tr></thead><tbody>
       ${list.map(e => { const s = F.situacao(e, hoje, prazo()); return `<tr class="${h.open === e.id ? 'sel' : ''}"><td>${dBR(e.dataISO)}</td><td>${esc(e.cliente.nome)}</td><td>${esc(e.inv)}</td><td>${esc(e.nf || '—')}</td><td class="n">${e.totais.caixas}</td><td class="n">${fmtInt(e.totais.peixes)}</td><td class="n">${fmt(F.devido(e))}</td><td>${chip(s.kind, s.label)}${e.mort && e.mort.credito ? ' ' + chip('warn', 'mortalidade') : ''}</td>
-        <td style="white-space:nowrap"><button type="button" data-h="open" data-id="${e.id}">Detalhes</button> <button type="button" data-h="edit" data-id="${e.id}">Editar</button> <button type="button" data-h="repeat" data-id="${e.id}">Repetir</button> <button type="button" class="mortbtn" data-h="mortgo" data-id="${e.id}" title="Registrar mortalidade e descontar na nota do pedido">Mortalidade</button></td></tr>`; }).join('')}</tbody></table></div>` : `<p class="empty">${all.length ? 'Nenhum pedido com esse filtro.' : 'Os pedidos aparecem aqui quando você baixa os documentos ou clica em "Salvar no histórico".'}</p>`}
+        <td style="white-space:nowrap" class="hacts">${acaoLinha(e, s)}</td></tr>`; }).join('')}</tbody></table></div>` : `<p class="empty">${all.length ? 'Nenhum pedido com esse filtro.' : 'Os pedidos aparecem aqui quando você baixa os documentos ou clica em "Salvar no histórico".'}</p>`}
       </section>`;
     const open = h.open && S.hist.find(e => e.id === h.open);
     if (open) html += detail(open, hoje);
@@ -262,6 +280,19 @@
     }
     const b = ev.target.closest('[data-h]'); if (!b || S.view !== 'hist') return;
     const k = b.dataset.h, id = b.dataset.id, e = S.hist.find(x => x.id === (id || ST.hist.open));
+    if (k !== 'more') fechaMenu();
+    if (k === 'more') { if (e) { const abre = b.getAttribute('aria-expanded') !== 'true'; fechaMenu(); if (abre) abreMenu(b, e); } return; }
+    if (k === 'cobrar' && e) { try { await navigator.clipboard.writeText(F.msgCobranca(e, S.cfg.empresa.nome)); PP.toast('Mensagem de cobrança copiada. É só colar no WhatsApp de ' + e.cliente.nome + '.', 'ok'); } catch (_) { ST.hist.open = id; renderHist(); PP.toast('Não consegui copiar. Copie a mensagem aqui nos detalhes.'); } return; }
+    if (k === 'baixa' && e) {
+      const v = F.saldo(e); if (!(v > 0) || !confirm(`Registrar que ${e.cliente.nome} pagou R$ ${fmt(v)}?\n\nO pedido passa para "Pago" hoje (${dBR(F.todayISO())}). Dá para corrigir depois em Ver detalhes.`)) return;
+      e.pay = Object.assign({}, e.pay, { status: 'pago', pago: F.r2(((e.pay && e.pay.pago) || 0) + v), dataPago: F.todayISO() }); e.upd = Date.now();
+      PP.saveHist(); PP.renderClientes(); renderHist(); if (PP.assist) PP.assist.refresh(); PP.toast('Pagamento de ' + e.cliente.nome + ' registrado.', 'ok'); return;
+    }
+    if (k === 'notinha' && e) {
+      const dead = e.mort && e.mort.destino === 'abater' ? (e.mort.dead || {}) : {}, nc = F.notaCorrigida(e, F.mortalidade(e, dead));
+      const bytes = await PP.docs.notinhaXlsx({ cliente: e.cliente, dataISO: e.dataISO, nota: nc });
+      saveBlob(`NOTINHA_${PP.slug(e.cliente.nome)}.xlsx`, new Blob([bytes], { type: XLSX })); return;
+    }
     if (k === 'open') { ST.hist.open = id; renderHist(); $('hdet') && $('hdet').scrollIntoView({ behavior: 'smooth' }); }
     else if (k === 'close') { ST.hist.open = null; renderHist(); }
     else if (k === 'mortgo') { ST.hist.open = id; ST.hist.flash = id; renderHist(); const mb = $('mortBox'); if (mb) mb.scrollIntoView({ behavior: 'smooth', block: 'center' }); setTimeout(() => { ST.hist.flash = null; const m2 = $('mortBox'); if (m2) m2.classList.remove('flash'); }, 2400); }
@@ -328,7 +359,7 @@
   function renderPainel() {
     const [a, b] = range(), P = F.painel(S.hist, a, b, F.todayISO(), prazo()), r = ST.painel.r;
     const btn = (k, t) => `<button type="button" data-pr="${k}" aria-pressed="${r === k}">${t}</button>`;
-    $('vPainel').innerHTML = `<section class="step" id="relBox"></section><section class="step"><div class="row between"><h2>Painel</h2><div class="row" style="gap:6px">${btn('7', 'Últimos 7 dias')}${btn('30', 'Últimos 30 dias')}${btn('mes', 'Este mês')}${btn('tudo', 'Tudo')}</div></div>
+    $('vPainel').innerHTML = `<section class="step" id="relBox"></section><section class="step"><div class="row between"><h2>Painel</h2><div class="row seg" role="group" aria-label="Período">${btn('7', 'Últimos 7 dias')}${btn('30', 'Últimos 30 dias')}${btn('mes', 'Este mês')}${btn('tudo', 'Tudo')}</div></div>
       <p class="note">${dBR(a)} a ${dBR(b)}. Conta os pedidos salvos no histórico (cancelados ficam de fora).</p>
       ${P.pedidos ? `<div class="kpis"><div><b>${P.pedidos}</b><span>pedidos</span></div><div><b>${P.caixas}</b><span>caixas</span></div><div><b>${fmtInt(P.peixes)}</b><span>peixes</span></div><div><b>R$ ${fmt(P.faturamento)}</b><span>faturamento</span></div><div><b>R$ ${fmt(P.ticket)}</b><span>ticket médio</span></div><div><b>R$ ${fmt(P.receber)}</b><span>a receber</span></div><div><b>${P.atrasados}</b><span>atrasado(s) · R$ ${fmt(P.valorAtrasado)}</span></div></div>
       <div class="split"><div><h3>Espécies que mais saem (peixes)</h3>${bars(P.especies.slice(0, 10), x => x.peixes, x => x.nome, fmtInt)}</div>

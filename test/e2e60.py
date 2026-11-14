@@ -14,7 +14,7 @@ with sync_playwright() as p:
     pid=pg.evaluate("PP.S.hist[0].id")
     tot=pg.evaluate("PP.S.hist[0].totais.total"); base=pg.evaluate("PP.Features.baseAvista(PP.S.hist[0])")
     pg.evaluate("PP.go('hist')"); pg.wait_for_timeout(400)
-    pg.click(f'[data-h=open][data-id="{pid}"]'); pg.wait_for_timeout(500)
+    pg.click(f'[data-h=more][data-id="{pid}"]'); pg.click(f'#hMenu [data-h=open][data-id="{pid}"]'); pg.wait_for_timeout(500)
     ok(pg.locator('#avBox').count()==1,'o pedido aberto no Histórico tem a caixa "Desconto para pagamento à vista"')
     ok(pg.locator('[data-h=avNota]').is_disabled(),'sem desconto aplicado, o botão da nota com desconto fica desligado')
     pg.click('[data-h=avchip][data-v="10"]'); pg.wait_for_timeout(200)

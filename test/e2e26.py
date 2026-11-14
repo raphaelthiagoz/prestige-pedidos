@@ -42,12 +42,12 @@ with sync_playwright() as p:
     ok(pg.input_value('[data-pn=cli]')=='AQUAPRIME' and pg.locator('#pnForm .pnrow').count()==11,'importa o .zip baixado (pega a invoice, ignora a "em reais")')
     pg.click('[data-pnb=close]')
     # editar
-    pg.click(f'tr:has-text("AQUAPRIME") [data-h=edit]'); pg.wait_for_timeout(400)
+    pg.click('tr:has-text("AQUAPRIME") [data-h=more]'); pg.click('#hMenu [data-h=edit]'); pg.wait_for_timeout(400)
     ok(pg.locator('#pnForm').is_visible() and pg.input_value('[data-pn=inv]')=='77' and pg.locator('#pnForm .pnrow').count()==11,'Editar reabre o formulário preenchido')
     pg.fill('[data-pn=atest]','20'); pg.click('[data-pnb=save]'); pg.wait_for_timeout(300)
     e2=pg.evaluate("PP.S.hist.find(x=>x.inv==='77')"); ok(abs(e2['totais']['total']-(c['valor']+22.5+20+5))<1e-6 and pg.evaluate("PP.S.hist.filter(x=>x.inv==='77').length")==1,'edição atualiza sem duplicar')
     # detalhes + repetir
-    pg.click('tr:has-text("AQUAPRIME") [data-h=open]'); pg.wait_for_timeout(300); ok(pg.locator('#hdet').count()==1,'Detalhes abre sem erro')
+    pg.wait_for_timeout(800); pg.click('tr:has-text("AQUAPRIME") [data-h=more]'); pg.click('#hMenu [data-h=open]'); pg.wait_for_timeout(300); ok(pg.locator('#hdet').count()==1,'Detalhes abre sem erro')
     pg.click('[data-pn=toggle]') if pg.locator('#pnForm').count() else None
     # manual
     pg.evaluate("PP.go('hist')"); pg.click('[data-pn=toggle]'); pg.fill('[data-pn=cli]','MAEDA AQUARIOS'); pg.fill('[data-pn=data]','2026-11-03'); pg.fill('[data-pn=inv]','9')

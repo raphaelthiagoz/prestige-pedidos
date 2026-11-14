@@ -703,3 +703,30 @@ Arquivo novo: hojeplus.js (já está no index.html e na lista do sw.js).
 
 TESTES: test/e2e74.py (valores batendo com "Aguardando pagamento",
 períodos, tooltip, pedido quitado, vazio, pilha, celular).
+
+==================================================================
+v29.16 · HISTÓRICO COM UMA AÇÃO POR LINHA, PERÍODOS AGRUPADOS E ABAS COM SUBLINHADO
+==================================================================
+1. Histórico de pedidos: cada linha agora tem só 2 botões.
+   - Botão principal, conforme a situação do pedido:
+       Atrasado    -> "Cobrar" (copia a mensagem de cobrança para o WhatsApp)
+       Aguardando  -> "Dar baixa" (pergunta e registra que o cliente pagou
+                      o que falta, com a data de hoje)
+       Pago        -> "Ver" (abre os detalhes)
+   - "Mais": Ver detalhes, Editar pedido, Duplicar pedido (antigo
+     "Repetir"), Registrar mortalidade, Copiar cobrança (WhatsApp), Baixar
+     notinha (Excel) e, separado e em vermelho, "Excluir este pedido".
+   - Excluir continua pedindo confirmação e o pedido vai para "Pedidos
+     apagados", de onde dá para restaurar. Dar baixa também pede
+     confirmação e dá para corrigir em Ver detalhes.
+   - Não foi criado "Baixar PDF" por pedido: hoje o sistema gera a notinha
+     em Excel, então o item do menu é "Baixar notinha (Excel)".
+2. Períodos em botões agrupados: Painel (7 dias, 30 dias, mês, tudo),
+   relatório de vendas (esta semana, semana passada...) e as opções do
+   Histórico (Embarques e clientes, Todos, Nacionais, Exportações) viram
+   uma pílula só, com a opção ativa destacada.
+3. Abas com sublinhado: Exportação, Frete e outras abas agora mostram só
+   um sublinhado turquesa na aba ativa. No celular rolam para o lado.
+
+TESTES: test/e2e75.py. Foram ajustados e2e26, e2e42 e e2e60, que clicavam
+em Editar/Repetir/Mortalidade direto na linha (agora estão no "Mais").

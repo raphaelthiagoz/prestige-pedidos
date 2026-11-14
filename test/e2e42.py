@@ -36,7 +36,7 @@ with sync_playwright() as p:
     # --- Mortalidade
     ok(pg.locator('#hMort').count()==1,'faixa "Mortalidade dos embarques recentes" aparece')
     ok(pg.locator('#hMort button[data-h=mortgo]').count()==3,'um botão por cliente na faixa de mortalidade')
-    ok(pg.locator('#histTb button[data-h=mortgo]').count()>=3,'botão "Mortalidade" em cada linha da tabela')
+    ok(pg.locator('#histTb button[data-h=more]').count()>=3,'botão "Mais" em cada linha da tabela'); pg.locator('#histTb button[data-h=more]').first.click(); ok(pg.locator('#hMenu [data-h=mortgo]').count()==1,'"Registrar mortalidade" está no menu Mais'); pg.keyboard.press('Escape')
     pg.click('#hMort button[data-h=mortgo]:has-text("CLIENTE B")'); pg.wait_for_timeout(500)
     ok(pg.is_visible('#mortBox') and 'CLIENTE B' in pg.inner_text('#hdet'),'abre direto o painel de mortalidade do pedido')
     pg.fill('#mortBox [data-dead="0"]','100'); pg.wait_for_timeout(300)
