@@ -95,4 +95,6 @@
   build();
   on = !!store.get('hideVals', false); sync();
   refreshBell(); { const bd = $('asBadge'); if (bd) new MutationObserver(refreshBell).observe(bd, { childList: true, characterData: true, subtree: true }); }
+  /* atalhos do ícone do app (segurar o ícone no Android): abrem direto numa tela, ex.: ?v=hist */
+  try { const v = new URLSearchParams(location.search).get('v'); if (['hoje', 'pedido', 'hist', 'embarque', 'exp', 'frete', 'financeiro'].includes(v)) setTimeout(() => { try { PP.go(v); } catch (_) { /* ok */ } }, 700); } catch (_) { /* ok */ }
 })();

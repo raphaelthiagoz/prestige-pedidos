@@ -730,3 +730,17 @@ v29.16 · HISTÓRICO COM UMA AÇÃO POR LINHA, PERÍODOS AGRUPADOS E ABAS COM SU
 
 TESTES: test/e2e75.py. Foram ajustados e2e26, e2e42 e e2e60, que clicavam
 em Editar/Repetir/Mortalidade direto na linha (agora estão no "Mais").
+
+==================================================================
+v29.17 · PREPARAÇÃO PARA VIRAR APP NO CELULAR (APK)
+==================================================================
+- manifest.json / manifest.webmanifest: descrição, categorias, 4 atalhos ao
+  segurar o ícone (Hoje, Novo pedido, Histórico, Programação de voos) e 3
+  imagens de vitrine (pasta shots/, com nomes de clientes fictícios).
+- Os atalhos abrem direto na tela (endereço com ?v=hist etc., tratado em topo.js).
+- _headers: pronto para o arquivo /.well-known/assetlinks.json, que o
+  Android usa para abrir o app em tela cheia, sem barra do navegador. O
+  conteúdo vem do PWABuilder (impressão digital da chave do app).
+- Atenção: o site responde 401 (login do Netlify) para quem está de fora, e
+  por isso o PWABuilder não consegue ler o sistema enquanto a proteção
+  estiver ligada.

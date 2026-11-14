@@ -1,5 +1,5 @@
 /* Prestige Pedidos — modo offline. Com internet usa sempre a versão mais nova; sem internet abre a última guardada. */
-const V = 'pp-v67';
+const V = 'pp-v68';
 const CORE = ['./', 'index.html', 'style.css', 'theme.css', 'core.js', 'features.js', 'docs.js', 'app.js', 'cloudcfg.js', 'logo-login.png', 'extra.js', 'logos.js', 'templates.js', 'templates_exp.js', 'exportdocs.js', 'exportui.js', 'fretecore.js', 'freteui.js', 'hoje.js','hojeplus.js', 'financeiro.js', 'motion.js', 'motion.css', 'fundo.jpg', 'assist.js', 'kanban.js', 'cfgtabs.js', 'menucfg.js', 'logo-menu.png', 'mapa.js', 'nfpdf.js', 'clientes.js', 'relatorio.js', 'side.js', 'pednovo.js', 'auth.js', 'autobk.js', 'guia.js', 'topo.js', 'templates_frete.js', 'manifest.webmanifest', 'icon-192.png', 'manifest.json', 'icon-512.png',
   'vendor/exceljs.min.js', 'vendor/docx.iife.js', 'vendor/jszip.min.js', 'vendor/pdf-lib.min.js', 'vendor/logo.png', 'vendor/fonts/outfit-300.woff2', 'vendor/fonts/outfit-400.woff2', 'vendor/fonts/outfit-500.woff2', 'vendor/fonts/outfit-600.woff2'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(V).then(c => Promise.all(CORE.map(u => c.add(u).catch(() => {})))).then(() => self.skipWaiting())); });

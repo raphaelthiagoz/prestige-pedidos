@@ -936,3 +936,4 @@ main .seg>button[aria-pressed=true],main .rpchips>button[aria-pressed=true],main
 .hmenu{min-width:230px}.hmenu hr{border:0;border-top:1px solid var(--line);margin:6px 4px}
 .hmenu button.danger{color:#f08a8a}.hmenu button.danger:hover{background:rgba(239,107,107,.14)}
 .rpchips{width:fit-content;max-width:100%}
+.hrec .lb{flex-wrap:wrap;align-items:center}.hrec .seg{flex-wrap:nowrap;margin-left:auto}

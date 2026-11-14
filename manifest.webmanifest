@@ -1,5 +1,5 @@
 {
- "id": "./",
+ "id": "/",
  "name": "Sistema de Pedidos - Prestige Aquarium Ltda",
  "short_name": "Pedidos",
  "start_url": "./",
@@ -35,5 +35,85 @@
   }
  ],
  "prefer_related_applications": false,
- "orientation": "any"
+ "orientation": "any",
+ "description": "Pedidos nacionais, exportação, programação de voos, frete e financeiro da Prestige Aquarium, em um só lugar.",
+ "categories": [
+  "business",
+  "productivity"
+ ],
+ "dir": "ltr",
+ "display_override": [
+  "standalone",
+  "minimal-ui"
+ ],
+ "shortcuts": [
+  {
+   "name": "Hoje",
+   "short_name": "Hoje",
+   "description": "Resumo do dia",
+   "url": "./?v=hoje",
+   "icons": [
+    {
+     "src": "icon-192.png",
+     "sizes": "192x192"
+    }
+   ]
+  },
+  {
+   "name": "Novo pedido nacional",
+   "short_name": "Novo pedido",
+   "url": "./?v=pedido",
+   "icons": [
+    {
+     "src": "icon-192.png",
+     "sizes": "192x192"
+    }
+   ]
+  },
+  {
+   "name": "Histórico",
+   "short_name": "Histórico",
+   "url": "./?v=hist",
+   "icons": [
+    {
+     "src": "icon-192.png",
+     "sizes": "192x192"
+    }
+   ]
+  },
+  {
+   "name": "Programação de voos",
+   "short_name": "Voos",
+   "url": "./?v=embarque",
+   "icons": [
+    {
+     "src": "icon-192.png",
+     "sizes": "192x192"
+    }
+   ]
+  }
+ ],
+ "screenshots": [
+  {
+   "src": "shots/tela-hoje.png",
+   "sizes": "1080x2340",
+   "type": "image/png",
+   "form_factor": "narrow",
+   "label": "Tela Hoje: resumo do dia, previsão a receber e próximas programações"
+  },
+  {
+   "src": "shots/tela-previsao.png",
+   "sizes": "1080x2340",
+   "type": "image/png",
+   "form_factor": "narrow",
+   "label": "Previsão do que vai ser recebido nos próximos dias"
+  },
+  {
+   "src": "shots/tela-programacao.png",
+   "sizes": "1080x2340",
+   "type": "image/png",
+   "form_factor": "narrow",
+   "label": "Programação de voos"
+  }
+ ]
 }
