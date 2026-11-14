@@ -641,3 +641,38 @@ v29.13 — Novo visual: janela flutuante, título grande, fonte arredondada e As
   do Painel não aparece mais; no celular os valores grandes não ficam cortados.
   O cartão "A receber hoje" no rodapé do menu NÃO entrou (você preferiu o Assistente maior).
   Não precisa de SQL novo no Supabase.
+
+==================================================================
+v29.14 · BARRA SUPERIOR NOVA (criar, olho, sino, avatar) E COMANDOS NO CTRL K
+==================================================================
+Arquivo novo: topo.js (já está no index.html e na lista do sw.js).
+
+O QUE MUDOU
+1. No alto da tela, ao lado da busca, agora há:
+   - botão "+" : abre um menu com Novo pedido nacional, Nova exportação,
+     Anexar CTEs e Programação de voos.
+   - olho : esconde (desfoca) todos os valores em R$ da tela. Útil para
+     mostrar o sistema a alguém ou atender com outra pessoa por perto.
+     Fica salvo: ao recarregar continua escondido até você apertar de novo.
+   - sino : mostra as pendências do Assistente (até 4). Clicar numa abre
+     o balão do Assistente naquela pendência. A bolinha vermelha some
+     quando não há pendência.
+   - avatar : iniciais do seu nome; clicar abre as Configurações.
+2. Ctrl K agora também é uma paleta de comandos. Com a caixa vazia ele
+   lista os comandos; digitando "hist" + Enter vai para o Histórico.
+   Comandos: Ir para (todas as telas), Novo pedido nacional, Nova
+   exportação, Ocultar ou mostrar valores, Fazer backup agora, Abrir
+   configurações, Manual e tour. A busca de clientes, NF, invoice, AWB e
+   CT-e continua igual.
+3. No celular a barra fica numa linha própria acima do título e a busca
+   vira uma lupa.
+
+LIMITES (de propósito)
+- O olho só esconde o que aparece escrito na tela. Campos onde você
+  DIGITA valores não são escondidos, e documentos (PDF, relatórios,
+  orçamentos) saem sempre com os valores normais.
+- Não mexe em nenhum dado: é só visual.
+
+TESTES: test/e2e73.py (barra, menu +, olho em Hoje/Histórico/Financeiro e
+depois de recarregar, documentos intactos, sino, avatar, paleta de
+comandos, busca de cliente, celular).

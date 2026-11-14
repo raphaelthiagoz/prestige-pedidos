@@ -161,5 +161,5 @@
     if (what === 'reserva') { const o = T.emb[a] = T.emb[a] || {}; o.reserva = o.reserva ? 0 : Date.now(); } else { const k = a + '|' + c, o = T.lin[k] = T.lin[k] || {}; o[what] = o[what] ? 0 : Date.now(); }
     saveTk(T); if (S.view === 'embarque') PP.extra.render('embarque'); refresh();
   });
-  PP.assist = { items, refresh, embHTML, openCount, fish, act };
+  PP.assist = { items, refresh, embHTML, openCount, fish, act, open: i => { idx = Math.max(0, +i || 0); bubOpen = true; const f = $('asFish'); if (f) f.setAttribute('aria-expanded', 'true'); drawBub(); } };
 })();

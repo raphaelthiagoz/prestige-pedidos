@@ -178,18 +178,34 @@
     (PP.exp ? PP.exp.hist() : []).forEach(e => o.push({ g: 'Exportações', ic: PP.icon('exp'), t: `${p3(e.n)}/${e.ano} · ${(e.cons && e.cons.name) || ''}`, s: `${PP.exp.destLabel(e.dest) || ''} · ${dBR(e.dateISO)}`, q: norm([p3(e.n) + '/' + e.ano, e.n, e.cons && e.cons.name, PP.exp.destLabel(e.dest)].join(' ')), go: () => PP.exp.openEntry(e.id) }));
     if (PP.kanban) PP.kanban.searchItems(norm).forEach(x => o.push(x));
     if (PP.mapa) PP.mapa.searchItems(norm).forEach(x => o.push(x));
+    commands().forEach(x => o.push(x));
+    return o;
+  }
+  /* comandos do Ctrl K: ir para telas e ações rápidas (aparecem com a caixa vazia e também quando você digita) */
+  const VIEWS = [['hoje', 'Hoje'], ['pedido', 'Pedido nacional'], ['exp', 'Exportação'], ['mapa', 'Notas de entrada'], ['embarque', 'Programação de voos'], ['frete', 'Frete'], ['hist', 'Histórico'], ['financeiro', 'Financeiro'], ['clientes', 'Clientes'], ['painel', 'Painel'], ['relat', 'Romaneio e relatórios'], ['estoque', 'Estoque e reposição'], ['tarefas', 'Tarefas']];
+  function commands() {
+    const ic = k => { try { return PP.icon(k); } catch (_) { return ''; } }, o = [];
+    const add = (t, s, extra, go) => o.push({ g: 'Comandos', ic: ic('hoje'), t, s, q: norm(t + ' ' + s + ' ' + extra), go });
+    VIEWS.forEach(([k, t]) => { const c = { g: 'Comandos', ic: ic(k) || ic('hoje'), t: 'Ir para ' + t, s: 'Abrir a tela', q: norm('ir para abrir tela ' + t), go: () => PP.go(k) }; o.push(c); });
+    add('Novo pedido nacional', 'Abre um pedido em branco', 'criar novo', () => { PP.go('pedido'); PP.newOrder && PP.newOrder(); });
+    add('Nova exportação', 'Abre a tela de exportação', 'criar novo', () => PP.go('exp'));
+    add('Ocultar ou mostrar valores', 'Esconde os valores em R$ da tela', 'olho privacidade esconder cliente', () => PP.vals && PP.vals.toggle());
+    add('Fazer backup agora', 'Salva o arquivo de backup', 'salvar copia', () => PP.autobk && PP.autobk.backupAgora && PP.autobk.backupAgora());
+    add('Abrir configurações', 'Dados, nuvem, menu e assistente', 'config ajustes', () => { const b = $('btnCfg'); if (b) b.click(); });
+    add('Manual e tour', 'Ajuda e tour guiado', 'ajuda como usar', () => PP.guia && PP.guia.openManual && PP.guia.openManual());
     return o;
   }
   function find(qs) {
-    const toks = norm(qs).split(/\s+/).filter(Boolean); if (!toks.length) return [];
-    return index().filter(x => toks.every(t => x.q.includes(t))).sort((a, b) => (b.q.startsWith(toks[0]) ? 1 : 0) - (a.q.startsWith(toks[0]) ? 1 : 0)).slice(0, 40);
+    const toks = norm(qs).split(/\s+/).filter(Boolean); if (!toks.length) return commands();
+    const cm = x => x.g === 'Comandos' && toks.every(t => norm(x.t).includes(t)) ? 2 : 0; // comando cujo título bate com o que foi digitado vem primeiro
+    return index().filter(x => toks.every(t => x.q.includes(t))).sort((a, b) => (cm(b) + (b.q.startsWith(toks[0]) ? 1 : 0)) - (cm(a) + (a.q.startsWith(toks[0]) ? 1 : 0))).slice(0, 40);
   }
   function drawRes() {
     const box = $('srchRes'); if (!res.length) { box.innerHTML = `<div class="nores">${$('srchIn').value.trim() ? 'Nada encontrado.' : 'Digite um nome, NF, invoice, AWB ou CT-e.'}</div>`; return; }
     let g = '', h = ''; res.forEach((x, i) => { if (x.g !== g) { g = x.g; h += `<div class="sg">${g}</div>`; } h += `<button type="button" data-si="${i}" class="${i === sel ? 'on' : ''}"><span class="si">${x.ic}</span><span><b>${esc(x.t)}</b><small>${esc(x.s)}</small></span></button>`; });
     box.innerHTML = h;
   }
-  function openSearch() { $('srch').hidden = false; $('srchIn').value = ''; res = []; sel = 0; drawRes(); setTimeout(() => $('srchIn').focus(), 20); }
+  function openSearch() { $('srch').hidden = false; $('srchIn').value = ''; res = commands(); sel = 0; drawRes(); setTimeout(() => $('srchIn').focus(), 20); }
   function closeSearch() { $('srch').hidden = true; }
   function pick(i) { const x = res[i]; if (!x) return; closeSearch(); x.go(); }
   $('btnSearch').onclick = openSearch;
@@ -203,5 +219,5 @@
     if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); if (!res.length) return; sel = (sel + (e.key === 'ArrowDown' ? 1 : -1) + res.length) % res.length; drawRes(); const on = $('srchRes').querySelector('.on'); if (on) on.scrollIntoView({ block: 'nearest' }); }
     if (e.key === 'Enter') { e.preventDefault(); pick(sel); }
   });
-  PP.search = { open: openSearch, find };
+  PP.search = { open: openSearch, find, commands };
 })();

@@ -870,3 +870,30 @@ body[data-view=hoje] #vtitle{font-size:clamp(2rem,4.2vw,2.9rem);font-weight:400;
 .assist .amt{-webkit-line-clamp:1}
 /* barra preta vazia no relatório do Painel: o aviso só aparece quando tem texto */
 [data-rpmsg]:empty{display:none}
+
+/* ====================== v29.14 · barra superior: criar, ocultar valores, avisos, avatar ====================== */
+.tools{display:flex;align-items:center;gap:8px;flex:none}
+.ib{width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:var(--glass);display:grid;place-items:center;padding:0;color:var(--fg);position:relative;flex:none}
+.ib:hover{background:var(--glass2);border-color:rgba(255,255,255,.18)}
+.ib.pri{background:linear-gradient(135deg,#3fd6c8,#2fb6d6);color:var(--accent-fg);border:0}.ib.pri:hover{filter:brightness(1.07);background:linear-gradient(135deg,#3fd6c8,#2fb6d6)}
+.ib[aria-pressed=true]{color:var(--accent);border-color:rgba(63,214,200,.55);background:var(--accent-soft)}
+.ib .dot{position:absolute;top:8px;right:9px;width:8px;height:8px;border-radius:50%;background:var(--bad);border:2px solid #101a1d}.ib .dot[hidden]{display:none}
+.ib.avt{background:linear-gradient(135deg,#d6f5ef,#8fdccf);color:#0c2a27;font:600 .8rem var(--head);border:0}
+.tsep{width:1px;height:22px;background:var(--line);flex:none}
+html.hide-vals .pv{filter:blur(8px);user-select:none;-webkit-user-select:none}
+.tpop{position:fixed;z-index:80;min-width:240px;max-width:min(340px,calc(100vw - 20px));padding:6px;border-radius:16px;background:rgba(12,22,25,.97);border:1px solid rgba(255,255,255,.17);box-shadow:0 20px 50px rgba(0,0,0,.55)}
+.tpop h5{margin:6px 12px 4px;font:600 .66rem/1 var(--sans);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.tpop button{display:block;width:100%;text-align:left;border:0;background:none;padding:9px 12px;border-radius:10px;color:var(--fg)}
+.tpop button:hover{background:rgba(255,255,255,.08)}
+.tpop .tnt b{display:block;font-weight:600;font-size:.85rem}.tpop small{display:block;color:var(--muted);font-size:.76rem;margin-top:1px}
+.tpop .tmore,.tpop .tnt0{padding:8px 12px;color:var(--muted);font-size:.8rem}.tpop .tnt0 b{display:block;color:var(--fg)}
+@media(max-width:900px){
+  header{flex-wrap:wrap}
+  .tools{order:-1;width:100%;justify-content:flex-end;gap:6px}
+  header .htit{flex:1 1 100%}
+  .ib{width:38px;height:38px}
+}
+@media(max-width:420px){.ib.avt{display:none}}
+@media(max-width:900px){
+  header #btnSearch{width:38px;height:38px;padding:0;flex:none;background:var(--glass) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23e9f0f2' stroke-width='2' stroke-linecap='round'><circle cx='11' cy='11' r='7'/><path d='M20 20l-3.5-3.5'/></svg>") center/18px no-repeat}
+}
