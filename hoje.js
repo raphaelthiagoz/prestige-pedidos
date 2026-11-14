@@ -128,6 +128,14 @@
   const hdOpen = k => (hd[k] !== undefined ? hd[k] : (() => { try { const v = PP.store.get('hjAll', null); return v === null ? !!navigator.webdriver : !!v; } catch (_) { return false; } })());
   document.addEventListener('toggle', e => { const k = e.target && e.target.dataset && e.target.dataset.hd; if (k) hd[k] = e.target.open; }, true);
   const asRow = a => `<div class="hrow hw"><div class="hav ${a.kind || ''}">${a.icon || '!'}</div><div class="tx"><b>${esc(a.title)}</b><small>${esc(a.sub || '')}</small></div><div class="acts">${a.actions.map(x => `<button type="button" class="${x.primary ? 'primary' : ''}" data-as="${esc(a.key)}|${x.id}">${esc(x.label)}</button>`).join('')}</div></div>`;
+  function resumoDia(st) { // frase-resumo do dia, com os números reais
+    const p = [], n = st.linHoje.length;
+    if (n) p.push(`<b>${n} programaç${n > 1 ? 'ões' : 'ão'} hoje</b>, ${st.cxHoje} caixa${st.cxHoje === 1 ? '' : 's'}`); else p.push('Nenhuma programação hoje');
+    let t = p[0] + '.';
+    if (st.aguardando > 0) t += ` Você tem <b>R$ ${fmt(st.aguardando)}</b> a receber` + (st.atrasados ? ` e <b>${st.atrasados} pedido${st.atrasados > 1 ? 's' : ''} atrasado${st.atrasados > 1 ? 's' : ''}</b>.` : ', nada atrasado.');
+    else t += ' Nada a receber no momento.';
+    return t;
+  }
   function render() {
     title(); const st = stats(), as = PP.assist ? PP.assist.items() : [];
     $('catinfo').textContent = dataExt() + (as.length ? ` · ${as.length} pendência${as.length > 1 ? 's' : ''}` : ' · tudo em dia');
@@ -135,7 +143,7 @@
     const linhas = embDia.flatMap(e => (e.linhas || []).map(l => ({ e, l, r: (fretes().rec[e.id + '|' + l.id]) || {} })));
     const next = st.fut ? `${p3(st.fut.n)}/${st.fut.ano}` : '—';
     $('vHoje').innerHTML = `
-      <div class="hq"><button type="button" class="primary" data-hgo="novo">+ Novo pedido nacional</button><button type="button" data-hgo="exp">+ Exportação</button><button type="button" data-hgo="frete">Anexar CTEs</button><button type="button" data-hgo="embarque">Programação de voos</button></div>
+      <div class="hero"><p class="hsum" id="hSum">${resumoDia(st)}</p><div class="hq"><button type="button" class="primary" data-hgo="novo">+ Novo pedido nacional</button><button type="button" data-hgo="exp">+ Exportação</button><button type="button" data-hgo="frete">Anexar CTEs</button><button type="button" data-hgo="embarque">Programação de voos</button></div></div>
       <div class="hk">
         <div class="card">${st.hojeE.length || !st.prox ? `<div class="lb">Programações hoje</div><div class="big">${st.linHoje.length}</div><div class="nt">${st.linHoje.length ? `${st.cxHoje} caixas · ${st.embarcados} já embarcaram` : 'Nenhuma programação'}</div>` : `<div class="lb">Próxima programação</div><div class="big">${dBR(st.prox.saida).slice(0, 5)}</div><div class="nt">${st.prox.linhas.length} cliente(s) · ${st.prox.linhas.reduce((a, l) => a + (l.caixas || 0), 0)} caixa(s) · hoje não há programação</div>`}</div>
         <div class="card"><div class="lb">Fretes em aberto</div><div class="big ${st.abertoTot > 0 ? 'neg' : ''}">R$ ${fmt(st.abertoTot)}</div><div class="nt">${st.aberto.length ? `${st.aberto.length} cliente(s) devendo` : 'Nenhum frete em aberto'}</div></div>
@@ -156,7 +164,7 @@
     const b = e.target.closest('[data-hgo]'); if (!b || !$('vHoje').contains(b)) return; e.preventDefault();
     const k = b.dataset.hgo; if (k === 'novo') { PP.go('pedido'); PP.newOrder && PP.newOrder(); } else PP.go(k);
   });
-  PP.hoje = { render, title, stats };
+  PP.hoje = { render, title, stats, resumoDia };
 
   /* ---------- busca global ---------- */
   let res = [], sel = 0;

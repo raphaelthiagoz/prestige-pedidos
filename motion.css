@@ -92,3 +92,7 @@ html:not(.fx-full) #side,html:not(.fx-full) main .card,html:not(.fx-full) main .
 html.gl-on:not(.fx-full) main .card,html.gl-on:not(.fx-full) main .step,html.gl-on:not(.fx-full) body[data-view=hoje] #vHoje .card{background:linear-gradient(180deg,rgba(30,46,50,.74),rgba(17,28,32,.7))!important}
 html.gl-on:not(.fx-full) #side{background:rgba(9,17,19,.72)}
 html:not(.fx-full) body::before{animation:none!important}
+
+/* v29.13 · modo leve com a mesma aparência do completo: o desfoque ao vivo some, mas o brilho, a borda e a sombra do vidro ficam */
+html.gl-on:not(.fx-full) main .card,html.gl-on:not(.fx-full) main .step,html.gl-on:not(.fx-full) body[data-view=hoje] #vHoje .card{background:linear-gradient(180deg,rgba(40,60,66,.66),rgba(20,32,36,.62))!important;border-color:rgba(255,255,255,.11)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 14px 36px rgba(0,0,0,.25)}
+html.gl-on:not(.fx-full) #side{background:rgba(5,12,13,.34)}

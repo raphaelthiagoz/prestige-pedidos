@@ -108,7 +108,7 @@
   document.addEventListener('click', e => { const b = e.target.closest('[data-as]'); if (!b) return; const key = b.dataset.as.slice(0, b.dataset.as.lastIndexOf('|')), id = b.dataset.as.slice(b.dataset.as.lastIndexOf('|') + 1); act(key, id); });
 
   /* ---------- widget ---------- */
-  const w = $('assist') || (() => { const d = document.createElement('div'); d.id = 'assist'; d.className = 'assist'; d.innerHTML = `<button type="button" class="afish" id="asFish" aria-label="Abrir o assistente" aria-expanded="false" title="Assistente">${fish('')}<span class="abadge" id="asBadge"></span></button><div class="atx"><b>Assistente</b><small id="asSub">Tudo em dia</small></div><button type="button" class="amute" id="asMute" title="Silenciar o assistente" aria-label="Silenciar o assistente">🔔</button><div class="abub" id="asBub" hidden role="dialog" aria-label="Assistente"></div>`; return d; })();
+  const w = $('assist') || (() => { const d = document.createElement('div'); d.id = 'assist'; d.className = 'assist'; d.innerHTML = `<button type="button" class="afish" id="asFish" aria-label="Abrir o assistente" aria-expanded="false" title="Assistente">${fish('')}<span class="abadge" id="asBadge"></span></button><div class="atx"><b>Assistente</b><small id="asSub">Tudo em dia</small></div><button type="button" class="amute" id="asMute" title="Silenciar o assistente" aria-label="Silenciar o assistente">🔔</button><div class="aml" id="asMl"></div><div class="abub" id="asBub" hidden role="dialog" aria-label="Assistente"></div>`; return d; })();
   let idx = 0, bubOpen = false;
   function place() { const mob = window.matchMedia('(max-width:900px)').matches; if (mob) { w.classList.add('floating'); if (w.parentNode !== document.body) document.body.appendChild(w); } else { w.classList.remove('floating'); const slot = $('assistSlot'); if (slot && w.parentNode !== slot) slot.appendChild(w); } }
   function drawBub() {
@@ -124,9 +124,11 @@
     $('asBadge').textContent = n && !A.mute ? String(n) : ''; $('asSub').textContent = A.mute ? 'Silenciado' : n ? `${n} pendência${n > 1 ? 's' : ''}` : 'Tudo em dia';
     $('asMute').textContent = A.mute ? '🔕' : '🔔'; $('asMute').title = A.mute ? 'Ativar o assistente' : 'Silenciar o assistente';
     const f = document.querySelector('#nav [data-view="frete"]'); if (f) { let bd = f.querySelector('.bdg'); const c = openCount('frete'); if (c) { if (!bd) { bd = document.createElement('b'); bd.className = 'bdg'; f.appendChild(bd); } bd.textContent = c; } else if (bd) bd.remove(); }
+    const ml = $('asMl'); if (ml) ml.innerHTML = (n && !A.mute) ? L.slice(0, 2).map((a, i) => `<button type="button" class="amr ${a.kind || ''}" data-ai="${i}" title="Abrir esta pendência"><span class="amd"></span><span class="amt">${esc(a.title)}</span></button>`).join('') + (n > 2 ? `<small class="amx">+ ${n - 2} outras</small>` : '') : '';
     drawBub();
   }
   w.addEventListener('click', e => {
+    const ai = e.target.closest('[data-ai]'); if (ai) { idx = +ai.dataset.ai; bubOpen = true; $('asFish').setAttribute('aria-expanded', 'true'); drawBub(); return; }
     if (e.target.closest('#asFish')) { bubOpen = !bubOpen; $('asFish').setAttribute('aria-expanded', String(bubOpen)); drawBub(); return; }
     if (e.target.closest('#asMute')) { const A = ast(); A.mute = !A.mute; saveAst(A); if (A.mute) bubOpen = false; PP.toast(A.mute ? 'Assistente silenciado.' : 'Assistente ativado.'); refresh(); return; }
     const nv = e.target.closest('[data-an]'); if (nv) { const L = items(); idx = (idx + (+nv.dataset.an) + L.length) % Math.max(1, L.length); drawBub(); }

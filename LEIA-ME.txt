@@ -624,3 +624,20 @@ v29.12 — Backup em arquivo com um clique
   Firefox, Safari e celular não deixam escolher pasta: continuam baixando o arquivo.
   Limite: o backup guarda os dados do app, mas não os PDFs das NFs nem as fotos de comprovação de mortalidade.
   Não precisa de SQL novo no Supabase.
+
+v29.13 — Novo visual: janela flutuante, título grande, fonte arredondada e Assistente maior
+  Arquivos novos: vendor/fonts/outfit-300.woff2, outfit-400.woff2, outfit-500.woff2 e outfit-600.woff2 (a fonte arredondada dos
+  títulos e dos números grandes; já entram no sw.js; se você montar o zip à mão, inclua a pasta vendor/fonts).
+  Janela flutuante: no computador o sistema vira uma janela de cantos redondos sobre o fundo do aquário, com uma margem em volta.
+  No celular continua ocupando a tela toda.
+  Título grande: na tela Hoje a data fica pequena em cima, "Boa noite, Raphael" aparece grande e logo abaixo vem uma frase
+  com os números do dia, por exemplo "4 programações hoje, 29 caixas. Você tem R$ 22.230,00 a receber e 4 pedidos atrasados."
+  Os números da frase são os mesmos dos cartões.
+  Fonte arredondada (Outfit) nos títulos e nos números grandes. Ela vem junto com o sistema, então funciona sem internet.
+  Assistente maior: em telas altas (a partir de 980 px de altura) o cartão do Assistente no menu mostra as 2 pendências mais
+  urgentes; clicar numa delas abre o balão já nela. Em telas mais baixas o cartão fica no tamanho de antes, para o menu caber.
+  Modo leve: o brilho, a borda e a sombra do vidro agora são os mesmos do modo completo; o que muda é só o desfoque ao vivo.
+  Consertos: o anel de 71% não cobre mais o valor de "Aguardando pagamento"; a barra preta vazia sob os botões do relatório
+  do Painel não aparece mais; no celular os valores grandes não ficam cortados.
+  O cartão "A receber hoje" no rodapé do menu NÃO entrou (você preferiu o Assistente maior).
+  Não precisa de SQL novo no Supabase.
