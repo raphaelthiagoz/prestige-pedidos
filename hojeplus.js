@@ -33,7 +33,7 @@
     const P = pontos(ST.dias), N = P.B.reduce((a, b) => a + b.n, 0);
     const seg = [15, 30, 60].map(d => `<button type="button" data-rd="${d}" aria-pressed="${d === ST.dias}">${d} dias</button>`).join('');
     const head = `<div class="lb"><span>A receber · previsão</span><span class="seg" role="group" aria-label="Período da previsão">${seg}</span></div>`;
-    if (!N && !P.nDepois) return `<div class="card hchart" id="hjRec">${head}<div class="hrnone">Nada a receber nos pedidos nacionais em aberto.</div></div>`;
+    if (!N && !P.nDepois) return `<div class="card hrec" id="hjRec">${head}<div class="hrnone">Nada a receber nos pedidos nacionais em aberto.</div></div>`;
     const W = 600, H = 210, pl = 30, pr = 30, pt = 26, pb = 40, iw = W - pl - pr, ih = H - pt - pb, mx = Math.max(1, P.total);
     const X = i => pl + iw * i / (P.B.length - 1), Y = v => pt + ih - ih * v / mx;
     const pts = P.B.map((b, i) => [X(i), Y(b.acc)]);
@@ -48,10 +48,10 @@
     }).join('');
     const ate = `R$ ${fmt(P.total)}`;
     const depois = P.nDepois ? `<span> · mais R$ ${fmt(P.depois)} vence depois de ${P.dias} dias</span>` : '';
-    return `<div class="card hchart" id="hjRec">${head}
+    return `<div class="card hrec" id="hjRec">${head}
       <div class="hrbig"><b>${ate}</b><small>a vencer até ${dBR(addDias(F.todayISO(), P.dias))}${depois}</small></div>
       <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Previsão acumulada do que vai ser recebido nos próximos ${P.dias} dias">${g}
-        <path d="${solido}" fill="none" stroke="#f2f6f7" stroke-width="2.4" stroke-linecap="round"/>
+        <path d="${solido}" fill="none" stroke="#eef4f6" stroke-width="2.4" stroke-linecap="round"/>
         <path d="${pontil}" fill="none" stroke="#9fb4bb" stroke-width="2.4" stroke-linecap="round" stroke-dasharray="2 7" style="animation:none"/>
         ${dots}</svg>
       <div class="hrleg"><span><i style="background:#ef7b7b"></i>Atrasado</span><span><i style="background:#f0b94d"></i>Vence hoje</span><span><i style="background:#3fd6c8"></i>A vencer</span><span class="hrn">Linha cheia: já venceu · pontilhada: previsão</span></div></div>`;

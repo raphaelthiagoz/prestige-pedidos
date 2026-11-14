@@ -899,9 +899,9 @@ html.hide-vals .pv{filter:blur(8px);user-select:none;-webkit-user-select:none}
 }
 
 /* ====================== v29.15 · previsão a receber e pilha de programações (tela Hoje) ====================== */
-.hchart .seg{display:inline-flex;gap:2px;padding:3px;border-radius:12px;background:rgba(255,255,255,.05);border:1px solid var(--line);text-transform:none;letter-spacing:0}
-.hchart .seg button{border:0;padding:4px 11px;font-size:.76rem;border-radius:9px;color:var(--muted);background:transparent}
-.hchart .seg button[aria-pressed=true]{background:rgba(63,214,200,.18);color:var(--accent)}
+.hrec .seg{display:inline-flex;gap:2px;padding:3px;border-radius:12px;background:rgba(255,255,255,.05);border:1px solid var(--line);text-transform:none;letter-spacing:0}
+.hrec .seg button{border:0;padding:4px 11px;font-size:.76rem;border-radius:9px;color:var(--muted);background:transparent}
+.hrec .seg button[aria-pressed=true]{background:rgba(63,214,200,.18);color:var(--accent)}
 .hrbig{margin-top:8px}.hrbig b{font:400 1.9rem var(--head);letter-spacing:-.01em;font-variant-numeric:tabular-nums}.hrbig small{display:block;color:var(--muted);font-size:.78rem;margin-top:2px}
 .hrleg{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:6px;font-size:.74rem;color:var(--muted)}.hrleg i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}.hrleg .hrn{margin-left:auto}
 .hrnone{color:var(--muted);padding:18px 0 6px;font-size:.88rem}
@@ -919,3 +919,5 @@ html.hide-vals .pv{filter:blur(8px);user-select:none;-webkit-user-select:none}
 .stnav>button{width:32px;height:32px;border-radius:50%;padding:0;border:1px solid var(--line);background:var(--glass);color:var(--fg);font-size:1.1rem;line-height:1}
 .sdots{display:flex;gap:7px}.sdots i{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.22);cursor:pointer}.sdots i.on{background:var(--accent);width:18px;border-radius:4px}
 @media(prefers-reduced-motion:reduce){.stc{transition:none}}
+
+.hrec svg{width:100%;height:auto;display:block;margin-top:6px}.hrec svg g[data-tip]{cursor:default}.hrec svg g[data-tip]:hover circle{filter:brightness(1.25) drop-shadow(0 0 8px rgba(63,214,200,.5))}

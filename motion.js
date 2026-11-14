@@ -97,7 +97,7 @@
 
   /* tooltip do gráfico */
   function tipShow(ev) {
-    const g = ev.target.closest && ev.target.closest('.hchart svg g[data-tip]');
+    const g = ev.target.closest && ev.target.closest('.hchart svg g[data-tip],.hrec svg g[data-tip]');
     if (!g) { if (tip) tip.classList.remove('on'); return; }
     if (!tip) { tip = document.createElement('div'); tip.className = 'mo-tip'; tip.setAttribute('role', 'tooltip'); document.body.appendChild(tip); }
     const raw = g.getAttribute('data-tip'), i = raw.indexOf(':'), head = raw.slice(0, i), parts = raw.slice(i + 1).split('·').map(s => s.trim()).filter(Boolean);
