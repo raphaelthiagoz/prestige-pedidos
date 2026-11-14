@@ -1,0 +1,8 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "app.netlify.sistemaaquario.twa",
+    "sha256_cert_fingerprints": ["80:C6:95:23:80:2A:DD:E5:E7:21:91:6B:B7:ED:D6:78:81:65:68:D8:52:77:F7:66:D8:02:B2:BC:56:F7:7B:D4"]
+  }
+}]
