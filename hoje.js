@@ -153,9 +153,11 @@
       <div class="hg">
         <div class="hcol">
         <details class="card hchart foco" data-hd="chart" ${hdOpen('chart') ? 'open' : ''}><summary><span class="lb" style="margin:0">Vendas programadas <span style="text-transform:none;letter-spacing:0">· gráfico por dia</span></span><span class="alt">Ver gráfico</span></summary><div class="lb"><span>Caixas e quantidade de vendas, só nos dias com venda</span><a href="#" data-hdet="1" style="color:var(--accent);text-decoration:none">Ver detalhes →</a></div>${chart()}</details>
+      ${PP.hojeplus ? PP.hojeplus.receber() : ''}
       <div class="card"><div class="lb"><span>${embTit}${embDia[0] ? ' · ' + dBR(embDia[0].saida) : ''}</span><a href="#" data-hgo="embarque" style="color:var(--accent);text-decoration:none">Ver programação →</a></div>
         ${linhas.length ? linhas.map(({ e, l, r }) => `<div class="hrow"><div class="hav">${esc(ini2(l.cliente))}</div><div class="tx"><b>${esc(l.cliente || '—')}</b><small>${esc([l.aero, l.cidade].filter(Boolean).join(' · '))}${l.caixas ? ' · ' + l.caixas + ' caixa(s)' : ''}</small></div>${chipSt(l.status)}<span class="nt" style="min-width:130px;text-align:right;color:var(--muted)">${r.hora ? 'chega ' + esc(r.hora) : (l.awb ? 'AWB ' + esc(l.awb) : '—')}</span></div>`).join('') : '<p class="empty">Nenhuma programação. Crie uma na Programação de voos.</p>'}
       </div>
+        ${PP.hojeplus ? PP.hojeplus.pilha() : ''}
         </div>
         <div class="card"><div class="lb"><span>Precisa de atenção</span><span>${as.length || ''}</span></div>${as.length ? as.slice(0, 3).map(asRow).join('') + (as.length > 3 ? `<details class="hmais" data-hd="mais" ${hdOpen('mais') ? 'open' : ''}><summary>Mais ${as.length - 3} pendência(s)</summary>${as.slice(3).map(asRow).join('')}</details>` : '') : '<p class="empty">Tudo em dia. Nada pendente agora.</p>'}</div>
       </div>`;

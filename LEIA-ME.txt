@@ -676,3 +676,30 @@ LIMITES (de propósito)
 TESTES: test/e2e73.py (barra, menu +, olho em Hoje/Histórico/Financeiro e
 depois de recarregar, documentos intactos, sino, avatar, paleta de
 comandos, busca de cliente, celular).
+
+==================================================================
+v29.15 · PREVISÃO DO QUE VAI SER RECEBIDO E PILHA DE PRÓXIMAS PROGRAMAÇÕES (tela Hoje)
+==================================================================
+Arquivo novo: hojeplus.js (já está no index.html e na lista do sw.js).
+
+1. Cartão "A receber · previsão" (logo abaixo do gráfico de vendas):
+   - Usa os mesmos pedidos nacionais em aberto do cartão "Aguardando
+     pagamento", agrupados pela data de vencimento (data do pedido +
+     prazo de pagamento das Configurações).
+   - Pontos: Atrasado (vermelho), Hoje (âmbar) e 5 faixas futuras (verde).
+     A linha cheia vai até o que já venceu; a pontilhada é a previsão.
+     Passe o mouse (ou toque) num ponto para ver o valor da faixa, o
+     número de pedidos e o acumulado.
+   - Botões 15 / 30 / 60 dias mudam o período; a escolha fica salva.
+   - O que vence depois do período aparece escrito embaixo do valor.
+   - Pedido pago sai da previsão. Sem nada em aberto: "Nada a receber".
+   - Só entram pedidos nacionais (exportações não têm prazo de cobrança).
+2. Cartão "Próximas programações": pilha com as próximas programações
+   (até 6, a partir de amanhã; as de hoje continuam no cartão de cima).
+   Setas, pontinhos ou um clique no cartão de trás passam para a próxima.
+   "Abrir esta programação" abre a Programação de voos naquela data.
+   Sem programações futuras, o cartão não aparece.
+3. Nenhum dado é alterado: é só leitura do que já existe.
+
+TESTES: test/e2e74.py (valores batendo com "Aguardando pagamento",
+períodos, tooltip, pedido quitado, vazio, pilha, celular).
