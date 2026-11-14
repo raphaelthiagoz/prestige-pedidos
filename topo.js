@@ -73,7 +73,7 @@
     let L = []; try { L = PP.assist ? PP.assist.items() : []; } catch (_) { L = []; }
     openPop(a, '<h5>Avisos</h5>' + (L.length ? L.slice(0, 4).map((x, i) => `<button type="button" class="tnt" data-tb="${i}"><b>${esc(x.title)}</b><small>${esc(x.sub || '')}</small></button>`).join('') + (L.length > 4 ? `<div class="tmore">+ ${L.length - 4} outras. Veja todas na tela Hoje.</div>` : '') : '<div class="tnt0"><b>Tudo em dia</b><small>Nenhum aviso agora.</small></div>'), 'bell');
   }
-  function refreshBell() { const d = $('btnBell') && $('btnBell').querySelector('.dot'); if (!d) return; let n = 0; try { n = PP.assist ? PP.assist.items().length : 0; } catch (_) { n = 0; } d.hidden = !n; }
+  function refreshBell() { const d = $('btnBell') && $('btnBell').querySelector('.dot'); if (!d) return; const bd = $('asBadge'); d.hidden = !(bd && bd.textContent.trim()); } /* lê a bolinha do Assistente: não recalcula as pendências (era pesado) */
   function build() {
     const b = $('btnSearch'); if (!b || $('tools')) return;
     const t = document.createElement('div'); t.id = 'tools'; t.className = 'tools'; b.parentNode.insertBefore(t, b); t.appendChild(b);
@@ -94,6 +94,5 @@
   document.addEventListener('input', e => { if (e.target && e.target.id === 'uNome' && $('btnAvt')) $('btnAvt').textContent = initials(); });
   build();
   on = !!store.get('hideVals', false); sync();
-  refreshBell(); setInterval(refreshBell, 4000);
-  document.addEventListener('click', () => setTimeout(refreshBell, 300), true);
+  refreshBell(); { const bd = $('asBadge'); if (bd) new MutationObserver(refreshBell).observe(bd, { childList: true, characterData: true, subtree: true }); }
 })();
