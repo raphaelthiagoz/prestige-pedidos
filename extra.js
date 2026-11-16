@@ -238,6 +238,29 @@
       <p class="note" id="avMsg" role="status">${av ? `Desconto aplicado: ${String(av.pct).replace('.', ',')}% = R$ ${fmt(av.valor)}. Total a pagar agora: R$ ${fmt(F.devido(e))}.` : ''}</p></div>`;
   }
   document.addEventListener('input', ev => { const t = ev.target; if (t.id !== 'avPct' || S.view !== 'hist') return; const e = S.hist.find(x => x.id === ST.hist.open); if (!e) return; ST.hist.av[e.id] = t.value; if ($('avPrev')) $('avPrev').innerHTML = avPrevTxt(e, t.value); });
+  /* v29.18: boletos e parcelas (30/40/50/60, 25/40 ou outro prazo), com controle de boleto emitido e parcela paga */
+  function parcBox(e) {
+    const P = F.parcelas(e), id = e.id, hoje = F.todayISO(), dev = F.devido(e), soma = F.somaParc(e), und = ST.hist.parcUndo && ST.hist.parcUndo.id === id ? ST.hist.parcUndo : null;
+    const pres = F.PARC_PRESETS.map(([t]) => `<button type="button" data-h="parcPreset" data-id="${id}" data-v="${t}">${t.split('/').join(' / ')}</button>`).join('');
+    const escolha = `<div class="row" style="align-items:center"><span class="note" style="margin:0">${P.length ? 'Refazer com o prazo:' : 'Prazo do boleto, em dias depois do pedido:'}</span>${pres}
+      <label style="color:var(--fg)">outro: <input id="parcTxt" maxlength="40" placeholder="ex.: 20/35/50" style="width:130px" aria-label="Prazos do boleto em dias, separados por barra"></label><button type="button" data-h="parcGerar" data-id="${id}">Usar este prazo</button></div>`;
+    let corpo = '';
+    if (P.length) {
+      const nb = P.filter(p => p.boleto).length, np = P.filter(p => p.pago).length;
+      const st = p => { if (p.pago) return chip('ok', 'Paga'); const d = F.daysBetween(p.venc, hoje); return d > 0 ? chip('bad', 'Vencida há ' + d + (d === 1 ? ' dia' : ' dias')) : d === 0 ? chip('warn', 'Vence hoje') : chip('warn', 'Vence em ' + (-d) + (d === -1 ? ' dia' : ' dias')); };
+      corpo = `<div class="tablewrap"><table id="parcTab"><thead><tr><th>Parcela</th><th class="n">Prazo (dias)</th><th>Vencimento</th><th class="n">Valor (R$)</th><th>Boleto</th><th>Pagamento</th><th>Situação</th></tr></thead><tbody>
+        ${P.map((p, i) => `<tr><td data-l="Parcela">${p.n}ª</td><td class="n" data-l="Prazo (dias)">${p.dias}</td><td data-l="Vencimento"><input type="date" data-pf="venc|${i}" value="${esc(p.venc || '')}" aria-label="Vencimento da parcela ${p.n}"></td>
+        <td class="n" data-l="Valor (R$)"><input type="number" step="0.01" min="0" data-pf="valor|${i}" value="${p.valor}" style="width:104px" aria-label="Valor da parcela ${p.n}"></td>
+        <td data-l="Boleto"><label style="color:var(--fg)"><input type="checkbox" data-pf="boleto|${i}" ${p.boleto ? 'checked' : ''}> emitido${p.boleto ? ' em ' + dBR(p.boleto) : ''}</label></td>
+        <td data-l="Pagamento"><label style="color:var(--fg)"><input type="checkbox" data-pf="pago|${i}" ${p.pago ? 'checked' : ''}> pago${p.pago ? ' em ' + dBR(p.pago) : ''}</label></td><td data-l="Situação">${st(p)}</td></tr>`).join('')}</tbody></table></div>
+        <p class="note" id="parcResumo">Boletos emitidos: <b>${nb} de ${P.length}</b> · parcelas pagas: <b>${np} de ${P.length}</b> · a receber: <b>R$ ${fmt(F.saldo(e))}</b></p>
+        ${Math.abs(soma - dev) > 0.009 ? `<p class="note" style="color:var(--warn,#e0b25a)" id="parcDif">As parcelas somam R$ ${fmt(soma)}, mas o total a pagar é R$ ${fmt(dev)}. ${P.some(p => !p.pago) ? `<button type="button" data-h="parcRedis" data-id="${id}">Redistribuir nas parcelas abertas</button>` : ''}</p>` : ''}
+        <div class="row"><button type="button" class="danger" data-h="parcDel" data-id="${id}">Remover parcelamento deste pedido</button></div>`;
+    } else if (und) corpo = `<p class="note">Parcelamento removido. <button type="button" data-h="parcUndo" data-id="${id}">Desfazer remoção</button></p>`;
+    return `<div class="block" id="parcBox" style="margin-top:14px"><h3>Boletos e parcelas</h3>
+      <p class="note">${P.length ? 'Marque cada boleto como emitido e cada parcela como paga. O saldo, a situação e a previsão a receber seguem as parcelas.' : 'Opcional. Sem parcelas, o pedido vale pelo prazo geral (' + prazo() + ' dias). Com parcelas, o atraso conta a partir do vencimento de cada uma.'}</p>
+      ${corpo}${und && P.length ? `<p class="note">Parcelas anteriores guardadas. <button type="button" data-h="parcUndo" data-id="${id}">Desfazer a troca</button></p>` : ''}${escolha}<p class="note" id="parcMsg" role="status"></p></div>`;
+  }
   function detail(e, hoje) {
     const s = F.situacao(e, hoje, prazo()), mt = ST.hist.mort[e.id] || (ST.hist.mort[e.id] = (e.mort && e.mort.dead) || {}), calc = F.mortalidade(e, mt);
     const dest = (e.mort && e.mort.destino) || 'abater';
@@ -246,8 +269,8 @@
       <div class="split">
         <div><h3>Pagamento e situação</h3>
           <div class="row"><div class="field"><label for="pst">Situação</label><select id="pst" data-pay="status">${['aguardando', 'pago', 'embarcado', 'entregue', 'cancelado'].map(k => `<option value="${k}" ${e.pay.status === k ? 'selected' : ''}>${F.STATUS[k]}</option>`).join('')}</select></div>
-          <div class="field"><label for="ppago">Valor recebido (R$)</label><input id="ppago" type="number" step="0.01" min="0" data-pay="pago" value="${e.pay.pago || ''}"></div>
-          <div class="field"><label for="pdata">Data do pagamento</label><input id="pdata" type="date" data-pay="dataPago" value="${esc(e.pay.dataPago || '')}"></div></div>
+          <div class="field"><label for="ppago">Valor recebido (R$)</label><input id="ppago" type="number" step="0.01" min="0" data-pay="pago" value="${e.pay.pago || ''}" ${F.parcelas(e).length ? 'readonly title="Calculado pelas parcelas pagas"' : ''}></div>
+          <div class="field"><label for="pdata">Data do pagamento</label><input id="pdata" type="date" data-pay="dataPago" value="${esc(e.pay.dataPago || '')}" ${F.parcelas(e).length ? 'readonly title="Calculado pelas parcelas pagas"' : ''}></div></div>
           <div class="field"><label for="pobs">Observação</label><input id="pobs" data-pay="obs" value="${esc(e.pay.obs || '')}"></div>
           <p class="note">Situação agora: ${chip(s.kind, s.label)}. “Atrasado” aparece sozinho quando passam mais de ${prazo()} dias sem pagamento (mude em Configurações).</p>
           ${s.saldo > 0 ? `<div class="field"><label for="cobr">Mensagem de cobrança</label><textarea id="cobr" readonly style="min-height:110px">${esc(F.msgCobranca(e, S.cfg.empresa.nome))}</textarea></div>
@@ -259,7 +282,7 @@
           <p class="note">Digite quantos peixes morreram na chegada. O app calcula o crédito pelo preço cobrado e mostra como fica a nota do pedido.</p>
           <div class="kpis"><div><b>R$ ${fmt(e.totais.total)}</b><span>total do pedido</span></div><div><b style="color:var(--bad,#ef6b6b)">− R$ ${fmt(calc.credito)}</b><span>mortalidade (${fmtInt(calc.mortos)} peixes)</span></div><div><b style="color:var(--ok,#4cc58a)">R$ ${fmt(F.r2(e.totais.total - (dest === 'abater' ? calc.credito : 0)))}</b><span>${dest === 'abater' ? 'fica na nota do pedido' : 'total (crédito vai para o próximo pedido)'}</span></div></div>
           <div class="tablewrap"><table><thead><tr><th>Espécie</th><th class="n">Enviados</th><th class="n">R$ unit.</th><th class="n">Mortos</th></tr></thead><tbody>
-          ${e.lines.map((l, i) => `<tr><td>${esc(l.nome || l.comum)}</td><td class="n">${fmtInt(l.peixes)}</td><td class="n">${fmt(l.preco)}</td><td class="n"><input type="number" min="0" max="${l.peixes}" data-dead="${i}" value="${mt[i] || ''}" aria-label="Mortos ${esc(l.comum)}" style="width:84px"></td></tr>`).join('')}</tbody></table></div>
+          ${e.lines.map((l, i) => `<tr><td>${esc(l.nome || l.comum)}</td><td class="n">${fmtInt(l.peixes)}</td><td class="n">${fmt(l.preco)}</td><td class="n"><input type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" maxlength="6" data-dead="${i}" data-max="${l.peixes}" value="${mt[i] || ''}" aria-label="Mortos ${esc(l.comum)}" style="width:84px"></td></tr>`).join('')}</tbody></table></div>
           <p><b>Crédito: R$ ${fmt(calc.credito)}</b> <span class="note">(${fmtInt(calc.mortos)} peixes)</span></p>
           <div class="field"><label>O que fazer com o crédito</label>
             <label style="color:var(--fg)"><input type="radio" name="mdest" value="abater" ${dest === 'abater' ? 'checked' : ''}> Abater do saldo deste pedido</label>
@@ -267,7 +290,8 @@
           <div class="row"><button type="button" class="primary" data-h="mortSave" data-id="${e.id}">Aplicar ajuste</button><button type="button" data-h="mortNota" data-id="${e.id}" ${calc.credito > 0 ? '' : 'disabled'}>Baixar nota do pedido corrigida (.xlsx)</button></div>
           <p class="note" id="mortMsg" role="status">${e.mort && e.mort.credito ? `Ajuste aplicado: crédito de R$ ${fmt(e.mort.credito)} (${e.mort.destino === 'guardar' ? 'guardado para o próximo pedido' : 'abatido do saldo'}).` : ''}</p>
         </div>
-      </div></section>`;
+      </div>
+      ${parcBox(e)}</section>`;
   }
 
   document.addEventListener('click', async ev => {
@@ -286,6 +310,7 @@
     if (k === 'baixa' && e) {
       const v = F.saldo(e); if (!(v > 0) || !confirm(`Registrar que ${e.cliente.nome} pagou R$ ${fmt(v)}?\n\nO pedido passa para "Pago" hoje (${dBR(F.todayISO())}). Dá para corrigir depois em Ver detalhes.`)) return;
       e.pay = Object.assign({}, e.pay, { status: 'pago', pago: F.r2(((e.pay && e.pay.pago) || 0) + v), dataPago: F.todayISO() }); e.upd = Date.now();
+      if (F.parcelas(e).length) { const np = e.pay.pago; F.parcelas(e).forEach(p => { if (!p.pago) p.pago = F.todayISO(); }); F.syncParc(e); e.pay.pago = np; e.pay.status = 'pago'; e.pay.dataPago = F.todayISO(); }
       PP.saveHist(); PP.renderClientes(); renderHist(); if (PP.assist) PP.assist.refresh(); PP.toast('Pagamento de ' + e.cliente.nome + ' registrado.', 'ok'); return;
     }
     if (k === 'notinha' && e) {
@@ -313,6 +338,26 @@
       e.avista = { pct, valor: F.valorAvista(e, pct), em: F.todayISO(), ate: ($('avAte') || {}).value || '' }; e.upd = Date.now(); delete ST.hist.av[e.id];
       PP.saveHist(); PP.renderClientes(); renderHist(); if (PP.assist) PP.assist.refresh(); PP.toast('Desconto à vista aplicado.', 'ok');
     }
+    else if ((k === 'parcPreset' || k === 'parcGerar') && e) {
+      const D = F.parcDias(k === 'parcPreset' ? b.dataset.v : ($('parcTxt') || {}).value);
+      if (!D.length) { msg('parcMsg', 'Digite os prazos em dias separados por barra, por exemplo 30/40/50/60.'); return; }
+      const tem = F.parcelas(e).length, antes = (e.pay && e.pay.pago) || 0;
+      if (tem && !confirm('Refazer as parcelas deste pedido?\n\nAs marcações de boleto emitido e de parcela paga voltam do zero (o valor já recebido é aplicado de novo, em ordem). Dá para desfazer logo em seguida.')) return;
+      ST.hist.parcUndo = tem ? { id: e.id, parc: JSON.parse(JSON.stringify(e.pay.parc)) } : null;
+      e.pay.parc = F.gerarParcelas(e, D); F.aplicarRecebido(e); F.syncParc(e); e.upd = Date.now();
+      PP.saveHist(); PP.renderClientes(); renderHist(); if (PP.assist) PP.assist.refresh(); if (PP.hoje && S.view === 'hoje') PP.hoje.render();
+      PP.toast(Math.abs(e.pay.pago - antes) > 0.005 ? `Parcelas criadas. O valor recebido ficou em R$ ${fmt(e.pay.pago)} (soma das parcelas pagas); antes eram R$ ${fmt(antes)}.` : `Parcelas criadas: ${D.join(' / ')} dias.`, 'ok');
+    }
+    else if (k === 'parcRedis' && e) { F.redistribuir(e); F.syncParc(e); e.upd = Date.now(); PP.saveHist(); renderHist(); if (PP.assist) PP.assist.refresh(); PP.toast('Valores das parcelas abertas ajustados ao total a pagar.', 'ok'); }
+    else if (k === 'parcDel' && e) {
+      if (!confirm('Remover o parcelamento deste pedido?\n\nO valor já recebido continua. O pedido volta a valer pelo prazo geral. Dá para desfazer logo em seguida.')) return;
+      ST.hist.parcUndo = { id: e.id, parc: JSON.parse(JSON.stringify(F.parcelas(e))) }; e.pay.parc = []; e.upd = Date.now();
+      PP.saveHist(); PP.renderClientes(); renderHist(); if (PP.assist) PP.assist.refresh(); if (PP.hoje && S.view === 'hoje') PP.hoje.render(); PP.toast('Parcelamento removido. Use "Desfazer remoção" para voltar.', 'ok');
+    }
+    else if (k === 'parcUndo' && e && ST.hist.parcUndo && ST.hist.parcUndo.id === e.id) {
+      e.pay.parc = ST.hist.parcUndo.parc; ST.hist.parcUndo = null; F.syncParc(e); e.upd = Date.now();
+      PP.saveHist(); PP.renderClientes(); renderHist(); if (PP.assist) PP.assist.refresh(); if (PP.hoje && S.view === 'hoje') PP.hoje.render(); PP.toast('Parcelas de volta como estavam.', 'ok');
+    }
     else if (k === 'avDel' && e) { e.avista = null; e.upd = Date.now(); delete ST.hist.av[e.id]; PP.saveHist(); PP.renderClientes(); renderHist(); if (PP.assist) PP.assist.refresh(); PP.toast('Desconto removido: o pedido voltou ao valor de antes.', 'ok'); }
     else if (k === 'avNota' && e && e.avista) {
       const dead = e.mort && e.mort.destino === 'abater' ? (e.mort.dead || {}) : {}, nc = F.notaCorrigida(e, F.mortalidade(e, dead));
@@ -331,19 +376,30 @@
     if (t.id === 'hq') { ST.hist.q = t.value; renderHist(); const i = $('hq'); i.focus(); i.setSelectionRange(t.value.length, t.value.length); }
     else if (t.dataset.dead !== undefined) {
       const e = S.hist.find(x => x.id === ST.hist.open); if (!e) return;
-      ST.hist.mort[e.id] = Object.assign({}, ST.hist.mort[e.id]); ST.hist.mort[e.id][t.dataset.dead] = parseInt(t.value, 10) || 0;
-      const pos = t.dataset.dead; renderHist(); const i = document.querySelector(`[data-dead="${pos}"]`); if (i) i.focus();
+      const mx = parseInt(t.dataset.max, 10) || 0, n = Math.min(parseInt(String(t.value).replace(/\D/g, ''), 10) || 0, mx || Infinity);
+      ST.hist.mort[e.id] = Object.assign({}, ST.hist.mort[e.id]); ST.hist.mort[e.id][t.dataset.dead] = n;
+      const pos = t.dataset.dead; renderHist(); const i = document.querySelector(`[data-dead="${pos}"]`);
+      if (i) { i.focus(); const L = i.value.length; try { i.setSelectionRange(L, L); } catch (_) { /* ok */ } } /* o cursor fica no fim: antes voltava para o começo e o número saía ao contrário */
     }
   });
   document.addEventListener('change', ev => {
     if (S.view !== 'hist') return;
     const t = ev.target;
     if (t.id === 'hst') { ST.hist.st = t.value; renderHist(); }
+    else if (t.dataset.pf) {
+      const e = S.hist.find(x => x.id === ST.hist.open); if (!e) return;
+      const [c, i] = t.dataset.pf.split('|'), p = F.parcelas(e)[+i]; if (!p) return;
+      if (c === 'boleto' || c === 'pago') p[c] = t.checked ? F.todayISO() : '';
+      else if (c === 'valor') p.valor = Math.max(0, F.r2(parseFloat(t.value) || 0));
+      else if (c === 'venc') { p.venc = t.value; if (t.value) p.dias = F.daysBetween(e.dataISO, t.value); }
+      F.syncParc(e); e.upd = Date.now(); PP.saveHist(); PP.renderClientes(); renderHist(); if (PP.assist) PP.assist.refresh(); if (PP.hoje && S.view === 'hoje') PP.hoje.render();
+    }
     else if (t.dataset.pay) {
       const e = S.hist.find(x => x.id === ST.hist.open); if (!e) return;
       e.pay[t.dataset.pay] = t.dataset.pay === 'pago' ? (parseFloat(t.value) || 0) : t.value;
       if (t.dataset.pay === 'pago' && e.pay.pago >= F.devido(e) - 0.005 && e.pay.pago > 0 && e.pay.status === 'aguardando') e.pay.status = 'pago';
       if (t.dataset.pay === 'status' && t.value === 'pago' && !e.pay.pago) { e.pay.pago = F.devido(e); e.pay.dataPago = e.pay.dataPago || F.todayISO(); }
+      if (t.dataset.pay === 'status' && t.value === 'pago') F.parcelas(e).forEach(p => { if (!p.pago) p.pago = F.todayISO(); });
       e.upd = Date.now(); PP.saveHist(); renderHist();
     }
   });

@@ -130,11 +130,50 @@
 
   // situação (item 18)
   const STATUS = { aguardando: 'Aguardando pagamento', pago: 'Pago', embarcado: 'Embarcado', entregue: 'Entregue', cancelado: 'Cancelado' };
+  /* v29.18: boleto parcelado (ex.: 30/40/50/60 ou 25/40). e.pay.parc = [{n, dias, venc, valor, boleto, pago}]; boleto e pago guardam a data (AAAA-MM-DD) ou ''. */
+  const PARC_PRESETS = [['30/40/50/60', [30, 40, 50, 60]], ['25/40', [25, 40]], ['30/60', [30, 60]], ['30/45/60', [30, 45, 60]], ['30', [30]]];
+  function parcDias(txt) {
+    const L = String(txt == null ? '' : txt).split(/[^0-9]+/).filter(Boolean).map(Number).filter(n => n >= 1 && n <= 365);
+    return [...new Set(L)].sort((x, y) => x - y).slice(0, 12);
+  }
+  const parcelas = e => ((e && e.pay && Array.isArray(e.pay.parc)) ? e.pay.parc : []);
+  function gerarParcelas(e, dias) {
+    const D = Array.isArray(dias) ? dias : parcDias(dias); if (!D.length) return [];
+    const tot = devido(e), base = Math.floor(tot / D.length * 100) / 100; let acc = 0;
+    return D.map((d, i) => { const v = i === D.length - 1 ? r2(tot - acc) : base; acc = r2(acc + v); return { n: i + 1, dias: d, venc: addDays(e.dataISO, d), valor: v, boleto: '', pago: '' }; });
+  }
+  const somaParc = e => r2(parcelas(e).reduce((s, p) => s + (+p.valor || 0), 0));
+  /* mantém "valor recebido" e "situação" coerentes com as parcelas marcadas como pagas */
+  function syncParc(e) {
+    const P = parcelas(e); if (!P.length) return e;
+    const pg = P.filter(p => p.pago);
+    e.pay.pago = r2(pg.reduce((s, p) => s + (+p.valor || 0), 0));
+    e.pay.dataPago = pg.length ? pg.map(p => p.pago).sort().pop() : '';
+    if (pg.length === P.length) { if (e.pay.status === 'aguardando') e.pay.status = 'pago'; } else if (e.pay.status === 'pago') e.pay.status = 'aguardando';
+    return e;
+  }
+  /* refaz só os valores das parcelas ainda abertas para fechar com o total a pagar (depois de mortalidade/desconto) */
+  function redistribuir(e) {
+    const P = parcelas(e), ab = P.filter(p => !p.pago); if (!ab.length) return e;
+    const pg = r2(P.filter(p => p.pago).reduce((s, p) => s + (+p.valor || 0), 0)), rest = Math.max(0, r2(devido(e) - pg)), base = Math.floor(rest / ab.length * 100) / 100;
+    ab.forEach((p, i) => { p.valor = i === ab.length - 1 ? r2(rest - base * (ab.length - 1)) : base; });
+    return e;
+  }
+  /* pedido que já tinha valor recebido antes de virar parcelado: marca como pagas, em ordem, as parcelas que cabem nesse valor */
+  function aplicarRecebido(e) {
+    let sobra = r2((e.pay && e.pay.pago) || 0); const d = (e.pay && e.pay.dataPago) || todayISO();
+    parcelas(e).forEach(p => { if (sobra + 0.005 >= p.valor && p.valor > 0) { p.pago = d; sobra = r2(sobra - p.valor); } });
+    return e;
+  }
+  const parcAberta = e => parcelas(e).filter(p => !p.pago);
+  const proxVenc = e => { const L = parcAberta(e).map(p => p.venc).filter(Boolean).sort(); return L[0] || ''; };
   function situacao(e, hoje, prazo) {
     const st = (e.pay && e.pay.status) || 'aguardando', s = saldo(e), dias = daysBetween(e.dataISO, hoje || todayISO());
     if (st === 'cancelado') return { key: st, label: STATUS[st], kind: 'warn', saldo: 0, dias };
     if (s <= 0 && (e.pay.pago || 0) > 0) return { key: 'pago', label: 'Pago', kind: 'ok', saldo: 0, dias };
     if (st === 'pago') return { key: st, label: 'Pago', kind: 'ok', saldo: 0, dias };
+    const pv = proxVenc(e);
+    if (pv) { const h = hoje || todayISO(), at = daysBetween(pv, h); if (at > 0) return { key: 'atrasado', label: 'Atrasado · ' + at + ' dia' + (at === 1 ? '' : 's') + ' (parcela de ' + pv.split('-').reverse().slice(0, 2).join('/') + ')', kind: 'bad', saldo: s, dias, venc: pv }; return { key: st, label: (STATUS[st] || st) + ' · próx. parcela ' + pv.split('-').reverse().slice(0, 2).join('/'), kind: st === 'aguardando' ? 'warn' : 'ok', saldo: s, dias, venc: pv }; }
     if (dias > (prazo == null ? 7 : prazo)) return { key: 'atrasado', label: 'Atrasado · ' + dias + ' dias', kind: 'bad', saldo: s, dias };
     return { key: st, label: STATUS[st] || st, kind: st === 'aguardando' ? 'warn' : 'ok', saldo: s, dias };
   }
@@ -378,5 +417,5 @@
   }
 
   return { todayISO, addDays, daysBetween, r2, parsePrecos, priceFor, soldBoxes, effCatalog, usoOf, makeEntry, devido, baseAvista, valorAvista, saldo, creditoCliente, creditRow, mortalidade, notaCorrigida,
-    STATUS, situacao, msgCobranca, msgMortalidade, msgAvista, avistaSit, crossCheck, romaneio, painel, reposicao, ibamaRows, spokenToDigits, deriveKeys, encryptJSON, decryptJSON, cloudMod, mergeData, idIndex, mergeHist, mergeClientes, cloudPull, cloudPush, active };
+    PARC_PRESETS, redistribuir, aplicarRecebido, parcDias, parcelas, gerarParcelas, somaParc, syncParc, parcAberta, proxVenc, STATUS, situacao, msgCobranca, msgMortalidade, msgAvista, avistaSit, crossCheck, romaneio, painel, reposicao, ibamaRows, spokenToDigits, deriveKeys, encryptJSON, decryptJSON, cloudMod, mergeData, idIndex, mergeHist, mergeClientes, cloudPull, cloudPush, active };
 });

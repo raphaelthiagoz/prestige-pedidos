@@ -16,6 +16,8 @@
     const hoje = F.todayISO(), step = Math.max(1, Math.round(N / 5)), L = [];
     (S.hist || []).filter(F.active).forEach(e => {
       const s = F.situacao(e, hoje, prazo()); if (!(s.saldo > 0)) return;
+      const ab = F.parcAberta ? F.parcAberta(e) : [];
+      if (ab.length) { const so = ab.reduce((a, p) => a + (+p.valor || 0), 0), fa = so > 0 ? s.saldo / so : 0; ab.forEach(p => L.push({ v: p.venc || addDias(e.dataISO, prazo()), saldo: F.r2((+p.valor || 0) * fa) })); return; }
       L.push({ v: addDias(e.dataISO, prazo()), saldo: s.saldo });
     });
     const B = [{ k: 'atr', nome: 'Atrasado', rot: 'Atras.', n: 0, v: 0 }, { k: 'hoje', nome: 'Hoje', rot: 'Hoje', n: 0, v: 0 }];

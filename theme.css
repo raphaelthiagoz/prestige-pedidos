@@ -937,3 +937,14 @@ main .seg>button[aria-pressed=true],main .rpchips>button[aria-pressed=true],main
 .hmenu button.danger{color:#f08a8a}.hmenu button.danger:hover{background:rgba(239,107,107,.14)}
 .rpchips{width:fit-content;max-width:100%}
 .hrec .lb{flex-wrap:wrap;align-items:center}.hrec .seg{flex-wrap:nowrap;margin-left:auto}
+/* v29.18: boletos e parcelas — a tabela rola dentro do bloco, a página não */
+#hdet .split>div{min-width:0}
+#parcBox{min-width:0;margin-top:18px}#parcBox .row{margin-top:10px}#parcBox .tablewrap{max-width:100%;overflow-x:auto}
+#parcTab th,#parcTab td{white-space:nowrap}
+#parcTab input[type=date]{min-width:136px}
+@media (max-width:720px){
+  #parcTab thead{display:none}#parcTab,#parcTab tbody{display:block}
+  #parcTab tr{display:block;border:1px solid var(--line);border-radius:14px;padding:8px 12px;margin:10px 0}
+  #parcTab td{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:5px 0;border:0;white-space:normal}
+  #parcTab td::before{content:attr(data-l);opacity:.7;font-size:.82rem}
+}

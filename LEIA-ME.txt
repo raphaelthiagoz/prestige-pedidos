@@ -744,3 +744,34 @@ v29.17 · PREPARAÇÃO PARA VIRAR APP NO CELULAR (APK)
 - Atenção: o site responde 401 (login do Netlify) para quem está de fora, e
   por isso o PWABuilder não consegue ler o sistema enquanto a proteção
   estiver ligada.
+
+
+v29.18 · MORTALIDADE DIGITÁVEL, BOLETOS PARCELADOS E SELO DO NETLIFY
+==================================================================
+- Mortalidade: o campo "Mortos" aceitava só digitar de trás para frente
+  (205 virava 502) porque a tela se redesenhava a cada tecla e o cursor
+  voltava para o começo. Agora o cursor fica no fim, dá para digitar 205
+  normalmente, só entram números e o valor trava no total enviado da espécie.
+- Boletos e parcelas (Histórico > Ver detalhes > "Boletos e parcelas"):
+  * Prazos prontos: 30/40/50/60, 25/40, 30/60, 30/45/60 e 30; ou digite o
+    seu (ex.: 20/35/50). O total a pagar é dividido em parcelas iguais
+    (os centavos sobram na última) e cada vencimento é a data do pedido
+    mais o prazo.
+  * Cada parcela tem: vencimento (editável), valor (editável), "boleto
+    emitido" e "pago". Marcar grava a data de hoje; desmarcar limpa.
+  * Com parcelas, o atraso conta a partir do vencimento de cada parcela
+    (e não mais pelo prazo geral). A situação mostra "próx. parcela dd/mm".
+  * "Valor recebido" e "Data do pagamento" passam a ser calculados pelas
+    parcelas pagas. Pagar todas deixa o pedido como Pago; desmarcar uma
+    reabre. "Dar baixa" quita todas as parcelas abertas.
+  * Se a mortalidade ou o desconto mudarem o total e a soma das parcelas
+    não fechar, aparece um aviso com o botão "Redistribuir nas parcelas
+    abertas" (a parcela já paga não muda).
+  * "Refazer com o prazo" e "Remover parcelamento" pedem confirmação e têm
+    "Desfazer" logo em seguida. Pedido sem parcelas continua como antes.
+  * A previsão a receber (tela Hoje) usa o vencimento de cada parcela.
+  * No celular a tabela vira um cartão por parcela.
+- Selo "Powered by Netlify": é colocado pelo próprio Netlify no canto de
+  baixo, fora do código do sistema (o CSS do app não alcança). Para tirar:
+  Netlify > o site > Project configuration > General > "Powered by Netlify
+  badge" > desligar > salvar. Vale na hora, sem publicar de novo.
