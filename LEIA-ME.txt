@@ -775,3 +775,21 @@ v29.18 · MORTALIDADE DIGITÁVEL, BOLETOS PARCELADOS E SELO DO NETLIFY
   baixo, fora do código do sistema (o CSS do app não alcança). Para tirar:
   Netlify > o site > Project configuration > General > "Powered by Netlify
   badge" > desligar > salvar. Vale na hora, sem publicar de novo.
+
+
+v29.19 · FRETES: PLANILHA CERTA E HORA DIGITÁVEL
+==================================================================
+- Planilha FRETE_dd.mm.xlsx: o modelo trazia uma coluna E amarela com borda
+  só até a linha 5 (e linhas de exemplo embaixo), e com 8 clientes a tabela
+  saía "faltando" pedaço. Agora a tabela é só A–D (cliente, frete, taxa DM,
+  total), com borda do cabeçalho até o TOTAL, e nada sobra à direita nem
+  embaixo, qualquer que seja o número de clientes.
+- Hora de chegada: o campo era o seletor de hora do navegador, que gravava
+  assim que o horário ficava válido ("11:1") e redesenhava a tabela antes de
+  você digitar o "0". Agora é um campo de texto com máscara:
+  * digite 1110 e sai 11:10; digite 930 e sai 09:30 (o 9 já completa o zero);
+    digite só 06 e vira 06:00;
+  * grava ao apertar Enter ou Tab; Enter já pula para a hora do próximo
+    cliente (o mesmo vale para a coluna Frete);
+  * hora impossível (25:75) é recusada com aviso, e campo vazio apaga a hora;
+  * ao entrar no campo, o texto fica selecionado: é só digitar por cima.

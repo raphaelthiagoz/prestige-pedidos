@@ -102,7 +102,7 @@
       <td class="n">${vol}</td>
       <td class="n"><input data-fi="frete" data-k="${k}" value="${+r.frete > 0 ? money(r.frete) : ''}" placeholder="valor" style="width:94px;text-align:right" aria-label="Frete ${esc(l.cliente)}">${r.por ? ' <span class="chip ok" title="' + esc(r.arq || '') + '">CTE</span>' : ''}</td>
       <td class="n">${+r.frete > 0 ? money(r.taxa != null && r.taxa !== '' ? r.taxa : D.cfg.taxa) : '—'}</td><td class="n"><b>${t ? money(t) : '—'}</b></td>
-      <td><input type="time" data-fi="hora" data-k="${k}" value="${esc(r.hora || '')}" style="width:116px" aria-label="Hora de chegada ${esc(l.cliente)}">${r.entrega ? `<div class="frprev" title="Data prevista de entrega que está no CT-e">prev. ${esc(String(r.entrega).slice(0, 5))}</div>` : ''}${r.horaMail && r.hora ? `<div class="frprev ok" title="Horário que o despachante escreveu no e-mail">e-mail do despachante${r.vooMail ? ' · ' + esc(r.vooMail) : ''}</div>` : ''}${r.horaAuto && r.hora ? '<div class="frprev warn" title="Sugerida pela última vez que você informou a hora deste voo. Confirme com o rastreio.">sugerida · confirme</div>' : ''}</td>
+      <td><input type="text" inputmode="numeric" maxlength="5" placeholder="hh:mm" autocomplete="off" data-fi="hora" data-k="${k}" value="${esc(r.hora || '')}" style="width:92px" aria-label="Hora de chegada ${esc(l.cliente)}">${r.entrega ? `<div class="frprev" title="Data prevista de entrega que está no CT-e">prev. ${esc(String(r.entrega).slice(0, 5))}</div>` : ''}${r.horaMail && r.hora ? `<div class="frprev ok" title="Horário que o despachante escreveu no e-mail">e-mail do despachante${r.vooMail ? ' · ' + esc(r.vooMail) : ''}</div>` : ''}${r.horaAuto && r.hora ? '<div class="frprev warn" title="Sugerida pela última vez que você informou a hora deste voo. Confirme com o rastreio.">sugerida · confirme</div>' : ''}</td>
       <td>${aviso}</td><td style="white-space:nowrap">${chipPg(e, l)} <button type="button" class="${r.pago ? '' : 'baixa'}" data-fr="${r.pago ? 'desfaz' : 'baixa'}" data-k="${k}">${r.pago ? 'Desfazer' : 'Dar baixa'}</button></td></tr>`;
     }).join('');
   }
@@ -189,6 +189,9 @@
     const tr = ws.getRow(2 + rows.length), n1 = 2, n2 = 1 + rows.length;
     tr.getCell(1).value = 'TOTAL'; tr.getCell(2).value = { formula: `SUM(B${n1}:B${n2})`, result: FC.r2(rows.reduce((a, x) => a + +x.r.frete, 0)) }; tr.getCell(3).value = { formula: `SUM(C${n1}:C${n2})`, result: FC.r2(rows.reduce((a, x) => a + (x.t - +x.r.frete), 0)) }; tr.getCell(4).value = { formula: `SUM(D${n1}:D${n2})`, result: FC.r2(rows.reduce((a, x) => a + x.t, 0)) };
     for (let c = 1; c <= 4; c++) { tr.getCell(c).style = Object.assign({}, sty[c - 1]); tr.getCell(c).font = Object.assign({}, sty[c - 1].font || {}, { bold: true }); }
+    /* v29.19: o modelo traz uma coluna E amarela com borda só até a linha 5 e linhas de exemplo abaixo; a tabela é só A–D, então limpa tudo que sobra */
+    for (let r = 1; r <= Math.max(ws.rowCount, 3 + rows.length); r++) { const rw = ws.getRow(r); for (let c = 5; c <= Math.max(ws.columnCount, 6); c++) { const ce = rw.getCell(c); ce.value = null; ce.style = {}; } if (r > 2 + rows.length) for (let c = 1; c <= 4; c++) { const ce = rw.getCell(c); ce.value = null; ce.style = {}; } }
+    try { ws.getColumn(5).width = 8.43; } catch (_) {}
     const buf = await wb.xlsx.writeBuffer(), d = dBR(e.saida).slice(0, 5).replace('/', '.');
     PP.saveBlob(`FRETE_${d}.xlsx`, new Blob([buf], { type: PP.MIME.xlsx }));
     $('frList').textContent = rows.length < e.linhas.length ? `Baixei ${rows.length} de ${e.linhas.length} clientes (os sem frete não entram).` : 'Planilha baixada.';
@@ -196,6 +199,18 @@
   function latamUrl(awb) { const m = String(awb || '').match(/(\d{3})\D*(\d{8})/); return m ? 'https://www.latamcargo.com/en/trackshipment?docNumber=' + m[2] + '&docPrefix=' + m[1] + '&soType=SO' : ''; }
   async function copy(text) { try { await navigator.clipboard.writeText(text); return true; } catch (_) { const t = document.createElement('textarea'); t.value = text; document.body.appendChild(t); t.select(); let ok = false; try { ok = document.execCommand('copy'); } catch (_2) { /* */ } t.remove(); return ok; } }
 
+  /* v29.19: hora digitada direto (o campo de hora do navegador disparava ao formar "11:1" e a tela se redesenhava antes do "0") */
+  function maskHora(v) {
+    let d = String(v == null ? '' : v).replace(/\D/g, '').slice(0, 4); if (d && +d[0] > 2) d = '0' + d;
+    return d.length > 2 ? d.slice(0, 2) + ':' + d.slice(2) : d;
+  }
+  function normHora(v) { // '' (limpar) | 'hh:mm' | null (inválida)
+    const d = String(v || '').replace(/\D/g, ''); if (!d) return '';
+    const m = maskHora(d).replace(':', ''), hh = m.slice(0, 2).padStart(2, '0'), mm = (m.slice(2) + '00').slice(0, 2);
+    return +hh <= 23 && +mm <= 59 ? hh + ':' + mm : null;
+  }
+  const irParaProximo = (fi, k) => { ST.nextFocus = null; const L = [...view().querySelectorAll(`[data-fi="${fi}"]`)], i = L.findIndex(x => x.dataset.k === k); if (L[i + 1]) ST.nextFocus = { fi, k: L[i + 1].dataset.k }; };
+  const focarProximo = () => { const n = ST.nextFocus; ST.nextFocus = null; if (!n || !view()) return; const el = view().querySelector(`[data-fi="${n.fi}"][data-k="${n.k}"]`); if (el) { el.focus(); try { el.select(); } catch (_) {} } };
   /* ---------- eventos ---------- */
   const view = () => $('vFrete');
   document.addEventListener('change', async ev => {
@@ -206,11 +221,15 @@
     const fi = t.dataset.fi; if (!fi) return;
     const e = curEmb(), [eid, lid] = (t.dataset.k || '').split('|'), l = e && e.linhas.find(x => x.id === lid);
     if (fi === 'taxa') { const v = FC.parseMoney(t.value); if (v >= 0) D.cfg.taxa = v; save(); render(); return; }
-    if (fi === 'frete' && l) { const v = FC.parseMoney(t.value); setR(e, l, { frete: v > 0 ? v : '', taxa: (R(e, l).taxa != null && R(e, l).taxa !== '') ? R(e, l).taxa : D.cfg.taxa, por: R(e, l).por }); if (!(v > 0)) setR(e, l, { frete: '' }); save(); render(); return; }
+    if (fi === 'frete' && l) { const v = FC.parseMoney(t.value); setR(e, l, { frete: v > 0 ? v : '', taxa: (R(e, l).taxa != null && R(e, l).taxa !== '') ? R(e, l).taxa : D.cfg.taxa, por: R(e, l).por }); if (!(v > 0)) setR(e, l, { frete: '' }); save(); render(); focarProximo(); return; }
     if (fi === 'hora' && l) {
-      setR(e, l, { hora: t.value, horaAuto: false, horaMail: false, avisado: false, msg: null });
-      const rr = R(e, l); if (t.value && rr.voo && l.aero) { D.cfg.horas = D.cfg.horas || {}; D.cfg.horas[rr.voo + '|' + l.aero] = t.value; } // memoriza: voo 3747 em BSB chega às hh:mm
-      save(); render(); return;
+      const hv = normHora(t.value);
+      if (hv === null) { ST.msg = 'Hora inválida (' + t.value + '). Digite entre 00:00 e 23:59, por exemplo 1110 para 11:10.'; render(); return; }
+      if (ST.msg && /^Hora inválida/.test(ST.msg)) ST.msg = '';
+      if (hv === (R(e, l).hora || '')) { render(); focarProximo(); return; }
+      setR(e, l, { hora: hv, horaAuto: false, horaMail: false, avisado: false, msg: null });
+      const rr = R(e, l); if (hv && rr.voo && l.aero) { D.cfg.horas = D.cfg.horas || {}; D.cfg.horas[rr.voo + '|' + l.aero] = hv; } // memoriza: voo 3747 em BSB chega às hh:mm
+      save(); render(); focarProximo(); return;
     }
     if (fi === 'detalhe' || fi === 'vooawb') { D.cfg[fi] = t.checked; save(); render(); return; }
     if (fi === 'q') return;
@@ -219,8 +238,14 @@
     const t = ev.target; if (!view() || !view().contains(t)) return; const fi = t.dataset.fi;
     if (fi === 'modelo') { D.cfg.modelo = t.value; save(); const e = curEmb(), ta = view().querySelector('[data-fi="msg"]'); if (ta && e) { const l = e.linhas.find(x => key(e, x) === ST.sel); if (l && !R(e, l).msg) ta.value = msgOf(e, l); } return; }
     if (fi === 'msg') { const e = curEmb(), [, lid] = t.dataset.k.split('|'), l = e && e.linhas.find(x => x.id === lid); if (l) { setR(e, l, { msg: t.value, avisado: false }); save(); } return; }
+    if (fi === 'hora') { const v = maskHora(t.value); if (v !== t.value) t.value = v; return; }
     if (fi === 'q') { ST.q = t.value; const pos = t.selectionStart; render(); const n = $('frQ'); if (n) { n.focus(); n.setSelectionRange(pos, pos); } }
   });
+  document.addEventListener('keydown', ev => {
+    const t = ev.target; if (ev.key !== 'Enter' || !view() || !view().contains(t) || !t.dataset || !(t.dataset.fi === 'hora' || t.dataset.fi === 'frete')) return;
+    ev.preventDefault(); irParaProximo(t.dataset.fi, t.dataset.k); t.blur(); if (ST.nextFocus) focarProximo();
+  });
+  document.addEventListener('focusin', ev => { const t = ev.target; if (t && t.dataset && (t.dataset.fi === 'hora' || t.dataset.fi === 'frete') && view() && view().contains(t)) { try { t.select(); } catch (_) {} } });
   document.addEventListener('click', async ev => {
     const b = ev.target.closest('[data-fr]'); if (!b || !view() || !view().contains(b)) return; ev.preventDefault();
     const a = b.dataset.fr, e = curEmb(), k = b.dataset.k, find = kk => { const [eid, lid] = (kk || '').split('|'), ee = (S.embarques || []).find(x => x.id === eid), ll = ee && ee.linhas.find(x => x.id === lid); return ee && ll ? { e: ee, l: ll } : null; };
