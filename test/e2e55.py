@@ -32,8 +32,8 @@ with sync_playwright() as p:
     import base64
     b64=base64.b64encode(open('test/fx/real_mail_print.png','rb').read()).decode()
     pg.evaluate("""(b)=>{const by=Uint8Array.from(atob(b),c=>c.charCodeAt(0));const dt=new DataTransfer();dt.items.add(new File([by],'print.png',{type:'image/png'}));document.body.dispatchEvent(new ClipboardEvent('paste',{clipboardData:dt,bubbles:true,cancelable:true}));}""",b64)
-    pg.wait_for_selector('.frmail .warnbox',timeout=90000); pg.wait_for_timeout(300)
-    msg=pg.inner_text('.frmail .warnbox'); print(msg)
+    pg.wait_for_selector('#frPrintMsg',timeout=90000); pg.wait_for_timeout(300)
+    msg=pg.inner_text('#frPrintMsg'); print(msg)
     H=lambda k: pg.input_value(f'[data-fi="hora"][data-k="e1|{k}"]')
     exp={'a':'06:30','b':'15:15','c':'16:25','d':'16:25','e':'18:45','f':'08:30','g':'13:10'}
     for k,v in exp.items(): ok(H(k)==v,'PRINT REAL: hora do cliente %s = %s (%s)'%(k,v,H(k)))

@@ -92,10 +92,10 @@
       const line = raw.replace(/[|_;!\[\]{}()=~"'‘’“”«»]|—|–/g, ' ').replace(/\s+/g, ' ').trim();
       let hs = line.match(/\b(?:[01]?\d|2[0-3])[:.][0-5]\d\b/g); const fim = line.match(/(?:^|\s)([01]\d|2[0-3])\s?([0-5]\d)$/); // "1625" no fim da linha = 16:25 (o OCR às vezes come os dois-pontos)
       if (fim && !/[:.]\d\d$/.test(line)) hs = (hs || []).concat(fim[1] + ':' + fim[2]); if (!hs) return;
-      const am = line.match(/\b(\d{3})\s?-\s?((?:\d ?){7}\d)(?!\d)/); if (!am && !/PREST/i.test(line)) return;
+      const am = line.match(/(?:\b|\d)(\d{3})\s?-\s?((?:\d ?){7}\d)(?!\d)/); if (!am && !/P?R?ESTIG|PREST/i.test(line)) return;
       const awbDig = am ? (am[1] + am[2]).replace(/\D/g, '') : '';
-      const all = line.split(' '), iDig = all.findIndex(x => /\d/.test(x)), before = (iDig < 0 ? all : all.slice(0, iDig)).join(' ');
-      let tk = before.split(' ').filter(x => /^[A-Za-zÀ-ú]{2,}$/.test(x)); if (tk.length && /^.?PR?E?S?T/i.test(tk[0])) tk.shift();
+      const all = line.replace(/^\S*(?:PREST|RESTIG|ESTIGE)\S*\s*/i, '').split(' '), iDig = all.findIndex(x => /\d/.test(x)), before = (iDig < 0 ? all : all.slice(0, iDig)).join(' ');
+      let tk = before.split(' ').filter(x => /^[A-Za-zÀ-ú]{2,}$/.test(x)); if (tk.length && /PREST|RESTI|ESTIG/i.test(tk[0])) tk.shift();
       let dest = ''; if (tk.length > 1 && /^[A-Za-z]{3}$/.test(tk[tk.length - 1])) dest = tk.pop().toUpperCase();
       tk = tk.filter((x, i) => i === 0 || x.length > 2); // sobras de 1-2 letras são lixo do OCR
       const after = am ? line.slice(am.index + am[0].length) : (iDig < 0 ? '' : all.slice(iDig).join(' ')), nums = after.match(/^\s*(\d{1,3})[.,]\s?\d/);
@@ -108,6 +108,18 @@
   }
   const soL = s => String(s || '').normalize('NFD').replace(/[^A-Za-z]/g, '').toUpperCase();
   function lev(a, b) { const m = a.length, n = b.length; if (!m || !n) return m + n; let p = Array.from({ length: n + 1 }, (_, j) => j); for (let i = 1; i <= m; i++) { const c = [i]; for (let j = 1; j <= n; j++) c[j] = Math.min(p[j] + 1, c[j - 1] + 1, p[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); p = c; } return p[n]; }
+  const COMUNS = new Set(['LTDA', 'AQUARIO', 'AQUARIOS', 'AQUARIUM', 'AQUARIUMS', 'AQUARISMO', 'AQUATICA', 'AQUATICOS', 'PET', 'SHOP', 'PETSHOP', 'PEIXES', 'COMERCIO', 'EIRELI', 'DOS', 'DAS', 'DE', 'DA', 'DO', 'ME', 'EPP', 'PRESTIGE']);
+  // pontua quantas letras de palavras "marcantes" do nome do cliente aparecem (com até 1-2 letras trocadas) no texto lido
+  function palavrasNoTexto(n, nome) {
+    let sc = 0;
+    String(nome || '').split(/[^A-Za-zÀ-ú]+/).map(soL).filter(w => w.length >= 3 && !COMUNS.has(w)).forEach(w => {
+      if (w.length <= 4) { if (n.includes(w)) sc += w.length; return; }
+      const tol = w.length >= 7 ? 2 : 1; let best = 99;
+      for (let L = w.length - 1; L <= w.length + 1; L++) for (let i = 0; i + L <= n.length; i++) { const d = lev(n.slice(i, i + L), w); if (d < best) best = d; }
+      if (best <= tol) sc += w.length - best;
+    });
+    return sc;
+  }
   function matchEmailRowOcr(row, linhas, recOf) {
     // 1) AWB parecido com o do CT-e (até 3 dígitos trocados, e sem empate)
     if (row.awbDig && row.awbDig.length === 11) {
@@ -119,9 +131,15 @@
     if (n.length >= 3) {
       const c = linhas.map(l => { const full = soL(l.cliente), first = soL(String(l.cliente || '').trim().split(/\s+/)[0]); const d = Math.min(lev(n, full), lev(n, first), full.startsWith(n) ? 0 : 99, n.startsWith(first) && first.length >= 4 ? 0 : 99); return { l, d }; }).sort((x, y) => x.d - y.d);
       if (c.length && c[0].d <= (n.length >= 7 ? 2 : 1) && (c.length === 1 || c[1].d > c[0].d)) return { linha: c[0].l, por: 'nome' };
+      // 2b) v29.19: uma palavra marcante do nome dentro do que o print leu ("AGROPORPETA" -> PORPETA, "COCOJUVENLDO" -> JUVENILDO)
+      const p = linhas.map(l => ({ l, s: palavrasNoTexto(n, l.cliente) })).filter(x => x.s > 0).sort((x, y) => y.s - x.s);
+      if (p.length && (p.length === 1 || p[0].s > p[1].s)) return { linha: p[0].l, por: 'parte do nome' };
     }
     const k = linhas.filter(l => l.aero && l.aero.toUpperCase() === row.dest && +l.caixas === row.qtd);
-    return k.length === 1 ? { linha: k[0], por: 'aeroporto + caixas' } : null;
+    if (k.length === 1) return { linha: k[0], por: 'aeroporto + caixas' };
+    // 3) só um cliente da programação vai para esse aeroporto
+    const so = row.dest ? linhas.filter(l => l.aero && l.aero.toUpperCase() === row.dest) : [];
+    return so.length === 1 ? { linha: so[0], por: 'aeroporto (confira)' } : null;
   }
   // acha a linha do embarque: 1) pelo AWB do CT-e já anexado; 2) pelo nome; 3) pelo aeroporto + nº de caixas (se só uma serve)
   function matchEmailRow(row, linhas, recOf) {

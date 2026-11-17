@@ -50,11 +50,11 @@
     const sug = !r.hora && c.voo && l.aero && D.cfg.horas && D.cfg.horas[c.voo + '|' + l.aero];
     if (sug) setR(e, l, { hora: sug, horaAuto: true, avisado: false, msg: null });
   }
-  function importMail(text, ocr) {
-    const e = curEmb(); ST.mail = text; ST.mailOpen = true; ST.nextMsg = '';
+  function importMail(text, ocr, nVerm) {
+    const e = curEmb(); ST.mail = ocr ? '' : text; ST.mailOpen = true; // o texto cru do print é ilegível: não vai para a caixa ST.nextMsg = '';
     if (!e) { ST.mailMsg = 'Crie primeiro uma programação em Programação de voos.'; render(); return; }
     let rows = ocr ? [] : FC.parseEmail(text); if (!rows.length) rows = FC.parseEmailOcr(text);
-    if (!rows.length) { ST.mailMsg = ocr ? 'Não consegui ler a tabela neste print. Tire o print só da tabela (bem de perto, sem cortar a última coluna) e tente de novo.' : 'Não achei nenhuma linha com AWB (ex.: 957-43219691). Cole a tabela do e-mail, com as linhas dos clientes.'; render(); return; }
+    if (!rows.length) { ST.printMsg = ''; ST.mailMsg = ocr ? 'Não consegui ler a tabela neste print. Tire o print só da tabela (bem de perto, sem cortar a última coluna) e tente de novo.' : 'Não achei nenhuma linha com AWB (ex.: 957-43219691). Cole a tabela do e-mail, com as linhas dos clientes.'; if (ocr) { ST.printMsg = ST.mailMsg; ST.mailMsg = ''; ST.mailOpen = false; } render(); return; }
     const out = [], usados = new Set();
     rows.forEach(w => {
       const m = w.ocr ? FC.matchEmailRowOcr(w, e.linhas, l => R(e, l)) : FC.matchEmailRow(w, e.linhas, l => R(e, l)), conx = w.voos.filter(v => v.num).map(v => `${v.cia}${v.num}/${v.dia}`).join(' → ');
@@ -68,11 +68,26 @@
       out.push(w.hora ? `✓ ${m.linha.cliente} (casou por: ${m.por}) · chega ${w.hora}${conx ? ' · ' + conx : ''}${w.janela ? ' · ' + w.janela : ''}` : `! ${m.linha.cliente}: a linha do e-mail não tem horário.`);
     });
     const sem = e.linhas.filter(l => !usados.has(l.id)).map(l => l.cliente); if (sem.length) out.push(`Sem linha no e-mail: ${sem.join(', ')}`);
-    ST.mailMsg = (ocr ? 'Lido do print (confira as horas com o e-mail):\n' : '') + out.join('\n'); ST.mailOpen = true; save(); render();
+    ST.printMsg = ''; ST.mailMsg = (ocr ? (nVerm ? `Lido do print: ${nVerm} horário(s) em vermelho encontrados (confira com o e-mail)${ST.horaDuvida && ST.horaDuvida.length ? '. Leitura incerta, confira com atenção: ' + ST.horaDuvida.join(', ') : ''}:\n` : 'Lido do print (confira as horas com o e-mail):\n') : '') + out.join('\n'); if (ocr) { ST.printMsg = ST.mailMsg; ST.mailMsg = ''; ST.mailOpen = false; } else ST.mailOpen = true; save(); render();
   }
   async function importPrint(file) {
     ST.nextMsg = 'Lendo o print… 0%'; render();
-    try { const t = await ocrImagem(file, p => { const n = $('frNext'); if (n) n.textContent = 'Lendo o print… ' + p + '%'; }); ST.mail = ''; ST.nextMsg = ''; importMail(t, true); }
+    try {
+      const prog = p => { const n = $('frNext'); if (n) n.textContent = 'Lendo o print… ' + p + '%'; };
+      let hv = []; try { if (!window.Tesseract) await ocrCarrega(); hv = await horasVermelhas(file); } catch (_) { hv = []; }
+      if (hv.length) {
+        // linhas da tabela lidas uma a uma (modo "bloco de texto") + o horário vermelho da mesma altura
+        const r = await ocrImagem(file, prog, { psm: '6', linhas: true }), usados = new Set();
+        const duvida = [];
+        const linhas = r.linhas.map(l => { let best = null; hv.forEach((h, i) => { const dd = Math.abs(h.y - l.y); if (!usados.has(i) && dd <= Math.max(6, l.h * 0.8) && (!best || dd < best.dd)) best = { i, dd }; }); if (!best) return l.texto;
+          usados.add(best.i); const tl = (l.texto.match(/(?:[01]?\d|2[0-3])[:.]?[0-5]\d\W*$/) || [''])[0], v = votaHora(hv[best.i].leituras.concat(horaDe(tl)));
+          if (v && !v.certa) duvida.push(v.hora); return l.texto + ' ' + (v ? v.hora : hv[best.i].hora); });
+        ST.horaDuvida = duvida;
+        const t = linhas.join('\n'); PP.frete.ultimoPrint = t; ST.mail = ''; ST.nextMsg = '';
+        if (FC.parseEmailOcr(t).length) { importMail(t, true, hv.length); return; }
+      }
+      const t = await ocrImagem(file, prog); ST.mail = ''; ST.nextMsg = ''; importMail(t, true);
+    }
     catch (err) { ST.nextMsg = 'Não consegui ler o print: ' + (err.message || err); render(); }
   }
   async function importCtes(files) {
@@ -131,9 +146,9 @@
     else if (prontos.length === n) prox = '<span class="chip ok">Tudo pronto: todos os avisos foram copiados</span>';
     else prox = `<span class="note">${semCte.length ? 'Solte os CT-es que faltam' : 'Cole o e-mail do despachante (ou digite a hora na tabela)'} para liberar os avisos.</span>`;
     return `<div class="frflow" id="frFlow">
-      <div class="frdrop" id="frDrop"><b>Solte aqui os CT-es (PDF) e cole o PRINT do e-mail do despachante (Ctrl+V)</b><span class="note">Tire um print da tabela do e-mail (Win+Shift+S) e aperte Ctrl+V aqui: o app lê as horas de chegada da imagem. Também aceita o texto copiado. Pode fazer tudo em qualquer ordem. <a href="#" data-fr="pick">Escolher CT-es (PDF)</a> · <a href="#" data-fr="pickimg">Escolher print (imagem)</a></span><input type="file" id="frImg" accept="image/*" hidden></div>
+      <div class="frdrop" id="frDrop"><b>Solte aqui os CT-es (PDF) e cole o PRINT do e-mail do despachante (Ctrl+V)</b><span class="note">Tire um print da tabela do e-mail (Win+Shift+S) ou, no e-mail, clique com o botão direito na tabela &gt; Copiar imagem. Depois aperte Ctrl+V aqui ou o botão abaixo: o app lê os horários em vermelho. Também aceita o texto copiado. Pode fazer tudo em qualquer ordem. <a href="#" data-fr="pick">Escolher CT-es (PDF)</a> · <a href="#" data-fr="pickimg">Escolher print (imagem)</a></span><div class="row" style="margin-top:8px"><button type="button" data-fr="colarimg">Colar print copiado</button></div></span><input type="file" id="frImg" accept="image/*" hidden></div>
       <div class="frsteps">${passo(1, 'CT-e e frete', n - semCte.length, n, st(!semCte.length, semCte.length < n), semCte.length ? 'falta: ' + nomes(semCte) : '')}${passo(2, 'Hora de chegada', n - semHora.length, n, st(!semHora.length, semHora.length < n), semHora.length ? 'falta: ' + nomes(semHora) : '')}${passo(3, 'Avisos copiados', prontos.length - aCopiar.length, n, st(prontos.length === n && !aCopiar.length, prontos.length > 0), aCopiar.length ? 'a copiar: ' + nomes(aCopiar) : '')}</div>
-      <div class="row" style="align-items:center">${prox}<span class="note" id="frNext">${esc(ST.nextMsg || '')}</span></div></div>`;
+      <div class="row" style="align-items:center">${prox}<span class="note" id="frNext">${esc(ST.nextMsg || '')}</span></div>${ST.printMsg ? `<div class="warnbox" id="frPrintMsg" style="white-space:pre-line;margin-top:8px">${esc(ST.printMsg)}</div>` : ''}</div>`;
   }
   function viewDia() {
     const L = embs(), e = curEmb();
@@ -275,11 +290,17 @@
     }
     if (a === 'latam') { const x = find(k); if (!x) return; const u = latamUrl(R(x.e, x.l).awb); if (u) window.open(u, '_blank', 'noopener'); return; }
     if (a === 'voo' || a === 'awb') { const x = find(k); if (!x) return; const r = R(x.e, x.l); if (a === 'awb') { await copy(r.awb); ST.copyMsg = 'AWB copiado.'; render(); } else window.open('https://www.google.com/search?q=' + encodeURIComponent(`voo LATAM ${r.voo} ${r.vooDia || ''}`), '_blank', 'noopener'); return; }
+    if (a === 'colarimg') { // lê a imagem que está na área de transferência (print ou "Copiar imagem" do e-mail)
+      try { const it = await navigator.clipboard.read(); for (const c of it) { const tp = c.types.find(x => /^image\//.test(x)); if (tp) { const bl = await c.getType(tp); await importPrint(new File([bl], 'print.' + tp.split('/')[1], { type: tp })); return; } } ST.nextMsg = 'Não há imagem copiada. Tire o print da tabela (Win+Shift+S) ou, no e-mail, clique com o botão direito na tabela > "Copiar imagem", e aperte de novo.'; }
+      catch (_) { ST.nextMsg = 'O navegador não deixou ler a área de transferência. Aperte Ctrl+V aqui na tela do Frete, ou use "Escolher print (imagem)".'; }
+      render(); return;
+    }
     if (a === 'penddel') { ST.pend = ST.pend.filter(p => p.id !== b.dataset.p); render(); return; }
     if (a === 'pendok') { const p = ST.pend.find(x => x.id === b.dataset.p), sel = view().querySelector(`[data-fi="pendsel"][data-p="${b.dataset.p}"]`), l = p && e && e.linhas.find(x => x.id === (sel && sel.value)); if (p && l) { aplicar(e, l, p.c, p.name, 'escolha manual'); ST.pend = ST.pend.filter(x => x !== p); save(); render(); } return; }
   });
   /* lê o texto de um PRINT (imagem) do e-mail: amplia, passa para preto no branco e roda o OCR */
-  async function ocrImagem(file, onProg) {
+  const ocrCarrega = () => new Promise((ok, no) => { const sc = document.createElement('script'); sc.src = 'vendor/ocr/tesseract.min.js'; sc.onload = ok; sc.onerror = () => no(new Error('Não consegui carregar o leitor de imagem (sem internet na primeira vez?).')); document.head.appendChild(sc); });
+  async function ocrImagem(file, onProg, opts) {
     if (!window.Tesseract) await new Promise((ok, no) => { const sc = document.createElement('script'); sc.src = 'vendor/ocr/tesseract.min.js'; sc.onload = ok; sc.onerror = () => no(new Error('Não consegui carregar o leitor de imagem (sem internet na primeira vez?).')); document.head.appendChild(sc); });
     const bmp = await createImageBitmap(file), k = Math.max(1, Math.min(4, 3700 / bmp.width)), cv = document.createElement('canvas');
     cv.width = Math.round(bmp.width * k); cv.height = Math.round(bmp.height * k);
@@ -308,8 +329,55 @@
     for (let i = 0, p = 0; p < N; i += 4, p++) { const v = bin[p] === 1 ? 0 : 255; d[i] = d[i + 1] = d[i + 2] = v; d[i + 3] = 255; }
     cx.putImageData(im, 0, 0);
     const w = await Tesseract.createWorker('por', 1, { workerPath: 'vendor/ocr/worker.min.js', corePath: 'vendor/ocr/', langPath: 'vendor/ocr/', gzip: true, workerBlobURL: false, logger: m => { if (onProg && m.status === 'recognizing text') onProg(Math.round(m.progress * 100)); } });
-    try { await w.setParameters({ tessedit_pageseg_mode: '4', preserve_interword_spaces: '1' }); const { data } = await w.recognize(cv); return data.text; } finally { try { await w.terminate(); } catch (_) { /* ok */ } }
+    try {
+      await w.setParameters({ tessedit_pageseg_mode: (opts && opts.psm) || '4', preserve_interword_spaces: '1' });
+      if (!opts || !opts.linhas) { const { data } = await w.recognize(cv); return data.text; }
+      const { data } = await w.recognize(cv, {}, { text: true, blocks: true }), out = [];
+      (data.blocks || []).forEach(b => (b.paragraphs || []).forEach(p => (p.lines || []).forEach(l => out.push({ texto: String(l.text || '').replace(/\n/g, ' ').trim(), y: (l.bbox.y0 + l.bbox.y1) / 2 / k, h: (l.bbox.y1 - l.bbox.y0) / k }))));
+      return { texto: data.text, linhas: out };
+    } finally { try { await w.terminate(); } catch (_) { /* ok */ } }
   }
+  /* v29.19: o despachante marca o HORÁRIO DE CHEGADA em vermelho. Acha cada horário vermelho na imagem (só ele é vermelho),
+     lê só os números dele, um por um, e guarda a altura (y) para casar com a linha certa da tabela. */
+  // "16:25", "1625", "16.25" -> "16:25"; o resto -> ''
+  const horaDe = t => { const m = String(t || '').match(/(?:^|\D)([01]?\d|2[0-3])[:.]?([0-5]\d)(?!\d)/); return m ? m[1].padStart(2, '0') + ':' + m[2] : ''; };
+  // junta as leituras (vermelho em 2 tratamentos + a linha inteira) e fica com a que se repete
+  function votaHora(lidas) { const c = {}; lidas.filter(Boolean).forEach((h, i) => { c[h] = c[h] || { n: 0, i }; c[h].n++; }); const L = Object.entries(c).sort((a, b) => b[1].n - a[1].n || a[1].i - b[1].i); return L.length ? { hora: L[0][0], certa: L[0][1].n >= 2 } : null; }
+  async function horasVermelhas(file) {
+    const bmp = await createImageBitmap(file), W = bmp.width, H = bmp.height, c = document.createElement('canvas'); c.width = W; c.height = H;
+    const x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(bmp, 0, 0); const d = x.getImageData(0, 0, W, H).data;
+    const red = (i, f) => d[i] > 110 && d[i] - Math.max(d[i + 1], d[i + 2]) > (f || 60);
+    const lin = []; for (let y = 0; y < H; y++) { let a = W, b = -1, n = 0; for (let xx = 0; xx < W; xx++) if (red((y * W + xx) * 4)) { n++; if (xx < a) a = xx; if (xx > b) b = xx; } lin.push(n ? { a, b, n } : null); }
+    const bandas = []; let cur = null;
+    for (let y = 0; y < H; y++) { const l = lin[y]; if (!l) { if (cur && y - cur.y1 > 2) { bandas.push(cur); cur = null; } continue; } if (!cur) cur = { y0: y, y1: y, a: l.a, b: l.b, n: 0 }; cur.y1 = y; cur.a = Math.min(cur.a, l.a); cur.b = Math.max(cur.b, l.b); cur.n += l.n; }
+    if (cur) bandas.push(cur);
+    const boas = bandas.filter(b => b.y1 - b.y0 >= 4 && b.y1 - b.y0 <= 40 && b.b - b.a >= 10 && b.b - b.a <= 160 && b.n >= 15);
+    if (!boas.length) return [];
+    const w = await Tesseract.createWorker('por', 1, { workerPath: 'vendor/ocr/worker.min.js', corePath: 'vendor/ocr/', langPath: 'vendor/ocr/', gzip: true, workerBlobURL: false });
+    const out = [];
+    try {
+      await w.setParameters({ tessedit_pageseg_mode: '7', tessedit_char_whitelist: '0123456789:' });
+      for (const b of boas) {
+        const m = 4, x0 = Math.max(0, b.a - m), y0 = Math.max(0, b.y0 - m), cw = Math.min(W, b.b + m + 1) - x0, ch = Math.min(H, b.y1 + m + 1) - y0;
+        const cv = document.createElement('canvas'); cv.width = cw * S + 40; cv.height = ch * S + 40; const g = cv.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, cv.width, cv.height);
+        const ler = async (modo, S) => {
+          const cv = document.createElement('canvas'); cv.width = cw * S + 40; cv.height = ch * S + 40; const g = cv.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, cv.width, cv.height);
+          const sm = document.createElement('canvas'); sm.width = cw; sm.height = ch; const sg = sm.getContext('2d'), id = sg.createImageData(cw, ch);
+          for (let yy = 0; yy < ch; yy++) for (let xx = 0; xx < cw; xx++) {
+            const i = ((y0 + yy) * W + x0 + xx) * 4, o = (yy * cw + xx) * 4, rv = d[i] - Math.max(d[i + 1], d[i + 2]);
+            const v = modo === 'suave' ? (d[i] > 90 ? Math.max(0, Math.min(255, 255 - (rv - 20) * 2.6)) : 255) : (rv > 15 ? 255 - Math.round(d[i] * 0.9) : 255);
+            id.data[o] = id.data[o + 1] = id.data[o + 2] = v; id.data[o + 3] = 255;
+          }
+          sg.putImageData(id, 0, 0); g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high'; g.drawImage(sm, 20, 20, cw * S, ch * S);
+          const { data } = await w.recognize(cv); return horaDe(String(data.text || '').replace(/\s/g, ''));
+        };
+        const lid = [await ler('suave', 8), await ler('cinza', 6)].filter(Boolean);
+        if (lid.length) out.push({ y: (b.y0 + b.y1) / 2, hora: lid[0], leituras: lid });
+      }
+    } finally { try { await w.terminate(); } catch (_) {} }
+    return out;
+  }
+  PP.horasVermelhas = horasVermelhas;
   PP.ocrImagem = ocrImagem;
   // soltar PDFs / texto em qualquer lugar da tela Frete, e colar (Ctrl+V) o e-mail sem precisar clicar em caixa nenhuma
   const naFrete = () => S.view === 'frete' && (ST.sub || 'dia') === 'dia';
@@ -325,10 +393,14 @@
     if (f.length) await importCtes(f); else if (im.length) await importPrint(im[0]); else if (/\d{3}-\d{8}/.test(txt)) importMail(txt);
   });
   document.addEventListener('paste', async ev => {
+    if (S.view !== 'frete') return; const cd = ev.clipboardData; if (!cd) return;
+    const itImg = Array.from(cd.items || []).filter(i => i.kind === 'file' && /^image\//.test(i.type)).map(i => i.getAsFile()).filter(Boolean), im0 = imgs(cd.files).concat(itImg);
+    if (im0.length) { ev.preventDefault(); if (ST.sub !== 'dia') { ST.sub = 'dia'; render(); } await importPrint(im0[0]); return; } // print colado: vale mesmo com o cursor numa caixa
     if (!naFrete()) return; const t = ev.target; if (t && t.closest && t.closest('input,textarea,[contenteditable="true"]')) return;
-    const cd = ev.clipboardData; if (!cd) return; const f = pdfs(cd.files), txt = cd.getData('text/plain') || '';
+    const html = cd.getData('text/html') || '';
+    if (/<img/i.test(html) && !(cd.getData('text/plain') || '').trim()) { ev.preventDefault(); ST.nextMsg = 'O que foi copiado é só o link da imagem do e-mail, não a imagem. No e-mail, clique com o botão direito na tabela > "Copiar imagem" (ou tire um print com Win+Shift+S) e cole de novo aqui.'; render(); return; }
+    const f = pdfs(cd.files), txt = cd.getData('text/plain') || '';
     if (f.length) { ev.preventDefault(); await importCtes(f); }
-    else if (imgs(cd.files).length) { ev.preventDefault(); await importPrint(imgs(cd.files)[0]); }
     else if (/\d{3}-\d{8}/.test(txt)) { ev.preventDefault(); importMail(txt); ST.mailOpen = false; render(); }
     else if (txt.trim().length > 20) { ST.nextMsg = 'O texto colado não tem nenhum AWB (ex.: 957-43219691). Copie a tabela do e-mail do despachante.'; render(); }
   });

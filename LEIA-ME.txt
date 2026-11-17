@@ -793,3 +793,19 @@ v29.19 · FRETES: PLANILHA CERTA E HORA DIGITÁVEL
     cliente (o mesmo vale para a coluna Frete);
   * hora impossível (25:75) é recusada com aviso, e campo vazio apaga a hora;
   * ao entrar no campo, o texto fica selecionado: é só digitar por cima.
+- Leitura do PRINT do e-mail do despachante (tabela em imagem):
+  * o app acha cada HORÁRIO EM VERMELHO na imagem e lê só os números dele
+    (duas vezes, com tratamentos diferentes), e confere com a leitura da
+    linha inteira; fica com a hora que se repete e avisa quando ficar em
+    dúvida. Testado com os prints reais de 11/11 e 17/11: todas as horas certas.
+  * a tabela é lida linha a linha, então print sem cabeçalho, cortado bem
+    rente, também funciona.
+  * nomes que o print junta ou erra ("AGROPORPETA", "COCOJUVENLDO") casam
+    pela palavra marcante do nome (PORPETA, JUVENILDO); se só um cliente vai
+    para aquele aeroporto, casa pelo aeroporto (marcado "confira").
+  * colar a imagem (Ctrl+V) agora vale mesmo com o cursor dentro de uma
+    caixa da tabela, e no Frete inteiro. Novo botão "Colar print copiado".
+    Se o que foi copiado for só o link da imagem do e-mail, o app explica
+    como copiar a imagem de verdade.
+  * o resultado aparece logo abaixo da caixa do print, e o texto cru da
+    leitura não vai mais para a caixa de e-mail (era o que ficava "bagunçado").
