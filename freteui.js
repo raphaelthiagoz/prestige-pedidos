@@ -146,7 +146,7 @@
     else if (prontos.length === n) prox = '<span class="chip ok">Tudo pronto: todos os avisos foram copiados</span>';
     else prox = `<span class="note">${semCte.length ? 'Solte os CT-es que faltam' : 'Cole o e-mail do despachante (ou digite a hora na tabela)'} para liberar os avisos.</span>`;
     return `<div class="frflow" id="frFlow">
-      <div class="frdrop" id="frDrop"><b>Solte aqui os CT-es (PDF) e cole o PRINT do e-mail do despachante (Ctrl+V)</b><span class="note">Tire um print da tabela do e-mail (Win+Shift+S) ou, no e-mail, clique com o botão direito na tabela &gt; Copiar imagem. Depois aperte Ctrl+V aqui ou o botão abaixo: o app lê os horários em vermelho. Também aceita o texto copiado. Pode fazer tudo em qualquer ordem. <a href="#" data-fr="pick">Escolher CT-es (PDF)</a> · <a href="#" data-fr="pickimg">Escolher print (imagem)</a></span><div class="row" style="margin-top:8px"><button type="button" data-fr="colarimg">Colar print copiado</button></div></span><input type="file" id="frImg" accept="image/*" hidden></div>
+      <div class="frdrop" id="frDrop"><b>Solte aqui os CT-es (PDF) e cole o PRINT do e-mail do despachante (Ctrl+V)</b><span class="note">Tire um print da tabela do e-mail (Win+Shift+S) ou, no e-mail, clique com o botão direito na tabela &gt; Copiar imagem. Depois aperte Ctrl+V aqui ou o botão abaixo: o app lê os horários em vermelho. Também aceita o texto copiado. Pode fazer tudo em qualquer ordem. <a href="#" data-fr="pick">Escolher CT-es (PDF)</a> · <a href="#" data-fr="pickimg">Escolher print (imagem)</a></span><div class="row" style="margin-top:8px"><button type="button" data-fr="colarimg">Colar print copiado</button></div>${PP.outlook ? PP.outlook.html() : ''}</span><input type="file" id="frImg" accept="image/*" hidden></div>
       <div class="frsteps">${passo(1, 'CT-e e frete', n - semCte.length, n, st(!semCte.length, semCte.length < n), semCte.length ? 'falta: ' + nomes(semCte) : '')}${passo(2, 'Hora de chegada', n - semHora.length, n, st(!semHora.length, semHora.length < n), semHora.length ? 'falta: ' + nomes(semHora) : '')}${passo(3, 'Avisos copiados', prontos.length - aCopiar.length, n, st(prontos.length === n && !aCopiar.length, prontos.length > 0), aCopiar.length ? 'a copiar: ' + nomes(aCopiar) : '')}</div>
       <div class="row" style="align-items:center">${prox}<span class="note" id="frNext">${esc(ST.nextMsg || '')}</span></div>${ST.printMsg ? `<div class="warnbox" id="frPrintMsg" style="white-space:pre-line;margin-top:8px">${esc(ST.printMsg)}</div>` : ''}</div>`;
   }
@@ -404,5 +404,5 @@
     else if (/\d{3}-\d{8}/.test(txt)) { ev.preventDefault(); importMail(txt); ST.mailOpen = false; render(); }
     else if (txt.trim().length > 20) { ST.nextMsg = 'O texto colado não tem nenhum AWB (ex.: 957-43219691). Copie a tabela do e-mail do despachante.'; render(); }
   });
-  PP.frete = { render, reload() { D = load(); }, FC };
+  PP.frete = { render, reload() { D = load(); }, FC, importCtes, importPrint, importMail };
 })();

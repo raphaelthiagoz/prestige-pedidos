@@ -809,3 +809,29 @@ v29.19 · FRETES: PLANILHA CERTA E HORA DIGITÁVEL
     como copiar a imagem de verdade.
   * o resultado aparece logo abaixo da caixa do print, e o texto cru da
     leitura não vai mais para a caixa de e-mail (era o que ficava "bagunçado").
+- Outlook na aba Frete: botão "Buscar e-mail do despachante (Outlook)".
+  O app entra na sua conta Microsoft (só leitura, permissão Mail.Read), pega o
+  e-mail mais novo do despachante (exp.emissao@dmarcos.com.br, dá para mudar),
+  lê os CT-es em PDF anexados e a tabela de horários (texto do e-mail ou a
+  imagem). Se houver mais de um e-mail, "Usar outro e-mail" lista os outros.
+  Não envia, não apaga, não mexe em nada. O acesso fica só neste navegador
+  ("Desconectar o Outlook deste navegador" tira).
+  COMO CRIAR O "ID DO APLICATIVO" (uma vez só, grátis, ~10 minutos):
+   1. Entre em https://entra.microsoft.com com a mesma conta do Outlook
+      (se for conta pessoal @outlook/@hotmail, use https://portal.azure.com).
+   2. Menu: Aplicativos > Registros de aplicativo > + Novo registro.
+   3. Nome: Sistema de Pedidos Prestige.
+   4. Tipos de conta: "Contas em qualquer diretório organizacional e contas
+      pessoais da Microsoft".
+   5. URI de redirecionamento: escolha "Aplicativo de página única (SPA)" e
+      cole: https://sistemaaquario.netlify.app/outlook-volta.html
+   6. Registrar. Copie o "ID do aplicativo (cliente)".
+   7. Permissões de API > + Adicionar > Microsoft Graph > Permissões
+      delegadas > marque Mail.Read > Adicionar.
+   8. No sistema: Frete > "Configurar Outlook" > cole o ID > clique fora.
+   9. Clique em "Buscar e-mail do despachante (Outlook)", entre com a conta e
+      aceite a permissão de leitura. Pronto.
+  Se a Microsoft disser que precisa de autorização do administrador, a conta
+  é de empresa com app bloqueado: o administrador libera o aplicativo em
+  Aplicativos empresariais > Sistema de Pedidos Prestige > Permissões >
+  "Conceder consentimento do administrador".

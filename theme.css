@@ -948,3 +948,10 @@ main .seg>button[aria-pressed=true],main .rpchips>button[aria-pressed=true],main
   #parcTab td{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:5px 0;border:0;white-space:normal}
   #parcTab td::before{content:attr(data-l);opacity:.7;font-size:.82rem}
 }
+/* v29.19: Outlook na aba Frete */
+.olbox{margin-top:10px;padding-top:10px;border-top:1px dashed var(--line)}
+.olbox .ollist{display:flex;flex-direction:column;gap:6px;margin-top:6px}
+.olbox .ollist button{text-align:left;justify-content:flex-start}
+.olbox .ollist button[aria-pressed="true"]{border-color:var(--ac)}
+.olbox .olcfg{margin-top:8px}
+.olbox summary{cursor:pointer;color:var(--fg)}

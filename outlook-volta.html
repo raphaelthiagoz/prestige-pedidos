@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Entrando no Outlook</title>
+<style>
+  :root { color-scheme: dark; }
+  body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #0f1a1d; color: #cfe3e3; font: 16px/1.5 system-ui, sans-serif; padding: 16px; }
+  p { max-width: 420px; text-align: center; }
+</style>
+</head>
+<body>
+<p id="t">Entrando no Outlook… esta janela fecha sozinha.</p>
+<script>
+/* Volta do login da Microsoft (Sistema de Pedidos, v29.19).
+   Janelinha (popup): não faz nada; o sistema lê a resposta e fecha esta janela.
+   Página inteira (quando a janelinha foi bloqueada): termina o login e volta para a aba Frete. */
+(function () {
+  if (window.opener && window.opener !== window) return;
+  var c = {}; try { c = JSON.parse(localStorage.getItem('pp.outlook') || '{}'); } catch (_) {}
+  var volta = function () { location.replace('/?v=frete'); };
+  if (!c.clientId) return volta();
+  var s = document.createElement('script'); s.src = 'vendor/msal-browser.min.js';
+  s.onload = function () {
+    var app = new msal.PublicClientApplication({ auth: { clientId: c.clientId, authority: 'https://login.microsoftonline.com/common', redirectUri: location.origin + '/outlook-volta.html', navigateToLoginRequestUrl: false }, cache: { cacheLocation: 'localStorage' } });
+    app.initialize().then(function () { return app.handleRedirectPromise(); }).then(volta, function (e) { document.getElementById('t').textContent = 'Não consegui terminar o login: ' + (e && (e.errorMessage || e.message)) + '. Voltando…'; setTimeout(volta, 2500); });
+  };
+  s.onerror = volta; document.head.appendChild(s);
+})();
+</script>
+</body>
+</html>
