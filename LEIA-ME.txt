@@ -835,3 +835,51 @@ v29.19 · FRETES: PLANILHA CERTA E HORA DIGITÁVEL
   é de empresa com app bloqueado: o administrador libera o aplicativo em
   Aplicativos empresariais > Sistema de Pedidos Prestige > Permissões >
   "Conceder consentimento do administrador".
+
+
+v29.20 · EXPORTAÇÃO NOVA (LAYOUT C), REQUERIMENTO, ETIQUETA MENOR, CZI E TROCA DE ESPÉCIE
+==================================================================
+- Exportação no layout C: o pedido ocupa a esquerda e o resumo fica fixo à
+  direita (nº da invoice, saída, caixas, peixes, total, "Falta para gerar" e
+  os botões). O espaço vazio do topo sumiu. A tabela ganhou as colunas Peixes
+  e Subtotal; a coluna "kg por caixa" só aparece quando você pede ou quando
+  alguma espécie usa outro peso. Em telas menores e no celular o resumo vai
+  para cima.
+- Requerimento ao MAPA (novo documento, do seu modelo): espécies, total e
+  quantidade por extenso, importador e destino, MAWB, HAWB, LPCO IBAMA, DU-E
+  e o trajeto:
+    MAO – GRU G31573 – 16:55 – 22:00 (24/11/26)
+    GRU – AMS KL0792 – 20:59 – 12:20 (+1) (25/11/26)
+  Os horários vêm dos campos novos do bloco "Trajeto" (voo doméstico, saída
+  de MAO, chegada em GRU, voo internacional, partida de GRU, chegada no
+  destino). O "(+1)" sai sozinho. A data do fim é a "Data do requerimento"
+  (o dia em que você assina e protocola; em branco = hoje).
+- Etiquetas menores (do seu modelo): MAWB, HAWB e aeroporto de destino
+  (AMS, MIA ou NRT, conforme o destino), 10 por folha, folhas para todas as
+  caixas.
+- CZI:
+  * peso líquido = nº de caixas (100 caixas = 100,00 kg); o I.26 continua com
+    o peso total;
+  * data final ("Date: São Paulo…") = data da partida de GRU, não a saída do
+    aquário (vale para AMS, EUA, Japão e Alemanha);
+  * código do estabelecimento 13026030787 (fixo, em Dados da exportação)
+    nos dois lugares do CZI;
+  * o CZI de AMS já vem no modelo novo que você mandou.
+- "Trocar modelo" em cada documento .docx da lista: envie o arquivo novo do
+  Word e ele passa a valer nesta e nas próximas exportações. "Voltar ao
+  anterior" desfaz.
+- "Revisão antes do MAPA" (no resumo): confere pedido, dados do despachante
+  (e o formato de MAWB, LPCO, DU-E e HAWB), ordem das datas (embalagem →
+  saída do aquário → MAO → GRU → destino), 72 h de oxigênio, código do
+  estabelecimento, contato do consignee, saldo das NFs de entrada e CTF dos
+  pescadores. Cada problema tem "Ir para o campo". "Baixar os documentos do
+  MAPA (.zip)" traz requerimento, packing list, atestados e CZI.
+- Dados corrigidos em todos os documentos: MONTFOORT; Ruinemans com
+  telefone 0031 348 479 800 e purchase@ruinemans.com; Tucanoichthys tucano
+  sempre PIABA; e-mail do despachante enir@dmarcos.com.br no requerimento.
+- Histórico › Ver detalhes › Mortalidade: "Trocar espécie" em cada linha.
+  Quando o peixe que foi para o cliente era outro, escolha a espécie certa:
+  a linha passa a usar o preço dela, e notinha, estoque, relatórios e o
+  crédito de mortalidade (que continua na mesma linha) acompanham. Pede
+  confirmação e tem "Desfazer a troca".
+- Corrigido: digitar num campo e clicar logo em "Baixar" perdia o clique.

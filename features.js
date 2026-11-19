@@ -128,6 +128,38 @@
     return { rows, ex, totals, dia: e.nota.dia, avista: av };
   }
 
+  /* v29.20: trocar a espécie de uma linha de um pedido já salvo (o que foi pro cliente foi outro peixe).
+     Atualiza linha, notinha, caixas, estoque e o resumo do pedido de uma vez; a mortalidade digitada continua na mesma linha.
+     preco: preço da espécie nova (já com a tabela do cliente). Devolve a cópia de antes, para desfazer. */
+  function trocarEspecie(e, idx, it, preco, cfg) {
+    const l = e.lines && e.lines[idx]; if (!l || !it) return null;
+    const antes = JSON.parse(JSON.stringify(e)), old = { key: l.key, sci: l.sci, comum: l.comum, nome: l.nome, preco: l.preco };
+    const nome = Core.docName ? Core.docName(it, cfg || Core.DEFAULT_CFG) : (it.comum || it.sci), novoKey = Core.itemKey(it);
+    Object.assign(l, { key: novoKey, sci: it.sci, comum: it.comum, nome, preco: r2(+preco || 0) });
+    // notinha: a linha com o mesmo nome e preço da antiga (se houver duas iguais, a da mesma posição)
+    if (e.nota && Array.isArray(e.nota.rows) && e.nota.rows.length) {
+      const up = s => String(s || '').toUpperCase().trim(), cand = e.nota.rows.map((r, i) => i).filter(i => !e.nota.rows[i].credito && up(e.nota.rows[i].nome) === up(old.nome || old.comum || old.sci));
+      const ri = cand.length > 1 && cand.includes(idx) ? idx : cand[0];
+      if (ri != null) Object.assign(e.nota.rows[ri], { nome: up(nome), unit: r2(+preco || 0) });
+    }
+    // caixas, pedido salvo e estoque
+    (e.boxes || []).forEach(b => (b.items || []).forEach(x => { if (x.sci === old.sci) x.sci = it.sci; }));
+    let movido = false;
+    (e.rows || []).forEach(r => { if (!movido && r.sci === old.sci && (r.comum || '') === (old.comum || '')) { Object.assign(r, { sci: it.sci, comum: it.comum, caixa: it.caixa || r.caixa, rio: it.rio || '' }); movido = true; } });
+    if (e.uso && old.key && e.uso[old.key] != null) { const b = e.uso[old.key]; delete e.uso[old.key]; e.uso[novoKey] = r2((e.uso[novoKey] || 0) + b); }
+    // resumo do pedido
+    if (e.totais) {
+      const valor = r2(e.lines.reduce((a, x) => a + x.peixes * x.preco, 0));
+      e.totais.valor = valor;
+      const dif = r2((l.preco - (+old.preco || 0)) * (+l.peixes || 0)); // só muda o valor dos peixes desta linha; GTA, atestado e embalagem ficam
+      e.totais.fish = r2((+e.totais.fish || 0) + dif); e.totais.total = r2((+e.totais.total || 0) + dif);
+    }
+    if (e.mort && e.mort.dead) { const m = mortalidade(e, e.mort.dead); e.mort.credito = m.credito; e.mort.mortos = m.mortos; } // crédito de mortalidade pelo preço novo
+    e.trocas = (e.trocas || []).concat([{ em: Date.now(), de: old.sci, para: it.sci, precoDe: old.preco, precoPara: r2(+preco || 0) }]);
+    e.upd = Date.now();
+    return antes;
+  }
+
   // situação (item 18)
   const STATUS = { aguardando: 'Aguardando pagamento', pago: 'Pago', embarcado: 'Embarcado', entregue: 'Entregue', cancelado: 'Cancelado' };
   /* v29.18: boleto parcelado (ex.: 30/40/50/60 ou 25/40). e.pay.parc = [{n, dias, venc, valor, boleto, pago}]; boleto e pago guardam a data (AAAA-MM-DD) ou ''. */
@@ -416,6 +448,6 @@
     return bNovo ? b : a;
   }
 
-  return { todayISO, addDays, daysBetween, r2, parsePrecos, priceFor, soldBoxes, effCatalog, usoOf, makeEntry, devido, baseAvista, valorAvista, saldo, creditoCliente, creditRow, mortalidade, notaCorrigida,
+  return { todayISO, addDays, daysBetween, r2, parsePrecos, priceFor, soldBoxes, effCatalog, usoOf, makeEntry, devido, baseAvista, valorAvista, saldo, creditoCliente, creditRow, mortalidade, notaCorrigida, trocarEspecie,
     PARC_PRESETS, redistribuir, aplicarRecebido, parcDias, parcelas, gerarParcelas, somaParc, syncParc, parcAberta, proxVenc, STATUS, situacao, msgCobranca, msgMortalidade, msgAvista, avistaSit, crossCheck, romaneio, painel, reposicao, ibamaRows, spokenToDigits, deriveKeys, encryptJSON, decryptJSON, cloudMod, mergeData, idIndex, mergeHist, mergeClientes, cloudPull, cloudPush, active };
 });

@@ -261,6 +261,21 @@
       <p class="note">${P.length ? 'Marque cada boleto como emitido e cada parcela como paga. O saldo, a situação e a previsão a receber seguem as parcelas.' : 'Opcional. Sem parcelas, o pedido vale pelo prazo geral (' + prazo() + ' dias). Com parcelas, o atraso conta a partir do vencimento de cada uma.'}</p>
       ${corpo}${und && P.length ? `<p class="note">Parcelas anteriores guardadas. <button type="button" data-h="parcUndo" data-id="${id}">Desfazer a troca</button></p>` : ''}${escolha}<p class="note" id="parcMsg" role="status"></p></div>`;
   }
+  /* v29.20: trocar a espécie de uma linha (o peixe que foi para o cliente era outro) */
+  const catLabel = it => `${it.sci} — ${it.comum}${it.caixa ? ' (' + it.caixa + '/cx)' : ''}`;
+  const cliDe = e => (S.clientes || []).find(c => PP.up(c.nome) === PP.up(e.cliente.nome)) || null;
+  function trocaRow(e, i) {
+    const T = ST.hist.troca; if (!T || T.id !== e.id || T.i !== i) return '';
+    const it = (S.catalog || []).find(x => catLabel(x) === T.txt);
+    return `<tr class="trocarow"><td colspan="5"><div class="row" style="align-items:flex-end"><div class="field grow"><label for="trocaIn">Espécie que foi para o cliente (no lugar de ${esc(e.lines[i].nome || e.lines[i].comum)})</label>
+      <input id="trocaIn" list="trocaList" data-troca="1" value="${esc(T.txt || '')}" placeholder="digite o nome científico ou comum" autocomplete="off"><datalist id="trocaList">${(S.catalog || []).map(x => `<option value="${esc(catLabel(x))}">`).join('')}</datalist></div>
+      <button type="button" class="primary" data-h="trocaok" data-id="${e.id}" ${it ? '' : 'disabled'}>Trocar</button><button type="button" data-h="trocano" data-id="${e.id}">Cancelar</button></div>
+      <p class="note" id="trocaPrev">${trocaPrev(e, i, T.txt)}</p></td></tr>`;
+  }
+  function trocaPrev(e, i, txt) {
+    const it = (S.catalog || []).find(x => catLabel(x) === txt), pr = it ? F.priceFor(cliDe(e), it) : null;
+    return `${it ? `Preço passa de R$ ${fmt(e.lines[i].preco)} para <b>R$ ${fmt(pr)}</b> por peixe (${fmtInt(e.lines[i].peixes)} peixes: ${(pr - e.lines[i].preco) >= 0 ? '+' : '−'} R$ ${fmt(Math.abs(F.r2((pr - e.lines[i].preco) * e.lines[i].peixes)))} no pedido). A notinha, o estoque e os relatórios passam a usar a espécie nova; a mortalidade digitada fica nesta linha.` : 'Escolha a espécie na lista (ela vem do seu catálogo).'}`;
+  }
   function detail(e, hoje) {
     const s = F.situacao(e, hoje, prazo()), mt = ST.hist.mort[e.id] || (ST.hist.mort[e.id] = (e.mort && e.mort.dead) || {}), calc = F.mortalidade(e, mt);
     const dest = (e.mort && e.mort.destino) || 'abater';
@@ -281,8 +296,9 @@
         <div class="mortbox ${ST.hist.flash === e.id ? 'flash' : ''}" id="mortBox"><h3>Mortalidade na chegada</h3>
           <p class="note">Digite quantos peixes morreram na chegada. O app calcula o crédito pelo preço cobrado e mostra como fica a nota do pedido.</p>
           <div class="kpis"><div><b>R$ ${fmt(e.totais.total)}</b><span>total do pedido</span></div><div><b style="color:var(--bad,#ef6b6b)">− R$ ${fmt(calc.credito)}</b><span>mortalidade (${fmtInt(calc.mortos)} peixes)</span></div><div><b style="color:var(--ok,#4cc58a)">R$ ${fmt(F.r2(e.totais.total - (dest === 'abater' ? calc.credito : 0)))}</b><span>${dest === 'abater' ? 'fica na nota do pedido' : 'total (crédito vai para o próximo pedido)'}</span></div></div>
-          <div class="tablewrap"><table><thead><tr><th>Espécie</th><th class="n">Enviados</th><th class="n">R$ unit.</th><th class="n">Mortos</th></tr></thead><tbody>
-          ${e.lines.map((l, i) => `<tr><td>${esc(l.nome || l.comum)}</td><td class="n">${fmtInt(l.peixes)}</td><td class="n">${fmt(l.preco)}</td><td class="n"><input type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" maxlength="6" data-dead="${i}" data-max="${l.peixes}" value="${mt[i] || ''}" aria-label="Mortos ${esc(l.comum)}" style="width:84px"></td></tr>`).join('')}</tbody></table></div>
+          <div class="tablewrap"><table><thead><tr><th>Espécie</th><th class="n">Enviados</th><th class="n">R$ unit.</th><th class="n">Mortos</th><th></th></tr></thead><tbody>
+          ${e.lines.map((l, i) => `<tr><td>${esc(l.nome || l.comum)}${l.trocadoDe ? `<small class="note" style="display:block">trocado (era ${esc(l.trocadoDe)})</small>` : ''}</td><td class="n">${fmtInt(l.peixes)}</td><td class="n">${fmt(l.preco)}</td><td class="n"><input type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" maxlength="6" data-dead="${i}" data-max="${l.peixes}" value="${mt[i] || ''}" aria-label="Mortos ${esc(l.comum)}" style="width:84px"></td><td><button type="button" class="ib" data-h="troca" data-id="${e.id}" data-i="${i}" style="white-space:nowrap" title="O peixe que foi para o cliente era outro: troca a espécie desta linha no pedido inteiro (notinha, estoque e relatórios)">Trocar espécie</button></td></tr>${trocaRow(e, i)}`).join('')}</tbody></table></div>
+          ${ST.hist.trocaUndo && ST.hist.trocaUndo.id === e.id ? `<p class="note" id="trocaUndoBox">Espécie trocada: ${esc(ST.hist.trocaUndo.txt)}. <button type="button" data-h="trocaundo" data-id="${e.id}">Desfazer a troca</button></p>` : ''}
           <p><b>Crédito: R$ ${fmt(calc.credito)}</b> <span class="note">(${fmtInt(calc.mortos)} peixes)</span></p>
           <div class="field"><label>O que fazer com o crédito</label>
             <label style="color:var(--fg)"><input type="radio" name="mdest" value="abater" ${dest === 'abater' ? 'checked' : ''}> Abater do saldo deste pedido</label>
@@ -320,6 +336,24 @@
     }
     if (k === 'open') { ST.hist.open = id; renderHist(); $('hdet') && $('hdet').scrollIntoView({ behavior: 'smooth' }); }
     else if (k === 'close') { ST.hist.open = null; renderHist(); }
+    else if (k === 'troca' && e) { ST.hist.troca = { id: e.id, i: +b.dataset.i, txt: '' }; renderHist(); const inp = $('trocaIn'); if (inp) inp.focus(); return; }
+    else if (k === 'trocano') { ST.hist.troca = null; renderHist(); return; }
+    else if (k === 'trocaok' && e && ST.hist.troca) {
+      const T = ST.hist.troca, it = (S.catalog || []).find(x => catLabel(x) === T.txt), l = e.lines[T.i]; if (!it || !l) return;
+      const pr = F.priceFor(cliDe(e), it), de = l.nome || l.comum, para = Core.docName(it, S.cfg);
+      if (!confirm(`Trocar ${de} por ${para} no pedido de ${e.cliente.nome}?\n\nPreço: R$ ${fmt(l.preco)} → R$ ${fmt(pr)} por peixe.\nMuda a notinha, o estoque, os relatórios e o crédito de mortalidade desta linha.\nDá para desfazer logo em seguida.`)) return;
+      const antes = F.trocarEspecie(e, T.i, it, pr, S.cfg); if (!antes) return;
+      e.lines[T.i].trocadoDe = antes.lines[T.i].nome || antes.lines[T.i].comum;
+      if (e.pay && Array.isArray(e.pay.parc) && e.pay.parc.length && F.syncParc) F.syncParc(e);
+      ST.hist.trocaUndo = { id: e.id, antes, txt: `${de} → ${para}` }; ST.hist.troca = null;
+      PP.saveHist(); PP.renderClientes(); renderHist(); if (PP.assist) PP.assist.refresh(); if (PP.hoje && S.view === 'hoje') PP.hoje.render();
+      PP.toast(`Espécie trocada: ${de} → ${para}. A notinha já sai corrigida.`, 'ok'); return;
+    }
+    else if (k === 'trocaundo' && ST.hist.trocaUndo && ST.hist.trocaUndo.id === id) {
+      const ix = S.hist.findIndex(x => x.id === id); if (ix < 0) return;
+      S.hist[ix] = ST.hist.trocaUndo.antes; ST.hist.trocaUndo = null; PP.saveHist(); PP.renderClientes(); renderHist(); if (PP.assist) PP.assist.refresh();
+      PP.toast('Troca desfeita: o pedido voltou como estava.', 'ok'); return;
+    }
     else if (k === 'mortgo') { ST.hist.open = id; ST.hist.flash = id; renderHist(); const mb = $('mortBox'); if (mb) mb.scrollIntoView({ behavior: 'smooth', block: 'center' }); setTimeout(() => { ST.hist.flash = null; const m2 = $('mortBox'); if (m2) m2.classList.remove('flash'); }, 2400); }
     else if (k === 'mortok') { const em = (S.embarques || []).find(z => z.id === b.dataset.eid); if (em) { (em.linhas || []).forEach(l => { const h = S.hist.find(z => z.id === l.pedidoId); if (h && !h.mort) { h.mortOk = Date.now(); h.upd = Date.now(); } }); PP.saveHist(); renderHist(); if (PP.assist) PP.assist.refresh(); if (PP.hoje && S.view === 'hoje') PP.hoje.render(); } }
     else if (k === 'edit') { if (e && e.rapido && PP.pn) PP.pn.edit(id); else PP.loadEntry(id, 'edit'); }
@@ -374,6 +408,11 @@
     if (S.view !== 'hist') return;
     const t = ev.target;
     if (t.id === 'hq') { ST.hist.q = t.value; renderHist(); const i = $('hq'); i.focus(); i.setSelectionRange(t.value.length, t.value.length); }
+    else if (t.dataset.troca && ST.hist.troca) {
+      const e = S.hist.find(x => x.id === ST.hist.troca.id); if (!e) return; ST.hist.troca.txt = t.value;
+      const p = $('trocaPrev'), bt = document.querySelector('[data-h="trocaok"]'), it = (S.catalog || []).find(x => catLabel(x) === t.value);
+      if (p) p.innerHTML = trocaPrev(e, ST.hist.troca.i, t.value); if (bt) bt.disabled = !it; return;
+    }
     else if (t.dataset.dead !== undefined) {
       const e = S.hist.find(x => x.id === ST.hist.open); if (!e) return;
       const mx = parseInt(t.dataset.max, 10) || 0, n = Math.min(parseInt(String(t.value).replace(/\D/g, ''), 10) || 0, mx || Infinity);

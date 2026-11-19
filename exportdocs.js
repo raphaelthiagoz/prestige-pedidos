@@ -379,6 +379,7 @@
   const dataLongaLc = iso => { if (!iso) return '__ de ________ de ____'; const p = parseISO(iso); return `${pad2(p.d)} de ${MES_LC[p.m - 1]} de ${p.y}`; };
   const depParts = dep => { const m = /^(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2})/.exec(dep || ''); return m ? { date: dataBR(m[1]), time: m[2] } : { date: '', time: '' }; };
   const kgTxt = kg => (Math.round(kg * 100) / 100).toFixed(2).replace('.', ',');
+  const depISO = dep => { const m = /^(\d{4}-\d{2}-\d{2})/.exec(dep || ''); return m ? m[1] : ''; };
 
   // troca a tabela de espécies (cabeçalho + linhas) pelo conteúdo do pedido; mantém uma linha final vazia, se o modelo tiver
   function fillSpecies(xml, headRe, rowVals) {
@@ -423,7 +424,7 @@
     // ----- CZI -----
     if (cfg.czi) {
       R.push(whole(/E26\d{6,}(-\d)?\/SEV-GRU/, (m, t) => t.replace(/E26\d{6,}(-\d)?\/SEV-GRU/, lpcoFull)));
-      R.push(whole(/Date: São Paulo, \d{1,2} de [a-zç]+ de \d{4}/, (m, t) => t.replace(/\d{1,2} de [a-zç]+ de \d{4}/, dataLongaLc(o.dateISO))));
+      R.push(whole(/Date: São Paulo, \d{1,2} de [a-zç]+ de \d{4}/, (m, t) => t.replace(/\d{1,2} de [a-zç]+ de \d{4}/, dataLongaLc(depISO(ex.dep) || o.dateISO)))); // v29.20: data final = saída do voo em GRU
       R.push(whole(/\d{2}\/\d{2}\/\d{4} – \d{2}:\d{2}/, (m, t) => (dep.date ? t.replace(/\d{2}\/\d{2}\/\d{4} – \d{2}:\d{2}/, `${dep.date} – ${dep.time}`) : t)));
       R.push(whole(/MAWB/, (m, t) => (ex.mawb ? t.replace(/(MAWB[^\d]*)\d[\d\- ]*\d/, `$1${ex.mawb}`) : t)));
       R.push(whole(/^HAWB:/, (m, t) => (ex.hawb ? t.replace(/(HAWB:\s*).*/, `$1${ex.hawb}`) : t)));
@@ -432,13 +433,15 @@
       R.push(whole(/^\s*\d+ CAIXAS$/, (m, t) => t.replace(/\d+ CAIXAS/, `${pad2(T.boxes)} CAIXAS`)));
       R.push(whole(/\d+ CAIXAS/, (m, t) => t.replace(/\d+ CAIXAS/, `${pad2(T.boxes)} CAIXAS`)));
       R.push(whole(/[\d.]+ PEIXES/, (m, t) => t.replace(/[\d.]+ PEIXES/, `${nPT(T.fish)} PEIXES`)));
-      R.push(whole(/[\d.,]+ KGS?$/, (m, t) => t.replace(/[\d.,]+( KGS?)$/, `${kgTxt(T.kg)}$1`)));
+      R.push(whole(/[\d.,]+ KGS?$/, (m, t) => t.replace(/[\d.,]+( KGS?)$/, `${kgTxt(/Peso l[ií]quido\s*\//i.test(t) ? T.boxes : T.kg)}$1`))); // v29.20: peso líquido = nº de caixas (1 kg por caixa); I.26 = peso bruto
+      R.push(whole(/Código Estabelecimento:?\s*(N[º°]\s*)?\d+/i, (m, t) => (o.estab ? t.replace(/(Código Estabelecimento:?\s*(?:N[º°]\s*)?)\d+/i, `$1${o.estab}`) : t)));
       // importador
       R.push(whole(/^(Nome|1\. Importador:|Nome\/ Name:)\s*.*(RUINEMANS|FAR EAST)/, (m, t) => t.replace(/(RUINEMANS [A-Z ]+?|FAR EAST ENTERPRISE INC)\s*$/, c.name)));
       R.push(whole(/^(Endereço\s+IJSSELVELD|Endereço\s+HIKARIGAOKA|Endereço: HIKARIGAOKA|1\.1\. Endereço: 19150)/, (m, t) => t.replace(/^(.*?(?:Endereço:?\s*(?:1\.1\. )?)?)(IJSSELVELD.*|HIKARIGAOKA.*|19150.*)$/, `$1${c.addrAt}`)));
       R.push(whole(/^1\.1\. Endereço: (19150|HIKARIGAOKA)/, (m, t) => `1.1. Endereço: ${c.addrAt}`));
       R.push(whole(/^1\.2\. Contato \(tel\/email\):.*(305|\+ ?81)/, () => `1.2. Contato (tel/email): ${[c.phone, c.email].filter(Boolean).join(' - ')}`));
     }
+    R.push(whole(/MONTFORT\b/, (m, t) => t.replace(/MONTFORT\b/g, 'MONTFOORT'))); // grafia oficial em todos os documentos
     return R;
   }
 
@@ -534,6 +537,106 @@
     return zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE' });
   }
 
+  /* ---------- REQUERIMENTO ao MAPA (v29.20) ---------- */
+  const UNI = ['', 'um', 'dois', 'três', 'quatro', 'cinco', 'seis', 'sete', 'oito', 'nove', 'dez', 'onze', 'doze', 'treze', 'quatorze', 'quinze', 'dezesseis', 'dezessete', 'dezoito', 'dezenove'];
+  const DEZ = ['', '', 'vinte', 'trinta', 'quarenta', 'cinquenta', 'sessenta', 'setenta', 'oitenta', 'noventa'];
+  const CEN = ['', 'cento', 'duzentos', 'trezentos', 'quatrocentos', 'quinhentos', 'seiscentos', 'setecentos', 'oitocentos', 'novecentos'];
+  function ate999(n) {
+    if (n === 100) return 'cem'; const c = Math.floor(n / 100), r = n % 100, p = [];
+    if (c) p.push(CEN[c]); if (r) p.push(r < 20 ? UNI[r] : DEZ[Math.floor(r / 10)] + (r % 10 ? ' e ' + UNI[r % 10] : '')); return p.join(' e ');
+  }
+  // 28080 -> "vinte e oito mil e oitenta"
+  function extenso(n) {
+    n = Math.round(Number(n) || 0); if (!n) return 'zero';
+    const g = [[1e6, 'milhão', 'milhões'], [1e3, 'mil', 'mil'], [1, '', '']], partes = []; let r = n;
+    g.forEach(([v, s1, sN]) => { const q = Math.floor(r / v); r %= v; if (!q) return; partes.push(v === 1e3 && q === 1 ? 'mil' : ate999(q) + (s1 ? ' ' + (q === 1 ? s1 : sN) : '')); });
+    if (partes.length === 1) return partes[0];
+    const ult = partes[partes.length - 1], nUlt = n % 1000; // "e" antes do último grupo quando ele é < 100 ou centena redonda
+    return partes.slice(0, -1).join(' ') + ((nUlt < 100 || nUlt % 100 === 0) ? ' e ' : ' ') + ult;
+  }
+  const brCurto = iso => { if (!iso) return '__/__/__'; const p = parseISO(iso); return `${pad2(p.d)}/${pad2(p.m)}/${String(p.y).slice(2)}`; };
+  // "G31573 16:55-22:00 · G3 1234 ..." -> trechos
+  function trechosDom(txt) { return Array.from(String(txt || '').matchAll(/([A-Z0-9]{2}\s?\d{3,5})\s+(\d{1,2}:\d{2})\s*[-–]\s*(\d{1,2}:\d{2})/gi)).map(m => ({ voo: m[1].replace(/\s/g, '').toUpperCase(), sai: m[2].padStart(5, '0'), chega: m[3].padStart(5, '0') })); }
+  const hhmm = dt => { const m = /T(\d{2}:\d{2})/.exec(dt || ''); return m ? m[1] : ''; };
+  function linhaDom(o) {
+    const ex = o.ex || {};
+    if (ex.vooNac) return `MAO – GRU ${String(ex.vooNac).trim().toUpperCase()} – ${hhmm(ex.vooNacSai) || '__:__'} – ${hhmm(ex.vooNacChe) || '__:__'} (${brCurto(depISO(ex.vooNacSai) || o.dateISO)})`;
+    const L = trechosDom(ex.dom), d = brCurto(ex.domData || o.dateISO);
+    if (!L.length) return `MAO – GRU ${String(ex.dom || '').trim()} (${d})`.replace(/\s+\(/, ' (');
+    return 'MAO – GRU ' + L.map(t => `${t.voo} – ${t.sai} – ${t.chega}`).join(' / ') + ` (${d})`;
+  }
+  function linhaInt(o) {
+    const ex = o.ex || {}, dp = depParts(ex.dep), d0 = depISO(ex.dep), d1 = depISO(ex.vooIntChe);
+    const dd = d0 && d1 ? Math.round((Date.parse(d1) - Date.parse(d0)) / 864e5) : 0;
+    return `GRU – ${(o.cons && o.cons.aeroDest) || ''} ${String(ex.voo || '').trim()} – ${dp.time || '__:__'} – ${hhmm(ex.vooIntChe) || '__:__'}${dd > 0 ? ` (+${dd})` : ''} (${brCurto(d0)})`;
+  }
+  async function reqDocx(JSZip, tpl, o) {
+    const T = totals(o), c = o.cons || {}, ex = o.ex || {};
+    const SEC = [['IMPORTADOR', 'imp'], ['ESTABELECIMENTO DE DESTINO', 'dst'], ['EXPORTADOR', 'exp'], ['ESTABELECIMENTO DE ORIGEM', 'ori'], ['TRANSPORTE', 'tra'], ['TERMO DE RESPONSABILIDADE', 'ter'], ['CONTATO PARA ESCLARECIMENTOS', 'con'], ['DOCUMENTOS ANEXOS', 'doc']];
+    const pais = String(c.country || '').replace(/\s*-\s*[A-Z]{2}$/, '');
+    const VAL = { imp: { NOME: c.name, CGC: '-', CIDADE: c.city, TELEFONE: c.phone, EMAIL: c.email }, dst: { NOME: c.name, 'ENDEREÇO': c.addrAt, CIDADE: c.city, 'REGIÃO': pais, TELEFONE: c.phone, EMAIL: c.email } };
+    return patchDocx(JSZip, tpl, (xml, part) => {
+      if (part !== 'word/document.xml') return xml;
+      // tabela de espécies (cabeçalho + linhas + TOTAL)
+      xml = xml.replace(TBL_RE, tbl => {
+        if (!/Nome Específico/.test(tbl.replace(/<[^>]+>/g, ''))) return tbl;
+        const rows = tbl.match(TR_RE); if (!rows || rows.length < 3) return tbl;
+        const tot = rows.find(r => /^TOTAL/i.test(paraTextRow(r))) || rows[rows.length - 1], proto = stripIds(rows[1]);
+        const setCells = (row, vals) => { let i = 0; return row.replace(P_RE, p => { const v = vals[i++]; return v === undefined ? p : setParaText(p, v); }); };
+        const body = T.lines.filter(l => l.boxes > 0).map(l => setCells(proto, [String(l.sci).toUpperCase(), String(l.pt || '').toUpperCase(), nPT(l.totalFish)])).join('');
+        // o modelo usa um campo =SUM(ABOVE) no total: tira o campo e deixa o número fixo (o Word/LibreOffice recalculava errado)
+        const semCampo = p => p.replace(/<w:r>(?:(?!<\/w:r>)[\s\S])*?<w:(?:fldChar|instrText)[\s\S]*?<\/w:r>/g, '').replace(/<w:r [^>]*>(?:(?!<\/w:r>)[\s\S])*?<w:(?:fldChar|instrText)[\s\S]*?<\/w:r>/g, '');
+        const totRow = stripIds(tot).replace(P_RE, p => (/^[\d.]+$/.test(paraText(p).trim()) ? setParaText(semCampo(p), nPT(T.fish)) : p));
+        const i0 = tbl.indexOf(rows[1]), i1 = tbl.lastIndexOf(rows[rows.length - 1]) + rows[rows.length - 1].length;
+        return tbl.slice(0, i0) + body + totRow + tbl.slice(i1);
+      });
+      let sec = '', lab = '';
+      xml = xml.replace(P_RE, p => {
+        const t = paraText(p), tt = t.trim(); if (!tt) return p;
+        const s = SEC.find(([k]) => tt.toUpperCase().startsWith(k)); if (s) { sec = s[1]; lab = ''; return p; }
+        let nt = t;
+        if (/^Quantidade \(ler item 2/.test(tt)) nt = t.replace(/(\):)\s*.*$/, `$1 ${extenso(T.fish)}.`);
+        else if (/^MAWB:/i.test(tt)) nt = `MAWB: ${ex.mawb || ''}`;
+        else if (/^HAWB:/i.test(tt)) nt = `HAWB: ${ex.hawb || ''}`;
+        else if (/^LPCO IBAMA:/i.test(tt)) nt = `LPCO IBAMA: ${ex.lpcoIbama || ''}`;
+        else if (/^DU-?E:/i.test(tt)) nt = `DU-E: ${ex.dued || ''}`;
+        else if (/^MAO\s*[–-]\s*GRU/i.test(tt)) nt = linhaDom(o);
+        else if (/^GRU\s*[–-]\s*[A-Z]{3}\b/i.test(tt)) nt = linhaInt(o);
+        else if (/^MANAUS-AMAZONAS, \d{1,2} DE [A-ZÇ]+ DE \d{4}/.test(tt)) nt = t.replace(/\d{1,2} DE [A-ZÇ]+ DE \d{4}/, dataLonga(ex.reqDate || o.today || o.dateISO));
+        else if (VAL[sec]) {
+          const L = tt.toUpperCase().replace(/\s+/g, '');
+          const key = /^NOME/.test(L) ? 'NOME' : /^CGC/.test(L) ? 'CGC' : /^ENDEREÇO/.test(L) ? 'ENDEREÇO' : /^CIDADE/.test(L) ? 'CIDADE' : /^REGIÃO/.test(L) ? 'REGIÃO' : /^TELEFONE/.test(L) ? 'TELEFONE' : /^EMAIL/.test(L) ? 'EMAIL' : '';
+          if (key && /:\s*$/.test(tt)) { lab = key; return p; }
+          if (lab && VAL[sec][lab] != null) { const v = VAL[sec][lab]; lab = ''; nt = String(v || ''); }
+        }
+        nt = nt.replace(/MONTFORT\b/g, 'MONTFOORT').replace(/enir@dmarcos\.com\.b(?!r)/g, 'enir@dmarcos.com.br');
+        return nt === t ? p : setParaText(p, nt);
+      });
+      return xml;
+    });
+  }
+
+  /* ---------- ETIQUETAS MENORES: MAWB + HAWB + aeroporto de destino (10 por folha, 1 por caixa) ---------- */
+  async function etqMenorDocx(JSZip, tpl, o) {
+    const T = totals(o), ex = o.ex || {}, aero = (o.cons && o.cons.aeroDest) || '';
+    const zip = await JSZip.loadAsync(b64ToBytes(tpl));
+    let xml = await zip.file('word/document.xml').async('string');
+    xml = xml.replace(P_RE, p => {
+      const t = paraText(p), tt = t.trim();
+      if (/^MAWB\s*N[º°]:/i.test(tt)) return setParaText(p, t.replace(/(MAWB\s*N[º°]:\s*).*/i, `$1${ex.mawb || ''}`));
+      if (/^HAWB\s*N[º°]:/i.test(tt)) return setParaText(p, t.replace(/(HAWB\s*N[º°]:\s*).*/i, `$1${ex.hawb || ''}`));
+      if (/^AIRPORT DESTINY:/i.test(tt)) return setParaText(p, t.replace(/(AIRPORT DESTINY:\s*).*/i, `$1${aero}`));
+      return p;
+    });
+    const b0 = xml.indexOf('<w:body>') + 8, b1 = xml.lastIndexOf('</w:body>'), body = xml.slice(b0, b1), sp = body.lastIndexOf('<w:sectPr');
+    const conteudo = stripIds(body.slice(0, sp)), sect = body.slice(sp);
+    const porFolha = (conteudo.match(/AIRPORT DESTINY/gi) || []).length || 10, folhas = Math.max(1, Math.ceil((T.boxes || 1) / porFolha));
+    // parágrafo mínimo (1 pt) que começa a página seguinte: a folha anterior já está cheia
+    const quebra = '<w:p><w:pPr><w:pageBreakBefore/><w:spacing w:before="0" w:after="0" w:line="20" w:lineRule="exact"/><w:rPr><w:sz w:val="2"/><w:szCs w:val="2"/></w:rPr></w:pPr></w:p>';
+    zip.file('word/document.xml', xml.slice(0, b0) + Array.from({ length: folhas }, () => conteudo).join(quebra) + sect + xml.slice(b1));
+    return zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE' });
+  }
+
   /* ============================================================
      API
      ============================================================ */
@@ -546,9 +649,11 @@
       doc: (k, o) => docFor(JSZip, need(k), o, DOC_CFG[k]),
       etiquetasDocx: o => etiquetasDocx(JSZip, need('etiq'), o),
       packingDocx: o => packingDocx(JSZip, need('packing'), o),
+      requerimentoDocx: o => reqDocx(JSZip, need('req'), o),
+      etiquetasMenoresDocx: o => etqMenorDocx(JSZip, need('etqm'), o),
       _dump: k => dumpDocx(JSZip, need(k))
     };
   }
 
-  return { make, totals, aduanaPrices, _x: { paraText, setParaText, patchParas, P_RE, TBL_RE, TR_RE, stripIds, patchDocx }, util: { xe, xu, b64ToBytes, dataBR, dataLonga, serial, nPT, grp, r2, pad2, parseISO } };
+  return { make, totals, aduanaPrices, _x: { paraText, setParaText, patchParas, P_RE, TBL_RE, TR_RE, stripIds, patchDocx }, util: { extenso, trechosDom, linhaDom, linhaInt, xe, xu, b64ToBytes, dataBR, dataLonga, serial, nPT, grp, r2, pad2, parseISO } };
 });

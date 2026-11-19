@@ -20,11 +20,11 @@ with sync_playwright() as p:
     ok('-1/SEV-GRU' in pg.inner_text('#xCert') and '-2/SEV-GRU' in pg.inner_text('#xCert'),'LPCO Japão -1 / -2')
     with pg.expect_download() as d: pg.click('[data-xa="zip"]')
     path=OUT+'jpn.zip'; d.value.save_as(path); z=zipfile.ZipFile(path); names=z.namelist(); print(names)
-    ok(len(names)==9, '9 arquivos Japão (inv, brl, pl, et, 3 at, 2 czi) = %d'%len(names))
+    ok(len(names)==11, '11 arquivos Japão (inv, brl, pl, et, etiquetas menores, requerimento, 3 at, 2 czi) = %d'%len(names))
     for n in names:
         if n.endswith('docx') or n.endswith('xlsx'):
             t=txt(z.read(n)); 
-            if 'ETIQ' in n: ok('FAR EAST ENTERPRISE NOVO INC' in t and 'E26006' in t,'etiquetas: consignee editado + LPCO IBAMA')
+            if 'ETIQUETAS_0' in n or ('ETIQ' in n and 'MENORES' not in n): ok('FAR EAST ENTERPRISE NOVO INC' in t and 'E26006' in t,'etiquetas: consignee editado + LPCO IBAMA')
             if 'CZI_JAPAO' in n: ok('E2600665213-1/SEV-GRU' in t,'CZI JP -1'); ok('018' in t,'CZI nº 018')
             if 'ALEMANHA' in n: ok('E2600665213-2/SEV-GRU' in t,'CZI DE -2'); ok('NOVO' in t,'CZI DE consignee editado')
             if n.startswith('INVOICE_018.2026.xlsx'): ok('NOVO' in t and '4147' in t.replace(',','').replace('.','')[:0]+t.replace(',',''),'invoice ok')

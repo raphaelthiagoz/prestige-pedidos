@@ -2049,6 +2049,7 @@ PP.mapa={
   abrirPescadores:function(){tab='pesc';PP.go('mapa');},
   render:renderPublic,
   mountPanel:mountPanel,invalidate:function(){_carregado=false;},
+  estadoExp:function(){carregarSePreciso();var X=PP.exp;return X&&X.mapaInfo?estadoExportacao(X.mapaInfo()):null;},
   searchItems:buscaItens,
   pendencias:pendencias,
   aProtocolar:function(){carregar();return S.processos.filter(aguardaProt).map(function(p){return {id:p.id,pack:p.pack,destino:p.destino,data:p.data,sei:p.sei};});},

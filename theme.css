@@ -955,3 +955,56 @@ main .seg>button[aria-pressed=true],main .rpchips>button[aria-pressed=true],main
 .olbox .ollist button[aria-pressed="true"]{border-color:var(--ac)}
 .olbox .olcfg{margin-top:8px}
 .olbox summary{cursor:pointer;color:var(--fg)}
+/* v29.20: Exportação no layout C (pedido à esquerda, resumo fixo à direita) */
+.xC{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px;align-items:start}
+.xCmain{display:flex;flex-direction:column;gap:16px;min-width:0}
+.xCside{position:sticky;top:12px;min-width:0}
+.xsum{background:var(--glass,rgba(255,255,255,.035));border:1px solid var(--line);border-radius:20px;padding:18px 20px;display:flex;flex-direction:column;gap:8px}
+.xsum .lbl,.xrev .lbl{font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.xsum .xbig{font-size:2.1rem;font-weight:500;letter-spacing:-.02em;line-height:1.1}
+.xsum .xsdest{color:var(--muted);font-size:.86rem;margin-top:4px}
+.xsumtot{margin-top:6px}.xsumtot .r2{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid var(--line);font-size:.9rem}
+.xsumtot .r2 span{color:var(--muted)}.xsumtot .r2 b{font-weight:500;font-variant-numeric:tabular-nums}
+.xsumtot .r2.tot{border:0;font-size:1rem}.xsumtot .r2.tot span{color:var(--fg)}.xsumtot .r2.tot b{color:var(--accent);font-weight:600}
+.xsumfalta{padding-top:10px;border-top:1px solid var(--line)}
+.xsum .pend{display:flex;gap:8px;align-items:flex-start;font-size:.86rem;padding:3px 0}.xsum .pend i,.xrev .revi i{width:8px;height:8px;border-radius:50%;margin-top:6px;flex:0 0 8px}
+.xsum .pend.w i{background:var(--warn,#e0b25a)}.xsum .pend.o i{background:var(--accent)}
+.xsum .xsb{width:100%;justify-content:center}.xsum .xs2{gap:8px;flex-wrap:nowrap}.xsum .xs2 button{flex:1;justify-content:center}
+.xsum .ghost{background:transparent}
+.xsum .xsnum{margin-top:4px}.xsum .xsnum .row{flex-direction:column}
+.xdests{flex-wrap:nowrap}
+table.xit td.xcalc{color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+.xtraj{border:1px dashed var(--line);border-radius:14px;padding:10px 12px;margin:8px 0}.xtraj .lb{font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.xdoc .xdocb{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}.xtplbtn{cursor:pointer;font-size:.78rem;padding:5px 10px;border-radius:10px;border:1px solid var(--line);color:var(--muted);background:transparent}
+.xtplbtn:hover{color:var(--fg)}.xtplnote{display:block;color:var(--accent);font-size:.74rem;margin-top:2px}
+.xrev .revg{margin-top:12px}.xrev .revi{display:flex;gap:10px;align-items:flex-start;padding:7px 0;border-bottom:1px solid var(--line);font-size:.9rem}
+.xrev .revi span{flex:1}.xrev .revi .ib{font-size:.78rem;padding:4px 10px}
+.xrev .revi.s-ok i{background:var(--accent)}.xrev .revi.s-w i{background:var(--warn,#e0b25a)}.xrev .revi.s-b i{background:var(--bad,#e06a6a)}
+.badge.b-b{background:rgba(224,106,106,.16);color:var(--bad,#e06a6a)}
+.xflash{outline:2px solid var(--accent)!important;outline-offset:2px;transition:outline-color .3s}
+@media(max-width:1100px){.xC{grid-template-columns:1fr}.xCside{position:static;order:-1}.xdests{flex-wrap:wrap}}
+.xrev .badge{display:inline-block;font-size:.75rem;padding:3px 10px;border-radius:99px;white-space:nowrap}
+.xC table.xit{min-width:760px}
+.xC table.xit input[data-xk="sci"]{min-width:210px}.xC table.xit input[data-xk="pt"]{min-width:120px}
+.xC table.xit input[data-xk="boxes"]{width:54px!important}.xC table.xit input[data-xk="qpb"]{width:64px!important}.xC table.xit input[data-xk="price"]{width:66px!important}.xC table.xit input[data-xk="kg"]{width:54px!important}
+.xC table.xit th,.xC table.xit td{padding-left:4px;padding-right:4px}
+.xC .tablewrap{overflow-x:auto}
+.xsum .field{flex:none}
+.xC table.xit td:first-child{width:40px}.xC table.xit td:first-child .grip{float:left;margin-right:2px}
+.xC table.xit .mv{display:block;padding:0 4px;font-size:.58rem;line-height:1.25;margin:1px 0}
+.xC table.xit input[data-xk="sci"]{min-width:190px}.xC table.xit input[data-xk="pt"]{min-width:105px}
+.xC table.xit{min-width:720px}
+.xC table.xit .mv{display:inline-block;padding:0 5px;font-size:.62rem;margin:0}
+.xC table.xit td:first-child{width:auto;white-space:nowrap}.xC table.xit td:first-child .grip{float:none}
+.xC table.xit td{vertical-align:middle}
+.xC table.xit{min-width:0}
+.xC table.xit input[data-xk="sci"]{min-width:0;width:178px}.xC table.xit input[data-xk="pt"]{min-width:0;width:104px}
+.xC table.xit input[data-xk="boxes"]{width:48px!important}.xC table.xit input[data-xk="qpb"]{width:58px!important}.xC table.xit input[data-xk="price"]{width:60px!important}
+.xC table.xit th{font-size:.64rem;letter-spacing:.08em}
+.xC table.xit input[data-xk="sci"]{width:162px}.xC table.xit input[data-xk="pt"]{width:98px}
+.xC table.xit th,.xC table.xit td{padding-left:3px;padding-right:3px}
+.xC{grid-template-columns:minmax(0,1fr) 300px}
+@media(max-width:1340px){.xC{grid-template-columns:1fr}.xCside{position:static;order:-1}}
+.xsTop{display:flex;flex-direction:column;gap:8px}.xsA,.xsB{display:flex;flex-direction:column;gap:8px;min-width:0}
+@media(max-width:1340px) and (min-width:760px){.xsTop{display:grid;grid-template-columns:1fr 1fr;column-gap:28px}.xsum .xs2,.xsum{max-width:none}.xsum .xsb{width:auto}.xsum{display:grid;grid-template-columns:1fr 1fr 1fr;column-gap:10px}.xsum .xsTop,.xsum .xsnum,.xsum>p{grid-column:1/-1}.xsum .xs2{grid-column:span 1}}
+#mortBox .trocarow td{background:rgba(63,214,200,.05);border-radius:12px}

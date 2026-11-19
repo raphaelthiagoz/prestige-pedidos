@@ -2,7 +2,11 @@
 (function () {
   'use strict';
   const PPx = window.PP, $ = PPx.$, esc = PPx.esc, store = PPx.store, F = PPx.Features;
-  const ED = ExportDocs.make({ JSZip: window.JSZip, TPL: window.TPL_EXP || {} });
+  // v29.20: modelos que você troca (CZI atualizado etc.) ficam guardados e valem por cima dos embutidos
+  const TPLV = Object.assign({}, window.TPL_EXP || {});
+  const tplMeus = () => store.get('exptpl', {});
+  (function aplicaMeus() { const M = tplMeus(); Object.keys(M).forEach(k => { if (M[k] && M[k].b64) TPLV[k] = M[k].b64; }); })();
+  const ED = ExportDocs.make({ JSZip: window.JSZip, TPL: TPLV });
   const clone = o => JSON.parse(JSON.stringify(o));
   const todayISO = () => F.todayISO();
   const LOGO = 'data:image/png;base64,' + (window.LOGO_PNG_B64 || '');
@@ -12,17 +16,17 @@
   const DEST = {
     AMS: {
       label: 'AMS · Holanda',
-      cons: { name: 'RUINEMANS GROUP', nameAt: 'RUINEMANS GROUP', addr: 'IJSSELVELD 9', addr2: '3417 XH MONTFOORT - HOLLAND', addrAt: 'IJSSELVELD 9, 3417 XH MONTFOORT', lab1: 'IJSSELVELD 9, 3417 XH MONTFOORT', lab2: 'HOLLAND', phone: '+31 20 316 5090', email: '', country: 'HOLANDA (PAÍSES BAIXOS) - NL', border: 'NLAMS4' },
+      cons: { name: 'RUINEMANS GROUP', nameAt: 'RUINEMANS GROUP', addr: 'IJSSELVELD 9', addr2: '3417 XH MONTFOORT - HOLLAND', addrAt: 'IJSSELVELD 9, 3417 XH MONTFOORT', lab1: 'IJSSELVELD 9, 3417 XH MONTFOORT', lab2: 'HOLLAND', phone: '0031 348 479 800', email: 'purchase@ruinemans.com', city: 'MONTFOORT', aeroDest: 'AMS', country: 'HOLANDA (PAÍSES BAIXOS) - NL', border: 'NLAMS4' },
       atest: ['EU', 'VIG'], czi: ['EN'], modelo: 'CE.UE.AQ.ON.ABR.24.EN', vig: 'vigAMS'
     },
     MIA: {
       label: 'Miami · EUA',
-      cons: { name: 'RUINEMANS AQUARIUM INC', nameAt: 'RUINEMANS INC', addr: '19150 SW 248TH STREET', addr2: 'HOMESTEAD = FLORIDA = USA = 33031', addrAt: '19150 SW 248TH STREET HOMESTEAD, FLORIDA 33031', lab1: '19150 SW 248TH STREET', lab2: 'HOMESTEAD, FLORIDA 33031 - USA', phone: '305-279-2349', email: 'miami@ruinemans.com', country: 'ESTADOS UNIDOS', border: '' },
+      cons: { name: 'RUINEMANS AQUARIUM INC', nameAt: 'RUINEMANS INC', addr: '19150 SW 248TH STREET', addr2: 'HOMESTEAD = FLORIDA = USA = 33031', addrAt: '19150 SW 248TH STREET HOMESTEAD, FLORIDA 33031', lab1: '19150 SW 248TH STREET', lab2: 'HOMESTEAD, FLORIDA 33031 - USA', phone: '305-279-2349', email: 'miami@ruinemans.com', city: 'HOMESTEAD, FLORIDA', aeroDest: 'MIA', country: 'ESTADOS UNIDOS', border: '' },
       atest: ['US', 'VIG'], czi: ['US'], modelo: 'EXP.US.AQ.ON.MAI.11', vig: 'vigUS'
     },
     JPN: {
       label: 'Japão',
-      cons: { name: 'FAR EAST ENTERPRISE INC', nameAt: 'FAR EAST ENTERPRISE INC', addr: 'HIKARIGAOKA 1-1322, SANRIZUKA', addr2: 'NARITA CHIBA KEN TOKYO, TOKYO - JAPAN', addrAt: 'HIKARIGAOKA 1-1322, SANRIZUKA NARITA CHIBA KEN TOKYO, TOKYO - JAPAN', lab1: 'HIKARIGAOKA 1-1322, SANRIZUKA', lab2: 'NARITA CHIBA KEN TOKYO, TOKYO - JAPAN', phone: '+81 47 635 8911', email: '', country: 'JAPÃO', border: 'ALEMANHA' },
+      cons: { name: 'FAR EAST ENTERPRISE INC', nameAt: 'FAR EAST ENTERPRISE INC', addr: 'HIKARIGAOKA 1-1322, SANRIZUKA', addr2: 'NARITA CHIBA KEN TOKYO, TOKYO - JAPAN', addrAt: 'HIKARIGAOKA 1-1322, SANRIZUKA NARITA CHIBA KEN TOKYO, TOKYO - JAPAN', lab1: 'HIKARIGAOKA 1-1322, SANRIZUKA', lab2: 'NARITA CHIBA KEN TOKYO, TOKYO - JAPAN', phone: '+81 47 635 8911', email: '', city: 'NARITA, CHIBA', aeroDest: 'NRT', country: 'JAPÃO', border: 'ALEMANHA' },
       atest: ['JP', 'EU', 'VIG'], czi: ['DE', 'JP'], modelo: 'CE.UE.AQ.ON.ABR.24.DE e EXP.JP.PE.ON.MAI.11', vig: 'vigJP'
     }
   };
@@ -30,27 +34,40 @@
   const CZN = { EN: 'CZI Inglês – AMS (CE.UE.AQ.ON.ABR.24.EN)', US: 'CZI Estados Unidos (EXP.US.AQ.ON.MAI.11)', DE: 'CZI Alemanha→Japão (CE.UE.AQ.ON.ABR.24.DE)', JP: 'CZI Japão (EXP.JP.PE.ON.MAI.11)' };
   const SISA_KEY = { EU: 'sisaEU', US: 'sisaUS', JP: 'sisaJP' };
   const CZI_KEY = { EN: 'cziEN', US: 'cziUS', DE: 'cziDE', JP: 'cziJP' };
-  const PT = { 'otocinclus hoppei': 'LIMPA VIDRO', 'paracheirodon simulans': 'NEON VERDE', 'hemigrammus bleheri': 'RODOSTOMUS', 'paracheirodon axelrodi': 'CARDINAL', 'carnegiella strigata': 'BORBOLETA LISTRADA', 'poecilocharax weitzmani': 'BRILHANTE', 'symphysodon discus': 'DISCO', 'dianema urostriatum': 'RABO DE CHICOTE', 'heros severus': 'ACARA SEVERO', 'tucanoichthys tucano': 'TUCANO', 'nannostomus marginatus': 'TORPEDINHO', 'brochis splendens': 'BROCHIS' };
+  const PT = { 'otocinclus hoppei': 'LIMPA VIDRO', 'paracheirodon simulans': 'NEON VERDE', 'hemigrammus bleheri': 'RODOSTOMUS', 'paracheirodon axelrodi': 'CARDINAL', 'carnegiella strigata': 'BORBOLETA LISTRADA', 'poecilocharax weitzmani': 'BRILHANTE', 'symphysodon discus': 'DISCO', 'dianema urostriatum': 'RABO DE CHICOTE', 'heros severus': 'ACARA SEVERO', 'tucanoichthys tucano': 'PIABA', 'nannostomus marginatus': 'TORPEDINHO', 'brochis splendens': 'BROCHIS' };
   const SEED_USED = [{ n: 13, d: 'MIA', dt: '13/10/2026' }, { n: 15, d: 'JPN', dt: '24/10/2026' }, { n: 16, d: 'AMS', dt: '04/11/2026' }];
 
   /* ---------- armazenamento ---------- */
+  const ESTAB = '13026030787'; // código do estabelecimento da Prestige (consta na GTA)
   let CFG = Object.assign({ last: 17, ano: new Date().getFullYear(), cons: {}, ordem: [], used: SEED_USED.slice() }, store.get('expcfg', {}));
   let HIST = store.get('exphist', []);
   const saveCfg = () => store.set('expcfg', CFG);
   const saveHist = () => store.set('exphist', HIST);
-  const consOf = d => Object.assign({}, DEST[d].cons, CFG.cons[d] || {});
+  // v29.20: contato novo da Ruinemans e grafia MONTFOORT também nos dados já salvos
+  function migra2920(c) {
+    if (!c) return c; ['addr', 'addr2', 'addrAt', 'lab1', 'lab2', 'city'].forEach(k => { if (c[k]) c[k] = String(c[k]).replace(/MONTFORT\b/g, 'MONTFOORT'); });
+    if (c.phone === '+31 20 316 5090' || c.phone === '+31 6 535 680 46') c.phone = '0031 348 479 800';
+    if (!c.email || /ruinemansgroup\.com/i.test(c.email)) c.email = 'purchase@ruinemans.com'; return c;
+  }
+  if (!CFG.mig2920) { if (CFG.cons && CFG.cons.AMS) migra2920(CFG.cons.AMS); CFG.mig2920 = 1; try { store.set('expcfg', CFG); } catch (_) {} }
+  const consOf = d => { const c = Object.assign({}, DEST[d].cons, CFG.cons[d] || {}); ['city', 'aeroDest'].forEach(k => { if (!c[k]) c[k] = DEST[d].cons[k]; }); return c; };
   const newEx = () => ({ nf: '', aero: 'GRU', dued: '', mawb: '', hawb: '', awb: '', voo: '', dep: '', pkDate: todayISO(), pkTime: '06:00AM', oxy: '72HRS', temp: '20℃ – 27℃', fee: 12, disc: '', doa: '', frete: '', tarifa: '', gta: '', serie: '', lpcoMapa: '', lpcoIbama: '', vooNac: '', vooNacSai: '', vooNacChe: '', vooIntChe: '' });
   const newRot = () => ({ st: {}, nt: {}, no: {}, f: {}, only: false });
   const fresh = d => ({ dest: d || 'MIA', date: todayISO(), cons: consOf(d || 'MIA'), ex: newEx(), conv: { on: true, rate: '', date: todayISO(), msg: '' }, items: [], ordem: 'auto', tab: 'inv', sub: { atest: DEST[d || 'MIA'].atest[0], czi: DEST[d || 'MIA'].czi[0] }, invView: 'usd', allLabels: false, rot: newRot(), curId: null, n: null, msg: '' });
   let S = fresh('MIA');
   try { const r = store.get('expdraft', null); if (r && r.items && r.dest && DEST[r.dest]) { S = Object.assign(fresh(r.dest), r); S.rot = Object.assign(newRot(), r.rot || {}); S.ex = Object.assign(newEx(), r.ex || {}); S.conv = Object.assign({ on: true, rate: '', date: todayISO(), msg: '' }, r.conv || {}); S.cons = Object.assign(consOf(S.dest), r.cons || {}); } } catch (_) { /* rascunho inválido */ }
+  if (S.cons) { if (S.dest === 'AMS') migra2920(S.cons); ['city', 'aeroDest'].forEach(k => { if (!S.cons[k] && DEST[S.dest]) S.cons[k] = DEST[S.dest].cons[k]; }); }
   const persist = () => { try { store.set('expdraft', S); } catch (_) { /* cheio */ } };
   const curN = () => (S.curId && S.n ? S.n : (S.nOver || CFG.last + 1));
   const unitKg = () => (PPx.S.cfg && PPx.S.cfg.valores && PPx.S.cfg.valores.kgCaixa) || 8;
 
   /* nome em português: catálogo do app (com os "nomes nos documentos") → lista embutida → Coridora */
+  // v29.20: nomes comuns fixos nos documentos (pedido do cliente)
+  const PT_FIXO = { 'TUCANOICHTHYS TUCANO': 'PIABA' };
+  const ptDoc = (sci, pt) => PT_FIXO[String(sci || '').trim().toUpperCase().replace(/\s+/g, ' ')] || pt;
   function ptOf(sci) {
     const u = String(sci || '').trim().toUpperCase();
+    if (PT_FIXO[u.replace(/\s+/g, ' ')]) return PT_FIXO[u.replace(/\s+/g, ' ')];
     const it = (PPx.S.catalog || []).find(x => String(x.sci).trim().toUpperCase() === u);
     if (it) { try { return PPx.Core.docName(it, PPx.S.cfg); } catch (_) { return String(it.comum || '').toUpperCase(); } }
     const k = u.toLowerCase();
@@ -204,9 +221,9 @@ function czi(k){const t=T(),c=S.cons,e=S.ex,n=numStr(),num=bl(cert(k),'LPCO MAPA
     const adu = opt && opt.adu, c = adu ? aduCalc() : null;
     return {
       dest: S.dest, cons: S.cons, invNum: p3(curN()), ano: yr(), dateISO: S.date,
-      items: SI().map((x, i) => ({ sci: x.sci, pt: x.pt, boxes: +x.boxes || 0, qpb: +x.qpb || 0, price: adu ? c.prices[i] : +x.price || 0, kg: unit(x) })),
+      items: SI().map((x, i) => ({ sci: x.sci, pt: ptDoc(x.sci, x.pt), boxes: +x.boxes || 0, qpb: +x.qpb || 0, price: adu ? c.prices[i] : +x.price || 0, kg: unit(x) })),
       extras: opt ? (adu ? aduExtras() : origExtras()) : [],
-      rate: +S.conv.rate || 0, ex: S.ex
+      rate: +S.conv.rate || 0, ex: S.ex, estab: CFG.estab || ESTAB, today: todayISO()
     };
   };
   const gv = p => p.split('.').reduce((o, k) => (o == null ? o : o[k]), S);
@@ -218,10 +235,12 @@ function czi(k){const t=T(),c=S.cons,e=S.ex,n=numStr(),num=bl(cert(k),'LPCO MAPA
     L.push({ id: 'inv', name: ad ? `INVOICE_${n}_-_ORIGINAL.xlsx` : `INVOICE_${n}.xlsx`, label: ad ? 'Invoice ORIGINAL (US$)' : 'Invoice (US$)', ext: 'xlsx', build: () => ED.invoiceUsd(orderObj({ orig: 1 })) });
     if (ad) L.push({ id: 'adu', name: `INVOICE_${n}_-_ADUANA.xlsx`, label: 'Invoice ADUANA (US$)', ext: 'xlsx', build: () => ED.invoiceUsd(orderObj({ adu: 1 })) });
     if (S.conv.on) L.push({ id: 'brl', name: `INVOICE_${n}_EM_REAIS_uso_interno.xlsx`, label: 'Invoice convertida em R$ (uso interno)', ext: 'xlsx', build: () => ED.invoiceBrl(orderObj(aduOn() ? { adu: 1 } : undefined)), need: +S.conv.rate > 0 ? '' : 'informe a cotação do dólar' });
-    L.push({ id: 'pl', name: `PACKINGLIST_${n}.docx`, label: 'Packing List', ext: 'docx', build: () => ED.packingDocx(orderObj()) });
-    L.push({ id: 'et', name: `ETIQUETAS_${n}.docx`, label: 'Etiquetas (1 por caixa)', ext: 'docx', build: () => ED.etiquetasDocx(orderObj()) });
-    D.atest.forEach(k => L.push({ id: 'at:' + k, name: `${k === 'VIG' ? 'ATESTADO_VIGIAGRO' : 'ATESTADO_SISA_' + { EU: 'EUROPA', US: 'EUA', JP: 'JAPAO' }[k]}_${n}.docx`, label: ATN[k], ext: 'docx', build: () => ED.doc(k === 'VIG' ? D.vig : SISA_KEY[k], orderObj()) }));
-    D.czi.forEach(k => L.push({ id: 'cz:' + k, name: `CZI_${{ EN: 'INGLES_AMS', US: 'ESTADOS_UNIDOS', DE: 'ALEMANHA_JAPAO', JP: 'JAPAO' }[k]}_${n}.docx`, label: CZN[k].split(' (')[0], ext: 'docx', build: () => ED.doc(CZI_KEY[k], orderObj()) }));
+    L.push({ id: 'pl', mapa: 1, name: `PACKINGLIST_${n}.docx`, label: 'Packing List', ext: 'docx', tpl: 'packing', build: () => ED.packingDocx(orderObj()) });
+    L.push({ id: 'et', name: `ETIQUETAS_${n}.docx`, label: 'Etiquetas (1 por caixa)', ext: 'docx', tpl: 'etiq', build: () => ED.etiquetasDocx(orderObj()) });
+    L.push({ id: 'etm', name: `ETIQUETAS_MENORES_${n}.docx`, label: 'Etiquetas menores (MAWB, HAWB e destino)', ext: 'docx', tpl: 'etqm', build: () => ED.etiquetasMenoresDocx(orderObj()) });
+    L.push({ id: 'req', name: `REQUERIMENTO_MAPA_${n}.docx`, label: 'Requerimento ao MAPA (autorização de exportação)', ext: 'docx', tpl: 'req', mapa: 1, build: () => ED.requerimentoDocx(orderObj()) });
+    D.atest.forEach(k => L.push({ id: 'at:' + k, name: `${k === 'VIG' ? 'ATESTADO_VIGIAGRO' : 'ATESTADO_SISA_' + { EU: 'EUROPA', US: 'EUA', JP: 'JAPAO' }[k]}_${n}.docx`, label: ATN[k], ext: 'docx', tpl: k === 'VIG' ? D.vig : SISA_KEY[k], mapa: 1, build: () => ED.doc(k === 'VIG' ? D.vig : SISA_KEY[k], orderObj()) }));
+    D.czi.forEach(k => L.push({ id: 'cz:' + k, name: `CZI_${{ EN: 'INGLES_AMS', US: 'ESTADOS_UNIDOS', DE: 'ALEMANHA_JAPAO', JP: 'JAPAO' }[k]}_${n}.docx`, label: CZN[k].split(' (')[0], ext: 'docx', tpl: CZI_KEY[k], mapa: 1, build: () => ED.doc(CZI_KEY[k], orderObj()) }));
     return L;
   }
   function missing() {
@@ -353,9 +372,33 @@ function czi(k){const t=T(),c=S.cons,e=S.ex,n=numStr(),num=bl(cert(k),'LPCO MAPA
     const m = missing();
     return m.length ? `<b>Ainda em branco:</b> ${m.slice(0, 12).map(esc).join(' · ')}${m.length > 12 ? ' · +' + (m.length - 12) : ''}. Os arquivos saem mesmo assim, com esses campos vazios para você completar no Word.` : '✓ Tudo preenchido.';
   }
+  let lastDocs = '';
   function docsCard() {
-    const L = docList();
-    return `<div class="xdocs">${L.map(d => `<div class="xdoc"><span>${esc(d.label)}</span><span class="muted">${esc(d.name)}${d.need ? ' — ' + esc(d.need) : ''}</span><button type="button" data-xdl="${d.id}" ${d.need ? 'disabled' : ''}>⬇ Baixar</button></div>`).join('')}</div>`;
+    const L = docList(), M = tplMeus();
+    const dBRs = ts => { try { return new Date(ts).toLocaleDateString('pt-BR'); } catch (_) { return ''; } };
+    const tplBtns = d => !d.tpl ? '' : `<label class="xtplbtn" title="Enviar o modelo .docx atualizado deste documento">Trocar modelo<input type="file" accept=".docx" data-xtpl="${d.tpl}" hidden></label>${M[d.tpl] ? `<button type="button" class="xtplbtn" data-xa="tplback" data-k="${d.tpl}">Voltar ao anterior</button>` : ''}`;
+    return `<div class="xdocs">${L.map(d => `<div class="xdoc"><span>${esc(d.label)}${d.tpl && M[d.tpl] ? `<small class="xtplnote">modelo seu, enviado em ${esc(dBRs(M[d.tpl].dt))}</small>` : ''}</span><span class="muted">${esc(d.name)}${d.need ? ' — ' + esc(d.need) : ''}</span><span class="xdocb"><button type="button" data-xdl="${d.id}" ${d.need ? 'disabled' : ''}>⬇ Baixar</button>${tplBtns(d)}</span></div>`).join('')}</div>`;
+  }
+  const TPL_TESTE = { czi: /Nome científico|Número de embalagens|Peso líquido/i, req: /Nome Específico/i, etqm: /AIRPORT DESTINY|MAWB/i, etiq: /Scientific Name/i, sisa: /Nome Específico/i, vig: /Nome Específico/i, packing: /PACKING/i };
+  async function trocaModelo(k, file) {
+    const buf = await file.arrayBuffer(); let txt = '';
+    try { const z = await JSZip.loadAsync(buf); txt = (await z.file('word/document.xml').async('string')).replace(/<[^>]+>/g, ''); }
+    catch (_) { alert('Este arquivo não é um .docx do Word. Salve o modelo como "Documento do Word (.docx)" e envie de novo.'); return; }
+    const tipo = Object.keys(TPL_TESTE).find(t => k.toLowerCase().startsWith(t)), re = tipo && TPL_TESTE[tipo];
+    if (re && !re.test(txt) && !confirm(`Este arquivo não parece ser o modelo deste documento (não achei o texto esperado).\n\nUsar mesmo assim? Se der errado, é só clicar em "Voltar ao anterior".`)) return;
+    const b = new Uint8Array(buf); let bin = ''; for (let i = 0; i < b.length; i += 32768) bin += String.fromCharCode.apply(null, b.subarray(i, i + 32768));
+    const M = tplMeus(), prev = M[k] ? { b64: M[k].b64, name: M[k].name, dt: M[k].dt, prev: null } : null;
+    M[k] = { b64: btoa(bin), name: file.name, dt: Date.now(), prev };
+    try { store.set('exptpl', M); } catch (_) { alert('Não consegui guardar o modelo (memória do navegador cheia).'); return; }
+    TPLV[k] = M[k].b64; S.msg = `Modelo novo guardado (${file.name}). Vale para esta e para as próximas exportações.`;
+    if (PPx.toast) PPx.toast('Modelo trocado: ' + file.name, 'ok'); renderExp();
+  }
+  function voltaModelo(k) {
+    const M = tplMeus(), cur = M[k]; if (!cur) return;
+    if (!confirm(`Voltar ao modelo anterior deste documento?\n\nO modelo "${cur.name}" sai de uso${cur.prev ? ' e volta o "' + cur.prev.name + '"' : ' e volta o modelo que já vinha no app'}.`)) return;
+    if (cur.prev) M[k] = Object.assign({}, cur.prev, { prev: null }); else delete M[k];
+    store.set('exptpl', M); TPLV[k] = M[k] ? M[k].b64 : (window.TPL_EXP || {})[k];
+    if (PPx.toast) PPx.toast('Modelo anterior de volta.', 'ok'); renderExp();
   }
   /* ---------- prévia (sob demanda, editável) ---------- */
   function stageBody() {
@@ -398,40 +441,44 @@ function czi(k){const t=T(),c=S.cons,e=S.ex,n=numStr(),num=bl(cert(k),'LPCO MAPA
   const xgOpen = (k, def) => (S.xg && S.xg[k] !== undefined) ? !!S.xg[k] : (xgAll() ? true : def);
   const xgFill = ps => { const n = ps.filter(q => String(gv(q) == null ? '' : gv(q)).trim() !== '').length; return n === ps.length ? 'tudo preenchido' : n ? `${n} de ${ps.length} preenchidos` : 'nada preenchido'; };
   const xg = (k, title, sum, body, def) => `<details class="step xdet xg" data-xg="${k}" ${xgOpen(k, def) ? 'open' : ''}><summary><b>${title}</b> <span class="muted">· ${sum}</span></summary>${body}</details>`;
+  const kgCol = () => !!S.kgCol || S.items.some(x => x.kg !== '' && x.kg != null && +x.kg !== unitKg());
+  function sumTot() { const t = T(); return `<div class="r2"><span>Caixas</span><b>${t.boxes}</b></div><div class="r2"><span>Peixes</span><b>${nB(t.fish)}</b></div><div class="r2"><span>Mercadoria</span><b>US$ ${nU(t.goods, 2)}</b></div><div class="r2"><span>Package fee (${t.boxes} × ${nU(t.fee / (t.boxes || 1), 2)})</span><b>US$ ${nU(t.fee, 2)}</b></div><div class="r2 tot"><span>Total</span><b>US$ ${nU(t.total, 2)}</b></div>`; }
+  function sumFalta() { const m = missing(); return m.length ? `<div class="lbl">Falta para gerar</div>${m.slice(0, 6).map(x => `<div class="pend w"><i></i>${esc(x)}</div>`).join('')}${m.length > 6 ? `<div class="pend w"><i></i>e mais ${m.length - 6}</div>` : ''}` : '<div class="lbl">Falta para gerar</div><div class="pend o"><i></i>Nada: tudo preenchido</div>'; }
+  function sumHTML() {
+    const D = DEST[S.dest];
+    return `<div class="xsTop"><div class="xsA"><div class="lbl">Invoice</div><div class="xbig">${numStr()}</div>
+      <label class="note" style="display:flex;gap:6px;align-items:center;margin-top:4px">Trocar nº: <input type="number" min="1" id="xNumEd" value="${curN()}" style="width:84px" aria-label="Número da exportação"></label>${semRegistro().length ? `<div class="note" style="margin-top:4px">Sem registro no histórico: ${semRegistro().map(n => `<button type="button" class="xchip" data-xa="usarnum" data-n="${n}">${p3(n)}</button>`).join(' ')}</div>` : ''}
+      <div class="xsdest">${esc(D.label)} · ${esc(S.cons.name)}</div>
+      <div class="field" style="margin-top:8px"><label>Saída do aquário</label><input type="date" data-xp="date" value="${esc(S.date || '')}" ${S.date ? '' : 'disabled'}><label style="display:flex;gap:6px;align-items:center;color:var(--fg);margin-top:6px;font-size:.85rem"><input type="checkbox" id="xNoDate" ${S.date ? '' : 'checked'}> Sem data marcada ainda</label></div>
+      </div><div class="xsB"><div class="xsumtot" id="xSumTot">${sumTot()}</div>
+      <div class="xsumfalta" id="xSumFalta">${sumFalta()}</div></div></div>
+      <button type="button" class="primary xsb" data-xa="prev">Ver prévia dos documentos</button>
+      <button type="button" class="xsb" data-xa="revisao" aria-expanded="${!!S.revOpen}">Revisão antes do MAPA</button>
+      <div class="row xs2"><button type="button" data-xa="save">Salvar</button><button type="button" data-xa="zip">Baixar .zip</button></div>
+      <button type="button" class="xsb ghost" data-xa="novo">Nova exportação</button>
+      ${S.curId ? '<p class="note">Esta exportação já está salva no histórico.</p>' : ''}
+      <details class="xdet xsnum" id="xNum" ${S.numOpen ? 'open' : ''}><summary>Numeração das exportações <span class="muted">· última usada ${p3(CFG.last)}/${CFG.ano} — próxima ${p3(CFG.last + 1)}/${CFG.ano}</span></summary>
+        <div class="row" style="margin-top:8px"><div class="field" style="flex:0 1 190px"><label for="xLast">Última invoice usada (nº)</label><input type="number" min="0" id="xLast" value="${CFG.last}"></div><div class="field" style="flex:0 1 120px"><label for="xAno">Ano</label><input type="number" id="xAno" value="${CFG.ano}"></div>
+        <div class="field grow"><label>Já usados</label><span class="note">${(CFG.used || []).slice().sort((a, b) => b.n - a.n).map(u => `${p3(u.n)} (${esc((DEST[u.d] || {}).label || u.d)} · ${esc(u.dt)})`).join(' · ') || '—'}</span></div></div>
+        <p class="note">Ajuste a "última usada" quando quiser (hoje está em ${p3(CFG.last)}, a próxima é ${p3(CFG.last + 1)}). Para usar um número específico (por exemplo, um que foi pulado), troque o "Nº desta exportação" lá em cima ou clique no número em "Sem registro no histórico". Ao baixar o .zip ou salvar, o app avança sozinho. Vale só para exportações.</p></details>`;
+  }
   function renderExp() {
     const D = DEST[S.dest], el = $('vExp');
     const act = document.activeElement, keep = act && act.dataset && (act.dataset.xp || (act.dataset.xi != null ? act.dataset.xi + ':' + act.dataset.xk : null));
     el.innerHTML = `${xTabs()}
-    <section class="step"><div class="row between" style="align-items:center"><h2>Destino e numeração</h2><div class="row"><button type="button" class="primary" data-xa="prev">Ver prévia dos documentos</button><button type="button" data-xa="novo">Nova exportação</button></div></div>
-      <div class="row" style="align-items:flex-end">
-        <div class="field grow"><label>Destino</label><div class="chips">${Object.entries(DEST).map(([k, v]) => `<button type="button" class="xchip" data-xdest="${k}" aria-pressed="${S.dest === k}">${v.label}</button>`).join('')}</div></div>
-        <div class="field" style="flex:0 0 190px"><label>Nº desta exportação</label><div class="xbig">${numStr()}</div><label class="note" style="display:flex;gap:6px;align-items:center;margin-top:4px">Trocar nº: <input type="number" min="1" id="xNumEd" value="${curN()}" style="width:84px" aria-label="Número da exportação"></label>${semRegistro().length ? `<div class="note" style="margin-top:4px">Sem registro no histórico: ${semRegistro().map(n => `<button type="button" class="xchip" data-xa="usarnum" data-n="${n}">${p3(n)}</button>`).join(' ')}</div>` : ''}</div>
-        <div class="field" style="flex:0 0 210px"><label>Data</label><input type="date" data-xp="date" value="${esc(S.date || '')}" ${S.date ? '' : 'disabled'}><label style="display:flex;gap:6px;align-items:center;color:var(--fg);margin-top:6px;font-size:.85rem"><input type="checkbox" id="xNoDate" ${S.date ? '' : 'checked'}> Sem data marcada ainda (inserir depois)</label></div>
-      </div>
-      <p class="note">Escolhendo o destino, o consignee, os atestados e os CZIs mudam sozinhos. O mesmo nº vale para invoice, packing list, atestados e CZI. As exportações já feitas ficam no <b>Histórico</b>.${S.curId ? ' <b>Esta exportação já está salva no histórico.</b>' : ''}</p>
-      <details class="xdet" id="xNum" ${S.numOpen ? 'open' : ''}><summary>Numeração das exportações <span class="muted">· última usada ${p3(CFG.last)}/${CFG.ano} — próxima ${p3(CFG.last + 1)}/${CFG.ano}</span></summary>
-        <div class="row" style="margin-top:8px"><div class="field" style="flex:0 1 190px"><label for="xLast">Última invoice usada (nº)</label><input type="number" min="0" id="xLast" value="${CFG.last}"></div><div class="field" style="flex:0 1 120px"><label for="xAno">Ano</label><input type="number" id="xAno" value="${CFG.ano}"></div>
-        <div class="field grow"><label>Já usados</label><span class="note">${(CFG.used || []).slice().sort((a, b) => b.n - a.n).map(u => `${p3(u.n)} (${esc((DEST[u.d] || {}).label || u.d)} · ${esc(u.dt)})`).join(' · ') || '—'}</span></div></div>
-        <p class="note">Ajuste a "última usada" quando quiser (hoje está em ${p3(CFG.last)}, a próxima é ${p3(CFG.last + 1)}). Para usar um número específico (por exemplo, um que foi pulado), troque o "Nº desta exportação" lá em cima ou clique no número em "Sem registro no histórico". Ao baixar o .zip ou salvar, o app avança sozinho. Vale só para exportações.</p></details></section>
-    <div class="xgrid"><div class="xleft">
-      <section class="step"><h2>Pedido do cliente</h2>
+    <div class="xC"><div class="xCmain">
+      ${S.revOpen ? `<section class="step xrev" id="xRev">${revHTML()}</section>` : ''}
+      <section class="step"><div class="row between" style="align-items:center;gap:12px"><h2>Pedido do cliente</h2><div class="chips xdests" role="group" aria-label="Destino">${Object.entries(DEST).map(([k, v]) => `<button type="button" class="xchip" data-xdest="${k}" aria-pressed="${S.dest === k}">${v.label}</button>`).join('')}</div></div>
+        <p class="note" style="margin-top:0">O destino troca sozinho o consignee, os atestados, os CZIs e o aeroporto da etiqueta menor. O mesmo nº vale para todos os documentos.</p>
         <div class="row"><div class="field grow"><label>Stocklist de exportação respondida (.xlsx)</label><input type="file" id="xFile" accept=".xlsx"><p class="note">Lê a coluna "Order …" (caixas). Fica guardada para colar pedidos de texto depois.</p></div>
           <div class="field grow"><label>Ou cole o pedido (uma linha por espécie: <span class="mono">8 corydoras schwartzi</span>)</label><textarea id="xTxt" spellcheck="false" style="min-height:70px"></textarea><div class="row"><button type="button" data-xa="addtxt">Adicionar do texto</button></div></div></div>
         <p class="note" id="xMsg" role="status">${esc(S.msg || '')}</p>
-        <div class="tablewrap"><table class="xit"><thead><tr><th></th><th>Espécie</th><th>Nome comum</th><th>Caixas</th><th>Qtd/cx</th><th>US$/peixe</th><th>Kg/cx</th><th></th></tr></thead><tbody>
-        ${S.items.map((x, i) => `<tr data-xrow="${i}"><td style="white-space:nowrap"><span class="grip" draggable="true" data-xgrip="${i}" title="Arraste para mudar a ordem" aria-hidden="true">⠿</span><button type="button" class="mv" data-xmv="-1" data-xi2="${i}" aria-label="Subir linha ${i + 1}">▲</button><button type="button" class="mv" data-xmv="1" data-xi2="${i}" aria-label="Descer linha ${i + 1}">▼</button></td><td><input data-xi="${i}" data-xk="sci" value="${esc(x.sci)}"></td><td><input data-xi="${i}" data-xk="pt" value="${esc(x.pt)}" class="${x.pt ? '' : 'xblank'}"></td><td><input data-xi="${i}" data-xk="boxes" type="number" min="0" value="${esc(x.boxes)}" style="width:62px"></td><td><input data-xi="${i}" data-xk="qpb" type="number" min="0" value="${esc(x.qpb)}" style="width:72px"></td><td><input data-xi="${i}" data-xk="price" type="number" step="0.01" min="0" value="${esc(x.price)}" style="width:72px"></td><td><input data-xi="${i}" data-xk="kg" type="number" min="0" step="0.5" value="${esc(x.kg)}" placeholder="${unitKg()}" style="width:62px"></td><td><button type="button" class="danger" data-xdel="${i}" title="Remover linha" aria-label="Remover linha">✕</button></td></tr>`).join('')}</tbody></table></div>
-        <div class="row"><button type="button" data-xa="addrow">+ Adicionar espécie</button></div>
+        <div class="tablewrap"><table class="xit"><thead><tr><th></th><th>Espécie</th><th>Nome comum</th><th>Caixas</th><th>Qtd/cx</th><th class="n">Peixes</th><th>US$/peixe</th><th class="n">Subtotal US$</th>${kgCol() ? '<th>Kg/cx</th>' : ''}<th></th></tr></thead><tbody>
+        ${S.items.map((x, i) => `<tr data-xrow="${i}"><td style="white-space:nowrap"><span class="grip" draggable="true" data-xgrip="${i}" title="Arraste para mudar a ordem" aria-hidden="true">⠿</span><button type="button" class="mv" data-xmv="-1" data-xi2="${i}" aria-label="Subir linha ${i + 1}">▲</button><button type="button" class="mv" data-xmv="1" data-xi2="${i}" aria-label="Descer linha ${i + 1}">▼</button></td><td><input data-xi="${i}" data-xk="sci" value="${esc(x.sci)}"></td><td><input data-xi="${i}" data-xk="pt" value="${esc(x.pt)}" class="${x.pt ? '' : 'xblank'}"></td><td><input data-xi="${i}" data-xk="boxes" type="number" min="0" value="${esc(x.boxes)}" style="width:62px"></td><td><input data-xi="${i}" data-xk="qpb" type="number" min="0" value="${esc(x.qpb)}" style="width:72px"></td><td class="n xcalc" data-xfish="${i}">${nB((+x.boxes || 0) * (+x.qpb || 0))}</td><td><input data-xi="${i}" data-xk="price" type="number" step="0.01" min="0" value="${esc(x.price)}" style="width:72px"></td><td class="n xcalc" data-xsub="${i}">${nU((+x.boxes || 0) * (+x.qpb || 0) * (+x.price || 0), 2)}</td>${kgCol() ? `<td><input data-xi="${i}" data-xk="kg" type="number" min="0" step="0.5" value="${esc(x.kg)}" placeholder="${unitKg()}" style="width:62px"></td>` : ''}<td><button type="button" class="danger" data-xdel="${i}" title="Remover linha" aria-label="Remover linha">✕</button></td></tr>`).join('')}</tbody></table></div>
+        <div class="row"><button type="button" data-xa="addrow">+ Adicionar espécie</button><button type="button" class="xchip" data-xa="kgcol" aria-pressed="${kgCol()}" title="Peso por caixa (padrão ${unitKg()} kg). Só precisa mudar quando uma espécie usa caixa de outro peso.">${kgCol() ? 'Esconder' : 'Mostrar'} kg por caixa</button></div>
         <div class="xtot" id="xTot">${totalsLine()}</div>
         <div class="row" style="align-items:center"><span class="note" id="xOrdTxt" style="flex:1 1 260px">${ordTxt()}</span><button type="button" data-xa="ordauto" ${S.ordem === 'manual' ? '' : 'hidden'}>↺ Voltar à ordem automática</button><button type="button" data-xa="ordsave">Guardar esta ordem para os próximos pedidos</button>${(CFG.ordem || []).length ? '<button type="button" data-xa="ordclear">Apagar ordem guardada</button>' : ''}</div></section>
       <div id="xMapaPanel"></div>
-      <details class="step xdet" id="xCons" ${S.consOpen ? 'open' : ''}><summary>Consignee: <b>${esc(S.cons.name)}</b> <span class="muted">· ${esc(S.cons.addrAt)} — clique para editar</span></summary>
-        <div class="row">${fld('Nome (invoice, packing, etiquetas, CZI)', 'cons.name', 'text', '', 'grow')}${fld('Nome nos atestados', 'cons.nameAt')}</div>
-        <div class="row">${fld('Endereço – linha 1 (invoice/packing)', 'cons.addr')}${fld('Linha 2 (cidade / país)', 'cons.addr2')}</div>
-        <div class="row">${fld('Endereço em uma linha (atestados e CZI)', 'cons.addrAt', 'text', '', 'grow')}${fld('País (atestado)', 'cons.country')}</div>
-        <div class="row">${fld('Telefone', 'cons.phone')}${fld('E-mail', 'cons.email')}${S.dest !== 'MIA' ? fld('Posto fronteiriço (CZI)', 'cons.border') : ''}</div>
-        <div class="row">${fld('Etiqueta – endereço', 'cons.lab1', 'text', '', 'grow')}${fld('Etiqueta – cidade / país', 'cons.lab2', 'text', '', 'grow')}</div>
-        <p class="note">Mudou o endereço do cliente? Edite aqui: fica salvo para as próximas exportações deste destino.</p></details>
-    </div><div class="xleft">
       <section class="step"><div class="row between" style="align-items:center"><h2>Dados da exportação <span class="muted" style="font-size:.78rem;font-weight:400">· voo e documentos do despachante</span></h2><button type="button" class="xchip" data-xa="xgall" title="Mostra ou recolhe os blocos secundários desta tela (frete/DOA, embalagem, LPCO, conversão para real)">${xgAll() ? 'Recolher blocos secundários' : 'Abrir todos os blocos'}</button></div>
         <details class="frmail" id="xMailBox" ${XM.open ? 'open' : ''}><summary>Colar o e-mail do despachante (preenche MAWB, HAWB, LPCOs, DU-E e voo)</summary>
           <p class="note">Copie o texto do e-mail em que o despachante manda os documentos (INV, MAWB, LPCO IBAMA, LPCO MAPA, DU-E, voos) e cole aqui. Também funciona com Ctrl+V direto nesta tela, fora de qualquer campo.</p>
@@ -439,9 +486,12 @@ function czi(k){const t=T(),c=S.cons,e=S.ex,n=numStr(),num=bl(cert(k),'LPCO MAPA
           <div class="row"><button type="button" class="primary" data-xa="mailin">Ler e-mail e preencher</button></div>${XM.msg ? `<div class="warnbox" style="white-space:pre-line;margin-top:8px">${esc(XM.msg)}</div>` : ''}</details>
         <div class="row">${fld('Nota Fiscal nº', 'ex.nf', 'text', 'placeholder="00008941/8942 S-2"')}${fld('Aeroporto de saída', 'ex.aero')}${fld('DU-E', 'ex.dued', 'text', 'placeholder="26BR001971465-1"')}</div>
         <div class="row">${fld('MAWB', 'ex.mawb', 'text', 'placeholder="074-70222390"')}${fld('HAWB', 'ex.hawb')}${fld('AWB', 'ex.awb')}</div>
-        <div class="row">${fld('Voo internacional (nº)', 'ex.voo', 'text', 'placeholder="KL0792"')}${fld('Partida (data/hora)', 'ex.dep', 'datetime-local')}</div>
+        <div class="xtraj"><div class="lb">Trajeto (vai no requerimento e no CZI)</div>
+        <div class="row">${fld('Voo doméstico MAO → GRU (nº)', 'ex.vooNac', 'text', 'placeholder="G31573"')}${fld('Sai de MAO (data/hora)', 'ex.vooNacSai', 'datetime-local')}${fld('Chega em GRU (data/hora)', 'ex.vooNacChe', 'datetime-local')}</div>
+        <div class="row">${fld('Voo internacional (nº)', 'ex.voo', 'text', 'placeholder="KL0792"')}${fld('Partida de GRU (data/hora)', 'ex.dep', 'datetime-local')}${fld('Chegada no destino (data/hora)', 'ex.vooIntChe', 'datetime-local')}</div>
+        <p class="note">A data de partida de GRU é a "data final" do CZI. Se o voo chega no dia seguinte, o requerimento mostra "(+1)" sozinho.</p></div>
         <div class="row">${fld('Entrega da carga ao despachante', 'ex.entrega', 'text', 'placeholder="07/11/2026 às 11:00"')}${fld('Voos domésticos (até o aeroporto de saída)', 'ex.dom', 'text', 'placeholder="G31545 01:35-06:30"', 'grow')}</div>
-        <div class="row">${fld('GTA nº', 'ex.gta')}${fld('Série da GTA', 'ex.serie')}</div></section>
+        <div class="row">${fld('GTA nº', 'ex.gta')}${fld('Série da GTA', 'ex.serie')}<div class="field"><label for="xEstab">Código do estabelecimento (GTA · fixo da Prestige)</label><input id="xEstab" data-xcfg="estab" value="${esc(CFG.estab || ESTAB)}" inputmode="numeric"></div>${fld('Data do requerimento (dia em que assina e protocola)', 'ex.reqDate', 'date')}</div></section>
       ${xg('frete', 'Package fee, discount, DOA e frete', (['ex.disc', 'ex.doa', 'ex.frete', 'ex.tarifa'].some(q => +gv(q) > 0) ? 'com discount/DOA/frete: gera 2 invoices' : 'sem discount, DOA ou frete') + ` · package fee US$ ${esc(gv('ex.fee') || 0)}`,
         `<div class="row">${fld('Package fee (US$/caixa)', 'ex.fee', 'number', 'step="0.5" min="0"')}${fld('Discount (US$)', 'ex.disc', 'number', 'step="0.01" min="0" placeholder="0"')}${fld('DOA – mortalidade da exportação anterior (US$)', 'ex.doa', 'number', 'step="0.01" min="0" placeholder="0"')}</div>
         <div class="row">${fld('Frete pré-pago (US$) – valor da cotação do despachante', 'ex.frete', 'number', 'step="0.01" min="0" placeholder="0"')}${fld('…ou tarifa por kg (US$, só se não tiver o valor)', 'ex.tarifa', 'number', 'step="0.01" min="0" placeholder="0"')}</div>
@@ -455,12 +505,76 @@ function czi(k){const t=T(),c=S.cons,e=S.ex,n=numStr(),num=bl(cert(k),'LPCO MAPA
         `<label style="display:flex;gap:8px;align-items:center;color:var(--fg);font-size:.9rem"><input type="checkbox" data-xp="conv.on" ${S.conv.on ? 'checked' : ''}> Gerar também a invoice convertida em R$ (uso interno, não vai ao cliente)</label>
         ${S.conv.on ? `<div class="row">${fld('Data da cotação', 'conv.date', 'date')}${fld('Dólar PTAX compra (R$)', 'conv.rate', 'number', 'step="0.0001" min="0"')}<div class="field" style="flex:0 0 auto;justify-content:flex-end"><button type="button" data-xa="ptax">⟳ Buscar PTAX do dia (Banco Central)</button></div></div><p class="note" id="xPtmsg" role="status">${esc(S.conv.msg || 'Sem internet ou em fim de semana/feriado, o app usa o último dia útil; você também pode digitar a cotação.')}</p>` : ''}`, false)}
       <section class="step"><h2>Documentos desta exportação</h2>
-        <div class="warnbox" id="xWarn">${warnHTML()}</div><div id="xDocs">${docsCard()}</div>
-        <div class="row"><button type="button" class="primary" data-xa="zip">⬇ Baixar todos (.zip) e salvar</button><button type="button" data-xa="prev">Ver prévia</button><button type="button" data-xa="save">Salvar no histórico</button><button type="button" data-xa="rot">✓ Abrir roteiro</button></div></section>
-    </div></div>`;
+        <div class="warnbox" id="xWarn">${warnHTML()}</div><div id="xDocs">${lastDocs = docsCard()}</div>
+        <div class="row"><button type="button" class="primary" data-xa="zip">⬇ Baixar todos (.zip) e salvar</button><button type="button" data-xa="zipmapa">Baixar só os do MAPA (.zip)</button><button type="button" data-xa="prev">Ver prévia</button><button type="button" data-xa="save">Salvar no histórico</button><button type="button" data-xa="rot">✓ Abrir roteiro</button></div></section>
+      <details class="step xdet" id="xCons" ${S.consOpen ? 'open' : ''}><summary>Consignee: <b>${esc(S.cons.name)}</b> <span class="muted">· ${esc(S.cons.addrAt)} — clique para editar</span></summary>
+        <div class="row">${fld('Nome (invoice, packing, etiquetas, CZI)', 'cons.name', 'text', '', 'grow')}${fld('Nome nos atestados', 'cons.nameAt')}</div>
+        <div class="row">${fld('Endereço – linha 1 (invoice/packing)', 'cons.addr')}${fld('Linha 2 (cidade / país)', 'cons.addr2')}</div>
+        <div class="row">${fld('Endereço em uma linha (atestados e CZI)', 'cons.addrAt', 'text', '', 'grow')}${fld('País (atestado)', 'cons.country')}</div>
+        <div class="row">${fld('Cidade (requerimento)', 'cons.city')}${fld('Aeroporto de destino (etiqueta menor e requerimento)', 'cons.aeroDest')}</div>
+        <div class="row">${fld('Telefone', 'cons.phone')}${fld('E-mail', 'cons.email')}${S.dest !== 'MIA' ? fld('Posto fronteiriço (CZI)', 'cons.border') : ''}</div>
+        <div class="row">${fld('Etiqueta – endereço', 'cons.lab1', 'text', '', 'grow')}${fld('Etiqueta – cidade / país', 'cons.lab2', 'text', '', 'grow')}</div>
+        <p class="note">Mudou o endereço do cliente? Edite aqui: fica salvo para as próximas exportações deste destino.</p></details>
+    </div><aside class="xCside"><div class="xsum" id="xSum">${sumHTML()}</div></aside></div>`;
     if (keep) { try { const sel = keep.includes(':') ? `[data-xi="${keep.split(':')[0]}"][data-xk="${keep.split(':')[1]}"]` : `[data-xp="${keep}"]`, n = el.querySelector(sel); if (n) { n.focus(); if (n.setSelectionRange && /text|search/.test(n.type || '')) n.setSelectionRange(n.value.length, n.value.length); } } catch (_) { /* ok */ } }
     if (PPx.mapa && $('xMapaPanel')) PPx.mapa.mountPanel($('xMapaPanel'));
     persist();
+  }
+  /* ---------- v29.20: REVISÃO antes de anexar no MAPA ---------- */
+  function revChecks() {
+    const e = S.ex, c = S.cons, t = T(), G = [];
+    const ok = (g, tx, go) => G.push({ g, st: 'ok', tx, go }), w = (g, tx, go) => G.push({ g, st: 'w', tx, go }), b = (g, tx, go) => G.push({ g, st: 'b', tx, go });
+    const L = S.items.filter(x => +x.boxes > 0);
+    // 1. pedido
+    if (!L.length) b('Pedido', 'Nenhuma espécie com caixas no pedido.', 'xFile');
+    else ok('Pedido', `${L.length} espécies · ${t.boxes} caixas · ${nB(t.fish)} peixes. Os mesmos números saem em invoice, packing, etiquetas, atestados, CZI e requerimento.`);
+    S.items.forEach((x, i) => { if (+x.boxes > 0 && !x.pt) b('Pedido', `Falta o nome comum de ${x.sci}.`, `[data-xi="${i}"][data-xk="pt"]`); if (+x.boxes > 0 && !(+x.qpb > 0)) b('Pedido', `Falta a quantidade por caixa de ${x.sci}.`, `[data-xi="${i}"][data-xk="qpb"]`); if (+x.boxes > 0 && !(+x.price > 0)) w('Pedido', `Sem preço: ${x.sci}.`, `[data-xi="${i}"][data-xk="price"]`); });
+    const seen = {}; L.forEach(x => { const k = String(x.sci).trim().toUpperCase(); seen[k] = (seen[k] || 0) + 1; }); Object.keys(seen).filter(k => seen[k] > 1).forEach(k => w('Pedido', `${k} aparece ${seen[k]} vezes (tamanhos diferentes?). Confira se é isso mesmo.`));
+    // 2. dados do despachante
+    const F = [['ex.nf', 'Nota Fiscal nº', 1], ['ex.dued', 'DU-E', 1], ['ex.mawb', 'MAWB', 1], ['ex.hawb', 'HAWB', 1], ['ex.lpcoIbama', 'LPCO IBAMA', 1], ['ex.lpcoMapa', 'LPCO MAPA', 1], ['ex.gta', 'GTA nº', 1], ['ex.serie', 'Série da GTA', 0]];
+    F.forEach(([p, l, req]) => { if (!gv(p)) (req ? b : w)('Dados do despachante', `${l} em branco.`, p); });
+    const fmtOk = [['ex.mawb', /^\d{3}-\d{8}$/, 'MAWB fora do padrão (ex.: 074-70222412)'], ['ex.lpcoMapa', /^E\d{10}$/i, 'LPCO MAPA fora do padrão (ex.: E2600694032)'], ['ex.lpcoIbama', /^E\d{10}$/i, 'LPCO IBAMA fora do padrão (ex.: E2600666220)'], ['ex.dued', /^\d{2}BR\d{9,10}-\d$/i, 'DU-E fora do padrão (ex.: 26BR002109793-1)'], ['ex.hawb', /^DM-\d{6,}$/i, 'HAWB fora do padrão (ex.: DM-00058919)']];
+    fmtOk.forEach(([p, re, msg]) => { const v = String(gv(p) || '').trim(); if (v && !re.test(v)) w('Dados do despachante', `${msg}: "${v}".`, p); });
+    if (F.every(([p, , r]) => !r || gv(p))) ok('Dados do despachante', 'NF, DU-E, MAWB, HAWB, LPCOs e GTA preenchidos.');
+    // 3. trajeto e datas
+    const D0 = S.date, pk = e.pkDate, s1 = e.vooNacSai, c1 = e.vooNacChe, dp = e.dep, ch = e.vooIntChe;
+    [['ex.vooNac', 'Voo doméstico MAO → GRU'], ['ex.vooNacSai', 'Saída de MAO'], ['ex.vooNacChe', 'Chegada em GRU'], ['ex.voo', 'Voo internacional'], ['ex.dep', 'Partida de GRU (é a data final do CZI)'], ['ex.vooIntChe', 'Chegada no destino']].forEach(([p, l]) => { if (!gv(p)) (p === 'ex.dep' || p === 'ex.voo' ? b : w)('Trajeto e datas', `${l} em branco (vai no requerimento).`, p); });
+    const ts = v => (v ? Date.parse(v.length === 10 ? v + 'T12:00' : v) : NaN), seq = [['ex.pkDate', 'Embalagem', pk ? pk + 'T00:00' : ''], ['date', 'Saída do aquário', D0 ? D0 + 'T00:00' : ''], ['ex.vooNacSai', 'Saída de MAO', s1], ['ex.vooNacChe', 'Chegada em GRU', c1], ['ex.dep', 'Partida de GRU', dp], ['ex.vooIntChe', 'Chegada no destino', ch]].filter(x => x[2]);
+    let ordemOk = true; for (let i = 1; i < seq.length; i++) { if (ts(seq[i][2]) < ts(seq[i - 1][2]) - (seq[i][0] === 'ex.vooNacSai' || seq[i - 1][0] === 'date' ? 864e5 : 0)) { ordemOk = false; b('Trajeto e datas', `${seq[i][1]} está antes de ${seq[i - 1][1].toLowerCase()}. Confira as datas.`, seq[i][0]); } }
+    if (c1 && dp && ts(dp) - ts(c1) < 2 * 36e5 && ts(dp) >= ts(c1)) w('Trajeto e datas', 'Menos de 2 horas entre chegar em GRU e o voo internacional.', 'ex.dep');
+    if (pk && dp && ts(dp) - ts(pk + 'T' + ((/^(\d{1,2}):?(\d{2})/.exec(e.pkTime || '') || [, '06', '00']).slice(1, 3).map(x => String(x).padStart(2, '0')).join(':'))) > 72 * 36e5) w('Trajeto e datas', 'Mais de 72 horas entre a embalagem e a partida de GRU (o oxigênio está como ' + (e.oxy || '72HRS') + ').', 'ex.pkDate');
+    if (seq.length >= 3 && ordemOk) ok('Trajeto e datas', 'As datas estão em ordem: embalagem → saída do aquário → MAO → GRU → destino.');
+    if (dp) ok('Trajeto e datas', `O CZI sai com data final ${dp.slice(8, 10)}/${dp.slice(5, 7)}/${dp.slice(0, 4)} (partida de GRU).`);
+    // 4. CZI e requerimento
+    if (!(CFG.estab || ESTAB)) b('CZI e requerimento', 'Código do estabelecimento em branco.', 'xEstab'); else ok('CZI e requerimento', `Código do estabelecimento no CZI: ${CFG.estab || ESTAB}. Peso líquido do CZI: ${t.boxes},00 kg (1 kg por caixa); peso total: ${nB(t.kg)} kg.`);
+    ['phone', 'email', 'city'].forEach(k => { if (!c[k]) w('CZI e requerimento', `Consignee sem ${({ phone: 'telefone', email: 'e-mail', city: 'cidade' })[k]} (vai no requerimento).`, 'cons.' + k); });
+    if (!e.reqDate) w('CZI e requerimento', 'Data do requerimento em branco: sai com a data de hoje.', 'ex.reqDate');
+    const M = tplMeus(), meus = docList().filter(d => d.tpl && M[d.tpl]); if (meus.length) ok('CZI e requerimento', 'Usando modelo seu em: ' + meus.map(d => d.label).join(', ') + '.');
+    // 5. NFs de entrada (MAPA)
+    try { const est = PPx.mapa && PPx.mapa.estadoExp ? PPx.mapa.estadoExp() : null; if (est) { if (est.tipo === 'problema') b('Notas de entrada (MAPA)', 'Há espécie sem saldo de NF de entrada. Veja a Conferência de NFs abaixo do pedido.', 'xMapaPanel'); else if (est.tipo === 'pronto') ok('Notas de entrada (MAPA)', 'Todas as espécies têm saldo de NF de entrada.'); else if (est.tipo === 'protocolado') (est.difs && est.difs.length ? w : ok)('Notas de entrada (MAPA)', est.difs && est.difs.length ? 'O pedido mudou depois de gravar o consumo das NFs: ' + est.difs.join('; ') : 'Consumo das NFs já gravado para este pack.', 'xMapaPanel'); } } catch (_) { /* sem módulo */ }
+    try { const cv = PPx.mapa && PPx.mapa.ctfAvisos ? PPx.mapa.ctfAvisos() : []; cv.forEach(x => (x.venc ? b : w)('Notas de entrada (MAPA)', `CTF de ${x.nome} ${x.venc ? 'vencido' : 'vence em ' + x.dias + ' dias'}.`)); } catch (_) { /* ok */ }
+    if (!S.curId) w('Histórico', 'Esta exportação ainda não foi salva no histórico.');
+    return G;
+  }
+  function revHTML() {
+    const G = revChecks(), nb = G.filter(x => x.st === 'b').length, nw = G.filter(x => x.st === 'w').length, grupos = [...new Set(G.map(x => x.g))];
+    const head = nb ? `<span class="badge b-b">${nb} para corrigir</span>` : nw ? `<span class="badge b-w">Pronto, com ${nw} ${nw === 1 ? 'ponto' : 'pontos'} para conferir</span>` : '<span class="badge b-ok">Tudo certo para anexar no MAPA</span>';
+    return `<div class="row between" style="align-items:center"><h2>Revisão antes do MAPA</h2><div class="row">${head}<button type="button" data-xa="revisao">Fechar revisão</button></div></div>
+      ${grupos.map(g => `<div class="revg"><div class="lbl">${esc(g)}</div>${G.filter(x => x.g === g).map(x => `<div class="revi s-${x.st}"><i aria-hidden="true"></i><span>${esc(x.tx)}</span>${x.go ? `<button type="button" class="ib" data-xa="revgo" data-go="${esc(x.go)}">Ir para o campo</button>` : ''}</div>`).join('')}</div>`).join('')}
+      <div class="row" style="margin-top:12px"><button type="button" class="primary" data-xa="zipmapa">Baixar os documentos do MAPA (.zip)</button><span class="note" style="flex:1 1 260px">Requerimento, packing list, atestados e CZI. As notas de entrada unificadas e grifadas saem na Conferência de NFs.</span></div>`;
+  }
+  function revGo(go) {
+    let el = /^[#\[]|^x[A-Z]/.test(go) ? (go[0] === '[' ? $('vExp').querySelector(go) : $(go.replace(/^#/, ''))) : $('vExp').querySelector(`[data-xp="${go}"]`);
+    if (!el) return; const det = el.closest && el.closest('details'); if (det && !det.open) det.open = true;
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' }); if (el.focus) setTimeout(() => { try { el.focus(); } catch (_) {} }, 300);
+    el.classList.add('xflash'); setTimeout(() => el.classList.remove('xflash'), 1800);
+  }
+  async function downloadMapa() {
+    if (!semDataOk()) return;
+    const zip = new JSZip(), L = docList().filter(d => d.mapa && !d.need);
+    for (const d of L) zip.file(d.name, await d.build());
+    PPx.saveBlob(`MAPA_${p3(curN())}.${yr()}_${S.dest}.zip`, await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' }));
+    S.msg = `Baixei ${L.length} documentos para o MAPA: ${L.map(d => d.label).join(', ')}.`; persist(); renderExp();
   }
   function certNote() {
     const D = DEST[S.dest], c = k => { const m = S.ex.lpcoMapa; if (!m) return '(LPCO MAPA em branco)'; const suf = S.dest === 'JPN' ? (k === 'JP' ? '-1' : k === 'DE' ? '-2' : '') : ''; return m.replace(/\/SEV-GRU$/i, '') + suf + '/SEV-GRU'; };
@@ -490,7 +604,9 @@ function czi(k){const t=T(),c=S.cons,e=S.ex,n=numStr(),num=bl(cert(k),'LPCO MAPA
   }
   // atualiza só o que depende dos valores digitados, sem recriar os campos (o foco não se perde)
   function liveForm() {
-    const g = id => $(id); if (g('xTot')) g('xTot').innerHTML = totalsLine(); if (g('xWarn')) g('xWarn').innerHTML = warnHTML(); if (g('xDocs')) g('xDocs').innerHTML = docsCard(); if (g('xCert')) g('xCert').innerHTML = certNote(); if (g('xAduNote')) g('xAduNote').innerHTML = aduNote(); if (g('xMapaPanel') && PPx.mapa) PPx.mapa.mountPanel(g('xMapaPanel'));
+    const g = id => $(id); if (g('xSumTot')) g('xSumTot').innerHTML = sumTot(); if (g('xSumFalta')) g('xSumFalta').innerHTML = sumFalta(); if (g('xRev') && S.revOpen) g('xRev').innerHTML = revHTML();
+    S.items.forEach((x, i) => { const f = document.querySelector(`[data-xfish="${i}"]`), u = document.querySelector(`[data-xsub="${i}"]`); if (f) f.textContent = nB((+x.boxes || 0) * (+x.qpb || 0)); if (u) u.textContent = nU((+x.boxes || 0) * (+x.qpb || 0) * (+x.price || 0), 2); });
+    if (g('xTot')) g('xTot').innerHTML = totalsLine(); if (g('xWarn')) g('xWarn').innerHTML = warnHTML(); if (g('xDocs')) { const h = docsCard(); if (h !== lastDocs) { g('xDocs').innerHTML = h; lastDocs = h; } } /* só redesenha se mudou: senão o clique em "Baixar" logo depois de digitar se perdia */ if (g('xCert')) g('xCert').innerHTML = certNote(); if (g('xAduNote')) g('xAduNote').innerHTML = aduNote(); if (g('xMapaPanel') && PPx.mapa) PPx.mapa.mountPanel(g('xMapaPanel'));
     persist();
   }
   function live() { liveForm(); if (prevOpen()) refreshStage(); }
@@ -527,10 +643,10 @@ function czi(k){const t=T(),c=S.cons,e=S.ex,n=numStr(),num=bl(cert(k),'LPCO MAPA
       { k: 'nf', l: 'NOTA FISCAL', note: 'emitida à parte; o valor em R$ está em Pedido › Invoice › Convertida' },
       { k: 'pl', l: 'PACKING LIST', app: 'pl', need: [] },
       { k: 'etg', l: 'ETIQUETAS MAIORES', app: 'et', need: [['NF', 'ex.nf'], ['LPCO IBAMA', 'ex.lpcoIbama'], ['DU-E', 'ex.dued']] },
-      { k: 'etm', l: 'ETIQUETAS MENORES', note: 'ainda sem modelo no app; confira à parte' },
+      { k: 'etm', l: 'ETIQUETAS MENORES', note: 'geradas pelo app (Documentos desta exportação): MAWB, HAWB e aeroporto de destino', need2: [['MAWB', 'ex.mawb'], ['HAWB', 'ex.hawb']] },
       { k: 'gta', l: 'GTA', need2: [['GTA nº', 'ex.gta'], ['Série', 'ex.serie']] },
       { k: 'czi', l: 'CZI' + (D.czi.length > 1 ? ' (2 CZIs)' : ''), app: 'cz', need: [['LPCO MAPA', 'ex.lpcoMapa'], ['MAWB', 'ex.mawb'], ['Partida', 'ex.dep']] },
-      { k: 'req', l: 'REQUERIMENTO', note: 'preenchido e assinado (fora do app)' },
+      { k: 'req', l: 'REQUERIMENTO', note: 'gerado pelo app (Documentos desta exportação); assine e anexe no MAPA', need2: [['MAWB', 'ex.mawb'], ['HAWB', 'ex.hawb'], ['LPCO IBAMA', 'ex.lpcoIbama'], ['DU-E', 'ex.dued'], ['Voo doméstico', 'ex.vooNac'], ['Voo internacional', 'ex.voo'], ['Partida de GRU', 'ex.dep'], ['Chegada no destino', 'ex.vooIntChe']] },
       { k: 'ent', l: 'NOTAS DE ENTRADA', note: 'cobrem as espécies e quantidades?' },
       { k: 'sisa', l: 'ATESTADO SISA' + (sis.length > 1 ? ' (2: ' + sis.map(k => k === 'JP' ? 'Japão' : 'Europa').join(' + ') + ')' : ''), app: 'at', sub: sis[0], need: [] },
       { k: 'vig', l: 'ATESTADO VIGIAGRO', app: 'at', sub: 'VIG', need: [['GTA', 'ex.gta']] },
@@ -800,6 +916,8 @@ function czi(k){const t=T(),c=S.cons,e=S.ex,n=numStr(),num=bl(cert(k),'LPCO MAPA
   document.addEventListener('change', async e => {
     const t = e.target;
     if (t.id === 'xFile' && t.files[0]) { await importFile(t.files[0]); t.value = ''; renderExp(); return; }
+    if (t.dataset && t.dataset.xtpl && t.files && t.files[0]) { await trocaModelo(t.dataset.xtpl, t.files[0]); t.value = ''; return; }
+    if (t.dataset && t.dataset.xcfg) { CFG[t.dataset.xcfg] = String(t.value || '').trim(); saveCfg(); if (S.revOpen && $('xRev')) $('xRev').innerHTML = revHTML(); return; }
     if (t.id === 'xNumEd') {
       const n = parseInt(t.value, 10);
       if (!(n > 0)) { S.msg = 'Digite um número maior que zero.'; renderExp(); return; }
@@ -869,6 +987,11 @@ function czi(k){const t=T(),c=S.cons,e=S.ex,n=numStr(),num=bl(cert(k),'LPCO MAPA
     if (a === 'addtxt') { importText($('xTxt').value); renderExp(); return; }
     if (a === 'addrow') { addItem({ boxes: 1 }); renderExp(); return; }
     if (a === 'ptax') { await buscaPtax(); return; }
+    if (a === 'kgcol') { S.kgCol = !kgCol(); persist(); renderExp(); return; }
+    if (a === 'revisao') { S.revOpen = !S.revOpen; persist(); renderExp(); if (S.revOpen) { const r = $('xRev'); if (r) r.scrollIntoView({ behavior: 'smooth', block: 'start' }); } return; }
+    if (a === 'revgo') { revGo(b.dataset.go); return; }
+    if (a === 'zipmapa') { b.disabled = true; try { await downloadMapa(); } catch (e) { S.msg = 'Erro ao gerar: ' + (e.message || e); renderExp(); } return; }
+    if (a === 'tplback') { voltaModelo(b.dataset.k); return; }
     if (a === 'zip') { b.disabled = true; try { await downloadAll(); } catch (e) { S.msg = 'Erro ao gerar: ' + (e.message || e); renderExp(); } return; }
     if (a === 'save') { saveEntry(); S.msg = `Exportação ${numStr()} salva no histórico.`; persist(); if (S.xview === 'rot') renderRot(); else renderExp(); return; }
     if (a === 'rot' || a === 'vrot') { S.xview = 'rot'; persist(); render(); window.scrollTo(0, 0); return; }
