@@ -31,6 +31,16 @@ with sync_playwright() as p:
     ok('falta para gerar' in pg.inner_text('#xSumFalta').lower() and 'MAWB' in pg.inner_text('#xSumFalta'),'"Falta para gerar" lista o que está em branco')
     sw=pg.evaluate("(()=>{const w=document.querySelector('.xC .tablewrap');return w.scrollWidth-w.clientWidth})()")
     ok(sw<=2,'a tabela do pedido cabe sem rolar de lado (sobra %d px)'%sw)
+    # ordersheet do cliente (Ruinemans): Species + Boxes; preço e qtd/caixa da stocklist guardada
+    pg.set_input_files('#xFile','test/fx/ordersheet_ruinemans.xlsx'); pg.wait_for_timeout(2000)
+    m=pg.inner_text('#xMsg'); print('  ',m[:160])
+    ok('RUINEMANS AQUARIUM B.V.' in m and '26000847' in m and '11 espécies, 100 caixas' in m,'ordersheet da Ruinemans lido: pedido 26000847, 11 espécies, 100 caixas')
+    vals=[[pg.input_value(f'[data-xi="{i}"][data-xk="{k}"]') for k in ['sci','boxes','qpb','price']] for i in range(11)]
+    d={v[0]:v for v in vals}
+    ok(d.get('PARACHEIRODON AXELRODI',[0,'',''])[1:3]==['10','450'] and d['PARACHEIRODON AXELRODI'][3]=='0.16','cardinal: 10 caixas, 450/cx e US$ 0,16 vindos da stocklist')
+    ok('OTOCINCLUS VITTATUS L' in m and d.get('OTOCINCLUS VITTATUS',['','','x'])[2]=='','espécie que não está na stocklist entra em branco e é avisada')
+    ok('SCHWARTZI HIGHFIN' in m and 'ROBUSTA' in m,'nome ou tamanho parecido (highfin, robusta/robustus) vem marcado para conferir')
+    pg.set_input_files('#xFile','test/fx/stock_dec_real.xlsx'); pg.wait_for_timeout(2000)
     # revisão com campos em branco
     pg.click('#xSum [data-xa="revisao"]'); pg.wait_for_timeout(400)
     ok(pg.is_visible('#xRev') and 'para corrigir' in pg.inner_text('#xRev'),'Revisão antes do MAPA abre e aponta o que corrigir')

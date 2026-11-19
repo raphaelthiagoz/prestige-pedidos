@@ -277,11 +277,69 @@ function czi(k){const t=T(),c=S.cons,e=S.ex,n=numStr(),num=bl(cert(k),'LPCO MAPA
   const normT = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
   function addItem(base) { S.items.push(Object.assign({ sci: '', pt: '', boxes: 1, qpb: '', price: '', kg: '' }, base)); }
   function itemFromStock(x, boxes) { return { sci: x.sci, pt: ptOf(x.sci) || '', boxes, qpb: x.qpb, price: x.price, kg: '' }; }
+  /* ---------- v29.20: ORDERSHEET do cliente (ex.: Ruinemans): colunas Species e Boxes; preço e qtd/caixa vêm da sua stocklist ---------- */
+  const SZ_RE = /^(XXS|XS|S|SM|S\/M|M|ML|M\/L|L|LXL|L\/XL|XL|XXL|XXXL|SMALL|MEDIUM|LARGE)$/i;
+  function orderName(raw) {
+    const t = String(raw || '').replace(/\([^)]*\)/g, ' ').replace(/\s+/g, ' ').trim().split(' ').filter(Boolean), sz = [];
+    while (t.length > 2 && SZ_RE.test(t[t.length - 1])) sz.unshift(t.pop());
+    return { name: t.join(' '), size: sz.join(' ').toUpperCase() };
+  }
+  const levD = (a, b) => { const m = a.length, n = b.length, d = Array.from({ length: m + 1 }, (_, i) => [i]); for (let j = 1; j <= n; j++) d[0][j] = j; for (let i = 1; i <= m; i++) for (let j = 1; j <= n; j++) d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); return d[m][n]; };
+  const pareceTk = (a, b) => a === b || (a.length >= 5 && b.length >= 5 && levD(a, b) <= (Math.min(a.length, b.length) >= 7 ? 2 : 1));
+  function matchStock(stock, raw) {
+    const q = orderName(raw), qt = normT(q.name).split(' ').filter(Boolean); if (qt.length < 2) return null;
+    const L = stock.map(x => { const st = normT(x.sci).split(' ').filter(Boolean); if (!st.length || !pareceTk(st[0], qt[0])) return null;
+      const qa = qt.filter(t => st.some(u => pareceTk(t, u))).length, sa = st.filter(u => qt.some(t => pareceTk(t, u))).length;
+      return sa >= 2 ? { x, sc: qa / qt.length + sa / st.length, exato: qa === qt.length && sa === st.length && st.every(u => qt.includes(u)) } : null; }).filter(Boolean);
+    if (!L.length) return null;
+    const top = Math.max(...L.map(c => c.sc)), best = L.filter(c => c.sc >= top - 1e-9);
+    // várias linhas da mesma espécie (tamanhos): L/XL/XXL -> "large"; S/M -> "small"/"3 cm"
+    const grande = /\b(L|XL|XXL|XXXL|LARGE)\b/.test(q.size), pick = best.find(c => (grande ? /large|grande|\bl\b|xl/i : /small|3 ?cm|pequen|\bs\b|\bm\b|medium/i).test(c.x.size || '')) || best[0];
+    return { x: pick.x, exato: pick.exato && best.length === 1, varios: best.length > 1, size: q.size };
+  }
+  async function parseClientOrder(buf) {
+    const wb = new ExcelJS.Workbook(); await wb.xlsx.load(buf);
+    const ws = wb.worksheets[0]; let hdr = 0, cols = {};
+    for (let r = 1; r <= Math.min(ws.rowCount, 60) && !hdr; r++) {
+      const map = {}; ws.getRow(r).eachCell({ includeEmpty: false }, (c, i) => { const t = cellText(c).trim().toLowerCase(); if (t === 'species') map.sp = i; else if (t === 'boxes') map.boxes = i; else if (t === 'pieces') map.pcs = i; });
+      if (map.sp && map.boxes) { hdr = r; cols = map; }
+    }
+    if (!hdr) return null;
+    const meta = {}; for (let r = 1; r < hdr; r++) { const k = cellText(ws.getRow(r).getCell(1)).trim().toLowerCase(), v = cellText(ws.getRow(r).getCell(3)).trim(); if (k === 'ordernumber') meta.num = v; }
+    const rows = []; let vazias = 0;
+    for (let r = hdr + 1; r <= Math.min(ws.rowCount, hdr + 400); r++) {
+      const row = ws.getRow(r), sp = cellText(row.getCell(cols.sp)).replace(/\s+/g, ' ').trim(), a = cellText(row.getCell(1)).trim();
+      if (!meta.cli && /b\.?v\.?$|ltd\.?$|inc\.?$|gmbh$/i.test(a) && !/prestige/i.test(a)) meta.cli = a;
+      if (!sp) { if (++vazias >= 30) break; continue; } vazias = 0;
+      const boxes = cellNum(row.getCell(cols.boxes)); if (boxes > 0) rows.push({ raw: sp, boxes, pcs: cols.pcs ? cellNum(row.getCell(cols.pcs)) : NaN });
+    }
+    return { rows, meta };
+  }
+  function itemsFromClientOrder(co) {
+    const stock = store.get('expstock', []), items = [], aprox = [], sem = [];
+    co.rows.forEach(r => {
+      const m = matchStock(stock, r.raw);
+      if (m) { items.push(itemFromStock(m.x, r.boxes)); if (!m.exato) aprox.push(`${r.raw} → ${m.x.sci}${m.x.size ? ' (' + m.x.size + ')' : ''}`); }
+      else { const q = orderName(r.raw).name; items.push({ sci: q, pt: ptOf(q) || '', boxes: r.boxes, qpb: r.pcs > 0 ? Math.round(r.pcs / r.boxes) : '', price: '', kg: '' }); sem.push(r.raw); }
+    });
+    return { items, aprox, sem };
+  }
   async function importFile(file) {
     S.msg = '';
     try {
-      const r = await parseExportStock(await file.arrayBuffer());
-      if (r.error) { S.msg = r.error; return; }
+      const buf = await file.arrayBuffer(), r = await parseExportStock(buf);
+      if (r.error) {
+        const co = await parseClientOrder(buf);
+        if (!co) { S.msg = 'Não reconheci esta planilha. Use a sua stocklist respondida (colunas Name, Price, "Order …") ou o ordersheet do cliente (colunas Species e Boxes).'; return; }
+        if (!co.rows.length) { S.msg = 'Li o ordersheet do cliente, mas nenhuma linha tem caixas na coluna Boxes.'; return; }
+        const z = itemsFromClientOrder(co); S.ordem = 'auto'; S.items = byQty(z.items);
+        const tem = store.get('expstock', []).length;
+        S.msg = `Ordersheet${co.meta.cli ? ' de ' + co.meta.cli : ''}${co.meta.num ? ' nº ' + co.meta.num : ''}: ${z.items.length} espécies, ${z.items.reduce((a, x) => a + (+x.boxes), 0)} caixas. Preço e qtd/caixa vêm da sua stocklist.`
+          + (z.sem.length ? ` Não achei na sua stocklist (preencha na tabela): ${z.sem.join('; ')}.` : '')
+          + (z.aprox.length ? ` Confira nome/tamanho: ${z.aprox.join('; ')}.` : '')
+          + (tem ? '' : ' Sua stocklist ainda não está guardada: carregue-a uma vez para o app preencher preço e qtd/caixa.');
+        return;
+      }
       store.set('expstock', r.all);
       const ord = r.all.filter(x => x.boxes > 0);
       S.ordem = 'auto'; S.items = byQty(ord.map(x => itemFromStock(x, x.boxes)));

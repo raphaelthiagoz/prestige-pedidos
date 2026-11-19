@@ -883,3 +883,9 @@ v29.20 · EXPORTAÇÃO NOVA (LAYOUT C), REQUERIMENTO, ETIQUETA MENOR, CZI E TROC
   crédito de mortalidade (que continua na mesma linha) acompanham. Pede
   confirmação e tem "Desfazer a troca".
 - Corrigido: digitar num campo e clicar logo em "Baixar" perdia o clique.
+- Ordersheet do cliente (ex.: Ruinemans, colunas Species e Boxes) no mesmo
+  botão de carregar o pedido: lê espécies e caixas, e o preço e a qtd/caixa
+  vêm da sua stocklist (carregue a stocklist uma vez antes). O tamanho
+  (M, L, XL) e o subgênero entre parênteses são ignorados para achar a
+  espécie; o que vier parecido (ex.: SCHWARTZI HIGHFIN, ROBUSTA/ROBUSTUS) é
+  avisado para conferir, e o que não existir na stocklist entra em branco.
