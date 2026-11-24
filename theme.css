@@ -1009,3 +1009,14 @@ table.xit td.xcalc{color:var(--muted);white-space:nowrap;font-variant-numeric:ta
 @media(max-width:1340px) and (min-width:760px){.xsTop{display:grid;grid-template-columns:1fr 1fr;column-gap:28px}.xsum .xs2,.xsum{max-width:none}.xsum .xsb{width:auto}.xsum{display:grid;grid-template-columns:1fr 1fr 1fr;column-gap:10px}.xsum .xsTop,.xsum .xsnum,.xsum>p{grid-column:1/-1}.xsum .xs2{grid-column:span 1}}
 #mortBox .trocarow td{background:rgba(63,214,200,.05);border-radius:12px}
 .xrev .revi .ib{white-space:nowrap;flex:0 0 auto}
+
+/* ====================== Modo convidado (v29.21) ====================== */
+body.gv .gv-blur{filter:blur(7px);user-select:none;pointer-events:none}
+body.gv #btnCfg,body.gv #gvOn,body.gv #stkTop,body.gv #nav button[data-view="financeiro"],body.gv #nav button[data-view="painel"],body.gv #nav button[data-view="relat"]{display:none!important}
+#gvBar{position:fixed;right:16px;bottom:16px;z-index:9998;display:flex;align-items:center;gap:12px;padding:8px 8px 8px 16px;border-radius:99px;background:rgba(17,24,28,.94);border:1px solid rgba(232,193,90,.45);color:#e8c15a;font-size:.8rem;box-shadow:0 8px 28px rgba(0,0,0,.45)}
+#gvBar button{border-radius:99px;padding:6px 14px;font-size:.8rem}
+.gvm{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;background:rgba(5,8,10,.72);backdrop-filter:blur(4px)}
+.gvbox{width:min(440px,92vw);max-height:90vh;overflow:auto;display:flex;flex-direction:column;gap:12px;padding:22px;border-radius:20px;background:#11181c;border:1px solid var(--line);box-shadow:0 20px 60px rgba(0,0,0,.6)}
+.gvbox h3{margin:0;font-size:1.05rem}
+.gverr{min-height:1.1em;color:var(--bad);font-size:.82rem}
+.gvlk{background:none;border:0;padding:0;color:var(--accent);text-decoration:underline;cursor:pointer;font:inherit}
