@@ -1020,3 +1020,21 @@ body.gv #btnCfg,body.gv #gvOn,body.gv #stkTop,body.gv #nav button[data-view="fin
 .gvbox h3{margin:0;font-size:1.05rem}
 .gverr{min-height:1.1em;color:var(--bad);font-size:.82rem}
 .gvlk{background:none;border:0;padding:0;color:var(--accent);text-decoration:underline;cursor:pointer;font:inherit}
+
+/* ====== Celular: correções v29.21 ====== */
+body.gv #btnEye{display:none}
+@media (max-width:900px){
+  /* aviso de backup: uma linha curta, só na tela Hoje */
+  #banners .bnbk{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 14px;font-size:.82rem;border-radius:18px}
+  #banners .bnbk .bnlong{display:none}
+  #banners .bnbk button{padding:7px 14px;font-size:.8rem}
+  body:not([data-view="hoje"]) #banners .bnbk{display:none}
+  /* Pedido nacional: o seletor do cliente ocupa a linha e os botões vêm embaixo */
+  .pedcli .row.nowrap{flex-wrap:wrap}
+  .pedcli select{flex:1 1 100%;min-width:0}
+  /* bolha do assistente: menor e sai da frente ao rolar */
+  .assist.floating{width:46px;height:46px;right:16px;bottom:100px;transition:transform .25s ease,opacity .25s ease}
+  .assist.floating .afish{width:46px;height:46px}
+  .assist.floating .afish svg{width:34px}
+  body.scrolling .assist.floating{transform:translateX(80px);opacity:0}
+}

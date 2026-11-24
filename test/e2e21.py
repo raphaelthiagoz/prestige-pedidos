@@ -17,7 +17,7 @@ with sync_playwright() as p:
     ok(abs(m['dx'])<=0.6 and abs(m['dy'])<=0.6,'ícone do microfone centralizado no círculo (desvio %.2f, %.2f px)'%(m['dx'],m['dy']))
     ok('0px 0px 0px' not in m['shadow'].replace('rgba','') or True,'sem halo')
     f=pg.evaluate("(()=>{const a=document.querySelector('.assist.floating'),s=a.querySelector('.afish svg'),m=document.getElementById('kbMic');const r=a.getBoundingClientRect(),q=s.getBoundingClientRect(),k=m.getBoundingClientRect();return {w:r.width,h:r.height,rad:getComputedStyle(a).borderRadius,inside:q.left>=r.left&&q.right<=r.right&&q.top>=r.top&&q.bottom<=r.bottom,dx:(q.x+q.width/2)-(r.x+r.width/2),dy:(q.y+q.height/2)-(r.y+r.height/2),gap:r.top-k.bottom,right:[r.right,k.right]}})()")
-    ok(f['w']==56 and f['h']==56 and f['rad'] in ('50%','28px'),'cardinal: círculo 56x56')
+    ok(f['w']==46 and f['h']==46 and f['rad'] in ('50%','28px'),'cardinal: círculo 46x46 (menor desde a v29.21)')
     ok(f['inside'] and abs(f['dx'])<=1 and abs(f['dy'])<=1.5,'cardinal inteiro e centralizado dentro do círculo (desvio %.1f, %.1f)'%(f['dx'],f['dy']))
     ok(f['gap']>=4 and abs(f['right'][0]-f['right'][1])<=0.5,'microfone e cardinal empilhados, alinhados e sem encostar (folga %dpx)'%f['gap'])
     # barra de baixo não cobre os círculos

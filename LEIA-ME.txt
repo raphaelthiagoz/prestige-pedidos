@@ -889,3 +889,29 @@ v29.20 · EXPORTAÇÃO NOVA (LAYOUT C), REQUERIMENTO, ETIQUETA MENOR, CZI E TROC
   (M, L, XL) e o subgênero entre parênteses são ignorados para achar a
   espécie; o que vier parecido (ex.: SCHWARTZI HIGHFIN, ROBUSTA/ROBUSTUS) é
   avisado para conferir, e o que não existir na stocklist entra em branco.
+
+
+v29.21 · MODO CONVIDADO, TEMA CLARO (VIDRO) E AJUSTES DO CELULAR
+==================================================================
+- Modo convidado (menu lateral, botão "Modo convidado"): serve para mostrar o
+  sistema a outra pessoa sem mostrar valores.
+  * Todo valor em dinheiro vira "•••" (R$, US$, colunas de preço, subtotal,
+    total e saldo, e campos de preço e desconto).
+  * Financeiro, Painel, Romaneio e relatórios e Configurações somem do menu.
+  * Downloads, impressão e escolha de pasta ficam bloqueados (os documentos
+    têm valores).
+  * Para ligar pela primeira vez você cria um PIN (4 a 8 números). Para sair,
+    digite o PIN. Se esquecer o PIN, "Esqueci o PIN" aceita o e-mail e a senha
+    da conta (precisa de internet).
+  * Fica só neste aparelho e continua ligado se a página for recarregada.
+  * É um modo de apresentação: protege contra quem só olha a tela. O olho do
+    topo ("Ocultar valores") continua existindo, mas qualquer um desliga.
+- Aparência (menu lateral): Escuro, Claro ou Auto (segue o celular/PC). A
+  escolha fica neste aparelho. O tema Claro é um vidro translúcido sobre um
+  fundo colorido, com brilho na borda e reflexo no canto. O escuro não mudou.
+- Celular:
+  * Aviso de backup ficou curto e só aparece na tela Hoje.
+  * Pedido nacional: o botão "Apagar" não é mais cortado e a página não
+    balança para os lados.
+  * Bolha do assistente menor e sai da frente enquanto você rola a tela.
+  * Botão "Modo convidado" com ícone, no mesmo padrão do menu.

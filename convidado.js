@@ -200,9 +200,10 @@
   /* ---------- botão no menu ---------- */
   function botao() {
     const f = document.querySelector('.sidefoot'); if (!f || $('gvOn')) return;
-    const b = document.createElement('button'); b.type = 'button'; b.id = 'gvOn'; b.textContent = 'Modo convidado';
+    const b = document.createElement('button'); b.type = 'button'; b.id = 'gvOn';
+    b.innerHTML = '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.2 8.3-8 9-4.8-.7-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg> Modo convidado';
     b.title = 'Esconde todos os valores em dinheiro e bloqueia downloads, para você mostrar o sistema a outra pessoa. Para sair precisa do PIN.';
-    b.onclick = ligar; f.insertBefore(b, f.firstChild);
+    b.onclick = ligar; f.insertBefore(b, $('btnCfg') || f.firstChild);
   }
   botao();
   PP.guest = { on: isOn, ligar, sair, pass };
