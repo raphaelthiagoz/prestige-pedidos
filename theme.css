@@ -1009,3 +1009,20 @@ table.xit td.xcalc{color:var(--muted);white-space:nowrap;font-variant-numeric:ta
 @media(max-width:1340px) and (min-width:760px){.xsTop{display:grid;grid-template-columns:1fr 1fr;column-gap:28px}.xsum .xs2,.xsum{max-width:none}.xsum .xsb{width:auto}.xsum{display:grid;grid-template-columns:1fr 1fr 1fr;column-gap:10px}.xsum .xsTop,.xsum .xsnum,.xsum>p{grid-column:1/-1}.xsum .xs2{grid-column:span 1}}
 #mortBox .trocarow td{background:rgba(63,214,200,.05);border-radius:12px}
 .xrev .revi .ib{white-space:nowrap;flex:0 0 auto}
+
+/* ====== Celular: correções v29.21 ====== */
+@media (max-width:900px){
+  /* aviso de backup: uma linha curta, só na tela Hoje */
+  #banners .bnbk{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 14px;font-size:.82rem;border-radius:18px}
+  #banners .bnbk .bnlong{display:none}
+  #banners .bnbk button{padding:7px 14px;font-size:.8rem}
+  body:not([data-view="hoje"]) #banners .bnbk{display:none}
+  /* Pedido nacional: o seletor do cliente ocupa a linha e os botões vêm embaixo */
+  .pedcli .row.nowrap{flex-wrap:wrap}
+  .pedcli select{flex:1 1 100%;min-width:0}
+  /* bolha do assistente: menor e sai da frente ao rolar */
+  .assist.floating{width:46px;height:46px;right:16px;bottom:100px;transition:transform .25s ease,opacity .25s ease}
+  .assist.floating .afish{width:46px;height:46px}
+  .assist.floating .afish svg{width:34px}
+  body.scrolling .assist.floating{transform:translateX(80px);opacity:0}
+}

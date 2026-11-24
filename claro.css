@@ -1,0 +1,151 @@
+/* ====================== Tema claro: vidro líquido (v29.21) ======================
+   Só vale com <html data-theme="light">. O escuro continua em theme.css.
+   Efeito: papel de parede colorido por trás + vidro (desfoque, saturação, brilho na borda e reflexo no canto). */
+html[data-theme="light"]:root:root:root{
+  --bg:#dfe8f1; --surface:rgba(255,255,255,.5); --fg:#0f1d29; --muted:#52636f; --line:rgba(15,40,65,.12);
+  --accent:#0b8794; --accent-fg:#ffffff; --accent-soft:rgba(11,135,148,.13);
+  --ok:#127a4a; --ok-soft:rgba(18,122,74,.13); --warn:#855600; --warn-soft:rgba(214,150,20,.18); --bad:#b3362c; --bad-soft:rgba(179,54,44,.12);
+  --glass:rgba(255,255,255,.5); --glass2:rgba(255,255,255,.78); --field:rgba(255,255,255,.62);
+  --paper:#fff; --paper-ink:#1b1b1b; --paper-line:#9aa5a8;
+  --lgbg:linear-gradient(135deg,rgba(255,255,255,.66),rgba(255,255,255,.36));
+  --lgsh:inset 0 1px 1px rgba(255,255,255,.95),inset 0 -1px 1px rgba(255,255,255,.4),inset 0 0 22px rgba(255,255,255,.28),0 12px 38px rgba(40,70,110,.17),0 2px 6px rgba(40,70,110,.08);
+  --lgblur:blur(28px) saturate(185%);
+  color-scheme:light}
+html[data-theme="light"]{color-scheme:light}
+html[data-theme="light"] body{
+  background:
+    radial-gradient(900px 620px at 10% 6%,rgba(110,185,255,.62),transparent 62%),
+    radial-gradient(820px 620px at 94% 2%,rgba(185,155,255,.5),transparent 62%),
+    radial-gradient(900px 720px at 82% 100%,rgba(105,225,200,.55),transparent 62%),
+    radial-gradient(760px 540px at 0% 100%,rgba(255,200,155,.5),transparent 62%),
+    linear-gradient(160deg,#d6e3f1,#e6edf6 50%,#d8e9ee);
+  background-attachment:fixed;color:var(--fg)}
+html[data-theme="light"] body::before{display:none!important}
+
+/* vidro: cartões, menu, barras, janelas */
+html[data-theme="light"] .step,
+html[data-theme="light"] .card,
+html[data-theme="light"] .assist,
+html[data-theme="light"] .hdk,
+html[data-theme="light"] .cloudcard,
+html[data-theme="light"] .pill{
+  background:radial-gradient(140% 90% at 0% 0%,rgba(255,255,255,.6),rgba(255,255,255,0) 55%),var(--lgbg);
+  border:1px solid rgba(255,255,255,.6);box-shadow:var(--lgsh);
+  -webkit-backdrop-filter:var(--lgblur);backdrop-filter:var(--lgblur)}
+html[data-theme="light"] #side{
+  background:linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,.3));
+  border-right:1px solid rgba(255,255,255,.65);box-shadow:inset -1px 0 0 rgba(255,255,255,.5),8px 0 30px rgba(40,70,110,.08);
+  -webkit-backdrop-filter:var(--lgblur);backdrop-filter:var(--lgblur)}
+html[data-theme="light"] #bar{
+  background:linear-gradient(135deg,rgba(255,255,255,.72),rgba(255,255,255,.4));border:1px solid rgba(255,255,255,.7);
+  box-shadow:var(--lgsh);-webkit-backdrop-filter:var(--lgblur)!important;backdrop-filter:var(--lgblur)!important}
+html[data-theme="light"] #config{background:linear-gradient(180deg,rgba(236,242,250,.86),rgba(222,233,244,.82));
+  -webkit-backdrop-filter:var(--lgblur);backdrop-filter:var(--lgblur);box-shadow:-24px 0 60px rgba(30,55,90,.25),inset 1px 0 0 rgba(255,255,255,.8)}
+html[data-theme="light"] #config>summary{background:rgba(240,246,252,.82)}
+html[data-theme="light"] #cfgBack,html[data-theme="light"] #srch{background:rgba(40,60,90,.28)}
+html[data-theme="light"] .sbox,
+html[data-theme="light"] .xmbox,
+html[data-theme="light"] .toast,
+html[data-theme="light"] #hDet>*{
+  background:linear-gradient(135deg,rgba(255,255,255,.82),rgba(240,246,252,.7));border:1px solid rgba(255,255,255,.75);
+  box-shadow:var(--lgsh),0 30px 80px rgba(30,55,90,.28);color:var(--fg);
+  -webkit-backdrop-filter:var(--lgblur);backdrop-filter:var(--lgblur)}
+
+/* texto e menu */
+html[data-theme="light"] h2,html[data-theme="light"] .lb,html[data-theme="light"] th,html[data-theme="light"] .ngrp,
+html[data-theme="light"] .sres .sg{color:var(--muted)}
+html[data-theme="light"] #nav button,html[data-theme="light"] .sidefoot button{color:#2a3b48}
+html[data-theme="light"] #nav button:hover,html[data-theme="light"] .sidefoot button:hover{background:rgba(255,255,255,.6);color:#0f1d29}
+html[data-theme="light"] #nav button[aria-selected=true]{background:linear-gradient(135deg,rgba(255,255,255,.9),rgba(255,255,255,.55));color:#075e68;
+  box-shadow:inset 0 1px 1px #fff,0 4px 14px rgba(40,70,110,.14),inset 0 0 0 1px rgba(11,135,148,.28)}
+html[data-theme="light"] .pill{color:#2a3b48}
+html[data-theme="light"] .pill:hover{background:var(--glass2)}
+html[data-theme="light"] .brand b,html[data-theme="light"] header h1{color:#0f1d29}
+
+/* campos e botões */
+html[data-theme="light"] input,html[data-theme="light"] select,html[data-theme="light"] textarea{
+  background-color:var(--field);border:1px solid rgba(15,40,65,.14);color:var(--fg);box-shadow:inset 0 1px 2px rgba(40,70,110,.1)}
+html[data-theme="light"] input::placeholder,html[data-theme="light"] textarea::placeholder{color:#7b8b96}
+html[data-theme="light"] input:focus,html[data-theme="light"] select:focus,html[data-theme="light"] textarea:focus{border-color:rgba(11,135,148,.7);box-shadow:0 0 0 3px rgba(11,135,148,.18)}
+html[data-theme="light"] select{background-repeat:no-repeat;background-size:5px 5px;background-position:calc(100% - 17px) 55%,calc(100% - 12px) 55%;background-image:linear-gradient(45deg,transparent 50%,#52636f 50%),linear-gradient(135deg,#52636f 50%,transparent 50%)}
+html[data-theme="light"] button,html[data-theme="light"] .filebtn{
+  background:linear-gradient(180deg,rgba(255,255,255,.85),rgba(255,255,255,.5));border:1px solid rgba(255,255,255,.8);color:var(--fg);
+  box-shadow:inset 0 1px 1px #fff,0 2px 8px rgba(40,70,110,.12)}
+html[data-theme="light"] button:hover,html[data-theme="light"] .filebtn:hover{background:linear-gradient(180deg,#fff,rgba(255,255,255,.7));border-color:#fff}
+html[data-theme="light"] button.primary{background:linear-gradient(135deg,#46d6cf,#27a5dc);color:#04323a;border:1px solid rgba(255,255,255,.55);
+  box-shadow:inset 0 1px 1px rgba(255,255,255,.8),0 6px 18px rgba(39,165,220,.35)}
+html[data-theme="light"] button.primary:hover{background:linear-gradient(135deg,#46d6cf,#27a5dc);filter:brightness(1.05)}
+html[data-theme="light"] button.danger{color:var(--bad)}
+html[data-theme="light"] .tabs button[aria-selected=true],html[data-theme="light"] button[aria-pressed=true],html[data-theme="light"] .seg button[aria-pressed=true]{
+  background:rgba(11,135,148,.14);border-color:rgba(11,135,148,.45);color:#075e68}
+html[data-theme="light"] .warnbox{background:rgba(255,236,190,.6);border:1px solid rgba(190,130,20,.35);color:#4a3200}
+html[data-theme="light"] .okbox{background:rgba(205,240,222,.6);color:#0c4a2c}
+html[data-theme="light"] tbody tr:hover td{background:rgba(255,255,255,.45)}
+html[data-theme="light"] .empty{background:rgba(255,255,255,.35);border-color:rgba(15,40,65,.2)}
+html[data-theme="light"] .xstage,html[data-theme="light"] .rawtxt{background:rgba(255,255,255,.45);color:var(--fg)}
+html[data-theme="light"] .checkbox{background:rgba(255,255,255,.35)}
+
+/* escolha de aparência no menu */
+#temaRow{display:flex;flex-direction:column;gap:6px;padding:6px 12px 8px}
+#temaRow .tmlb{font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+#temaRow .tmbt{display:flex;gap:4px;padding:3px;border-radius:99px;border:1px solid var(--line);background:rgba(127,140,150,.1)}
+#temaRow .tmbt button{flex:1;width:auto;padding:5px 4px;border-radius:99px;border:0;background:transparent;box-shadow:none;font-size:.78rem;justify-content:center;gap:0;color:var(--muted)}
+#temaRow .tmbt button[aria-pressed=true]{background:var(--accent-soft);color:var(--accent);font-weight:650;box-shadow:inset 0 0 0 1px var(--accent)}
+html[data-theme="light"] #temaRow .tmbt button{background:transparent;box-shadow:none;border:0}
+html[data-theme="light"] #temaRow .tmbt button[aria-pressed=true]{background:rgba(255,255,255,.9);color:#075e68;box-shadow:inset 0 1px 1px #fff,0 2px 8px rgba(40,70,110,.18)}
+html[data-theme="light"] #temaRow .tmbt{background:rgba(255,255,255,.35);border-color:rgba(255,255,255,.6)}
+
+/* celular: o visual preto puro vira vidro claro */
+@media (max-width:900px){
+  html[data-theme="light"]:root:root:root{--surf:rgba(255,255,255,.55);--surf2:rgba(255,255,255,.7);--barbg:rgba(255,255,255,.6);--line:rgba(15,40,65,.1)}
+  html[data-theme="light"] body{background:
+    radial-gradient(520px 420px at 0% 0%,rgba(110,185,255,.6),transparent 62%),
+    radial-gradient(520px 420px at 100% 14%,rgba(185,155,255,.5),transparent 62%),
+    radial-gradient(560px 460px at 100% 100%,rgba(105,225,200,.55),transparent 62%),
+    radial-gradient(520px 420px at 0% 92%,rgba(255,200,155,.5),transparent 62%),
+    linear-gradient(170deg,#d6e3f1,#e8eef6 50%,#d8e9ee)!important;background-attachment:fixed!important}
+  html[data-theme="light"] .card{border:1px solid rgba(255,255,255,.7)}
+  html[data-theme="light"] .warnbox{background:rgba(255,236,190,.7)}
+  html[data-theme="light"] button,html[data-theme="light"] .filebtn{border:1px solid rgba(255,255,255,.8);background:linear-gradient(180deg,rgba(255,255,255,.88),rgba(255,255,255,.55))}
+  html[data-theme="light"] button.primary{background:linear-gradient(135deg,#46d6cf,#27a5dc);color:#04323a}
+  html[data-theme="light"] input,html[data-theme="light"] select,html[data-theme="light"] textarea{border:1px solid rgba(15,40,65,.14);background-color:rgba(255,255,255,.65)}
+  html[data-theme="light"] #bar button{background:none;border:0;box-shadow:none}
+  html[data-theme="light"] #bar button.on{background:rgba(255,255,255,.9);color:#075e68;box-shadow:inset 0 1px 1px #fff,0 2px 8px rgba(40,70,110,.15)}
+  html[data-theme="light"] .assist.floating{background:rgba(255,255,255,.75);box-shadow:var(--lgsh)}
+  html[data-theme="light"] .assist.floating .abadge{border-color:#fff}
+}
+
+/* cores fixas do tema escuro que ficam fracas no claro */
+html[data-theme="light"] #vMapa .mptabs button,html[data-theme="light"] .pill{color:#2a3b48}
+html[data-theme="light"] .mortbtn{background:rgba(179,54,44,.12)!important;border:1px solid rgba(179,54,44,.4)!important;color:#9a2a21!important}
+html[data-theme="light"] #sideP .sdBad,html[data-theme="light"] #xProg .sit-problema{color:#b3362c}
+html[data-theme="light"] #sideP .sdWarn,html[data-theme="light"] #xProg .sit-programada{color:#8a5a00}
+html[data-theme="light"] #xProg .sit-chegou{color:#0b7a80}html[data-theme="light"] #xProg .sit-transito{color:#1e63b8}html[data-theme="light"] #xProg .sit-preparo{color:#52636f}
+html[data-theme="light"] [style*="color:#3fd6c8"],html[data-theme="light"] [style*="color: #3fd6c8"]{color:#0b7a80!important}
+html[data-theme="light"] [style*="color:#e8c15a"]{color:#9a6a00!important}
+html[data-theme="light"] .hchart svg path[stroke="#f2f6f7"]{stroke:#17344d}
+html[data-theme="light"] .hchart svg text{fill:#52636f}
+html[data-theme="light"] #relBox .rpprev{background:rgba(255,255,255,.4)}
+html[data-theme="light"] [style*="color:#f2f6f7"]{color:#17344d!important}
+
+/* menu lateral: botões sem moldura (só o ativo ganha vidro) */
+html[data-theme="light"] #nav button,html[data-theme="light"] .sidefoot button,html[data-theme="light"] #side .abtn{background:none;border:0;box-shadow:none}
+html[data-theme="light"] #nav button:hover,html[data-theme="light"] .sidefoot button:hover{background:rgba(255,255,255,.6)}
+html[data-theme="light"] #temaRow .tmbt button{background:transparent}
+/* moldura geral do app (PC): vidro claro em vez do escuro */
+@media (min-width:901px){
+  html[data-theme="light"] .app{background:linear-gradient(rgba(255,255,255,.2),rgba(255,255,255,.08));border:1px solid rgba(255,255,255,.75);
+    box-shadow:0 30px 80px rgba(40,70,110,.22),inset 0 1px 0 rgba(255,255,255,.9)}
+}
+html[data-theme="light"].gl-on body{background:linear-gradient(160deg,#d6e3f1,#e6edf6 50%,#d8e9ee)!important}
+html[data-theme="light"].gl-on body::before,html[data-theme="light"].gl-on body::after{display:none!important}
+
+html[data-theme="light"] .ib:not(.pri){color:#2a3b48}
+@media (max-width:900px){
+  /* menu que abre no celular: vidro mais fechado para não misturar com a tela de trás */
+  html[data-theme="light"] #side{background:linear-gradient(180deg,rgba(240,245,251,.94),rgba(226,236,246,.92));border-right:1px solid rgba(255,255,255,.8)}
+}
+@media (max-width:900px){
+  /* lupa do topo no celular: é uma imagem fixa clara no escuro; no claro precisa de traço escuro */
+  html[data-theme="light"] header #btnSearch{background:rgba(255,255,255,.7) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%232a3b48' stroke-width='2' stroke-linecap='round'><circle cx='11' cy='11' r='7'/><path d='M20 20l-3.5-3.5'/></svg>") center/18px no-repeat}
+}
