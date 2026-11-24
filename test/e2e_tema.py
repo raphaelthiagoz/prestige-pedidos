@@ -63,5 +63,30 @@ with sync_playwright() as p:
         pg.wait_for_timeout(1100); ok(pg.evaluate("getComputedStyle(document.querySelector('.assist.floating')).opacity")=='1','celular %s: bolha volta quando para'%tema)
         ok(pg.evaluate("document.querySelector('.assist.floating').getBoundingClientRect().width")<=48,'celular %s: bolha menor'%tema)
         ok(not errs,'celular %s sem erros de JavaScript %s'%(tema,errs)); ctx.close()
+    # --- navegador "de verdade": efeitos ligados (pp.motion=1), com e sem "Efeitos completos"
+    from PIL import Image; import io
+    lum=lambda png: (lambda im: sum(im.resize((40,40)).convert('L').getdata())/(40*40*255))(Image.open(io.BytesIO(png)))
+    for fx in ('false','true'):
+        for mobile in (False,True):
+            kw=dict(viewport={'width':360,'height':780},is_mobile=True,has_touch=True) if mobile else dict(viewport={'width':1400,'height':860})
+            ctx=b.new_context(service_workers='block',**kw); pg=ctx.new_page(); pg.on('dialog',lambda d:d.accept())
+            pg.goto('http://localhost:8765/index.html'); pg.evaluate("localStorage.setItem('pp.motion','1');localStorage.setItem('pp.fxFull','%s');localStorage.setItem('pp.tema','claro')"%fx)
+            pg.evaluate(SEED); pg.evaluate("sessionStorage.setItem('pp.asShown','1')"); pg.reload(); pg.wait_for_timeout(1500)
+            n='%s efeitos=%s'%('celular' if mobile else 'PC',fx)
+            cl=pg.evaluate("document.documentElement.className")
+            ok('gl-on' not in cl and 'mo-on' in cl,'%s: claro sem o fundo escuro de aquário e com movimento (%s)'%(n,cl))
+            l=lum(pg.locator('main .card:visible, main .step:visible').first.screenshot()); ok(l>0.8,'%s: cartão da tela Hoje é claro de verdade (luminosidade %.2f; com o defeito antigo dava 0.44)'%(n,l))
+            if not mobile: l=lum(pg.locator('#side').screenshot()); ok(l>0.8,'%s: menu lateral claro (%.2f)'%(n,l))
+            for v in ('hist','pedido'):
+                pg.evaluate("PP.go(%r)"%v); pg.wait_for_timeout(900); l=lum(pg.locator('main .card:visible, main .step:visible').first.screenshot()); ok(l>0.8,'%s: %s claro (%.2f)'%(n,v,l))
+            if mobile:
+                pg.evaluate("PP.go('hoje')"); pg.wait_for_timeout(500); pg.click('#barMore'); pg.wait_for_timeout(900)
+                l=lum(pg.locator('#side').screenshot()); ok(l>0.85,'%s: menu lateral do celular é claro (%.2f)'%(n,l))
+                al=pg.evaluate("(()=>{const b=getComputedStyle(document.getElementById('side')).backgroundImage+'';const m=[...b.matchAll(/rgba?\\(([^)]*)\\)/g)].map(x=>x[1].split(',').map(Number)).map(a=>a.length>3?a[3]:1);return Math.min(...m)})()")
+                ok(al>=0.97,'%s: fundo do menu lateral do celular é opaco, sem transparecer a tela de trás (alfa mínimo %.2f)'%(n,al))
+            pg.click('#temaRow [data-tema=escuro]') if not mobile else pg.click('#side #temaRow [data-tema=escuro]'); pg.wait_for_timeout(500)
+            ok('gl-on' in pg.evaluate("document.documentElement.className"),'%s: voltando para Escuro o fundo de aquário volta'%n)
+            pg.reload(); pg.wait_for_timeout(900); ok('gl-on' in pg.evaluate("document.documentElement.className") and pg.evaluate("document.documentElement.dataset.theme")=='dark','%s: escuro recarregado mantém o visual de aquário'%n)
+            ctx.close()
     b.close()
 print('\nFALHAS:',len(fails)); [print(' -',f) for f in fails]; sys.exit(1 if fails else 0)

@@ -897,6 +897,10 @@ v29.21 · TEMA CLARO (VIDRO) E AJUSTES DO CELULAR
   escolha fica neste aparelho e vale já na abertura, sem piscar. O tema Claro
   é um vidro translúcido sobre um fundo colorido, com brilho na borda e
   reflexo no canto. O tema Escuro não mudou.
+- Correção (tema Claro): com os efeitos ligados o fundo escuro do aquário
+  ainda aparecia por baixo e deixava tudo cinza; o menu lateral do celular
+  ficava transparente. Agora o Claro fica claro de verdade e o menu lateral
+  do celular é sólido.
 - Celular:
   * Aviso de backup ficou curto e só aparece na tela Hoje.
   * Pedido nacional: o botão "Apagar" não é mais cortado e a página não

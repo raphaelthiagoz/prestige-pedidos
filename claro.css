@@ -143,7 +143,7 @@ html[data-theme="light"].gl-on body::before,html[data-theme="light"].gl-on body:
 html[data-theme="light"] .ib:not(.pri){color:#2a3b48}
 @media (max-width:900px){
   /* menu que abre no celular: vidro mais fechado para não misturar com a tela de trás */
-  html[data-theme="light"] #side{background:linear-gradient(180deg,rgba(240,245,251,.94),rgba(226,236,246,.92));border-right:1px solid rgba(255,255,255,.8)}
+  html[data-theme="light"] #side{background:linear-gradient(180deg,#f3f7fb,#e4edf6)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;border-right:1px solid rgba(255,255,255,.9)}
 }
 @media (max-width:900px){
   /* lupa do topo no celular: é uma imagem fixa clara no escuro; no claro precisa de traço escuro */

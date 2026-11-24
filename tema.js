@@ -9,6 +9,9 @@
   function aplicar() {
     const m = get(), t = efetivo(m);
     document.documentElement.setAttribute('data-theme', t);
+    // o fundo de aquário + cartões escuros (gl-on, do motion.js) só vale no escuro; no claro ele cobriria o vidro claro
+    let fl = ''; try { fl = localStorage.getItem('pp.motion') || ''; } catch (_) { /* ok */ }
+    document.documentElement.classList.toggle('gl-on', t === 'dark' && fl !== '0' && (!navigator.webdriver || fl === '1'));
     const meta = document.querySelector('meta[name="theme-color"]'); if (meta) meta.setAttribute('content', t === 'light' ? '#dfe8f1' : '#0a0e11');
     document.querySelectorAll('#temaRow [data-tema]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.tema === m)));
   }

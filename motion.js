@@ -7,7 +7,8 @@
   const MO = !reduced && flag !== '0' && (!navigator.webdriver || flag === '1');
   if (MO) document.documentElement.classList.add('mo-on');
   // o VISUAL de vidro (fundo de aquário + cartões translúcidos) vale em todas as telas mesmo com as animações desligadas no sistema
-  if (flag !== '0' && (!navigator.webdriver || flag === '1')) document.documentElement.classList.add('gl-on');
+  // (no tema claro o fundo de aquário escuro não entra: o claro tem o próprio vidro, ver claro.css e tema.js)
+  if (flag !== '0' && (!navigator.webdriver || flag === '1') && document.documentElement.getAttribute('data-theme') !== 'light') document.documentElement.classList.add('gl-on');
   // modo leve (padrão): sem desfoque ao vivo atrás de cada cartão e sem fundo em movimento. "Efeitos completos" liga tudo de volta.
   const fxSync = () => { let on = false; try { on = localStorage.getItem('pp.fxFull') === 'true'; } catch (_) { /* ok */ } document.documentElement.classList.toggle('fx-full', on); };
   fxSync(); window.PPfxSync = fxSync;
